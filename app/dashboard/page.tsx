@@ -20,7 +20,7 @@ import {
 import { construirFilaHS, ETAPAS_HS_ATIVAS } from "@/lib/domain/high-school"
 import { GoalCard } from "@/components/goals/goal-cards"
 import { BlocoModulo, Kpi, KpiGrid, BlocoErro, BlocoVazio } from "@/components/dashboard/dashboard-ui"
-import { Building2, GraduationCap, Target, Map as MapIcon, Sparkles } from "lucide-react"
+import { Building2, GraduationCap, Target, Map as MapIcon, Sparkles, Settings } from "lucide-react"
 
 export const dynamic = "force-dynamic"
 
@@ -95,6 +95,11 @@ export default async function DashboardGeral() {
     verSV && { href: "/supervest", rotulo: "SuperVestibular", Icone: Sparkles },
     verMetas && { href: "/gestao/metas", rotulo: "Central de Metas", Icone: Target },
     verMapa && { href: "/mapa", rotulo: "Mapa", Icone: MapIcon },
+    (role === "gerente" || role === "supervisor") && {
+      href: "/gestao/configuracoes",
+      rotulo: "Configurações",
+      Icone: Settings,
+    },
   ].filter(Boolean) as { href: string; rotulo: string; Icone: typeof Building2 }[]
 
   return (
