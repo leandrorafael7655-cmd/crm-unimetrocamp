@@ -3,8 +3,8 @@ import { type NextRequest, NextResponse } from "next/server"
 
 /** Garante que o destino seja um caminho interno seguro. */
 function safeNext(next: string | null): string {
-  if (!next) return "/"
-  if (!next.startsWith("/") || next.startsWith("//")) return "/"
+  if (!next) return "/dashboard"
+  if (!next.startsWith("/") || next.startsWith("//")) return "/dashboard"
   return next
 }
 
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
   const { error } = await supabase.auth.exchangeCodeForSession(code)
 
   if (error) {
-    console.error("[v0] exchangeCodeForSession error:", error.message)
+    console.error("[auth] exchangeCodeForSession error:", error.message)
     const motivo = /expired|used|invalid/i.test(error.message) ? "link-invalido" : "callback-falhou"
     return NextResponse.redirect(`${origin}/auth/login?erro=${motivo}`)
   }
