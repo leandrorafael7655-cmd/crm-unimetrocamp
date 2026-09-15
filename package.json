@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "node scripts/apply-route-name-feature.mjs && node scripts/apply-attendance-feature.mjs && next dev",
-    "build": "node scripts/apply-route-name-feature.mjs && node scripts/apply-attendance-feature.mjs && next build",
+    "dev": "node scripts/apply-route-name-feature.mjs && node scripts/apply-attendance-feature.mjs && node scripts/apply-attendance-member-safety.mjs && next dev",
+    "build": "node scripts/apply-route-name-feature.mjs && node scripts/apply-attendance-feature.mjs && node scripts/apply-attendance-member-safety.mjs && next build",
     "start": "next start",
     "lint": "eslint .",
     "test": "vitest run",
