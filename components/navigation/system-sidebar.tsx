@@ -10,7 +10,6 @@ import {
   ChevronDown,
   CircleGauge,
   GraduationCap,
-  Handshake,
   Link2,
   MapPinned,
   Route,
@@ -26,7 +25,7 @@ import { can, normalizeRole, rotuloRole } from "@/lib/domain/roles"
 import { createClient } from "@/lib/supabase/client"
 
 type GroupKey = "b2b" | "high-school" | "routes" | "settings"
-type LegacyView = "painel" | "carteira" | "consulta" | "empresas" | "agenda" | "funil" | "convenios" | "equipe"
+type LegacyView = "painel" | "carteira" | "consulta" | "empresas" | "agenda" | "funil" | "equipe"
 type LegacyFocus = "equipe" | "links" | undefined
 
 type RoleInput = string | null | undefined
@@ -158,7 +157,6 @@ export function SystemSidebarMenu({ role, embedded = false, activeLegacyView = "
                 {isManager && <LegacyButton label="Todas as empresas" view="empresas" Icone={Building2} active={pathname === "/" && activeLegacyView === "empresas"} embedded={embedded} onLegacySelect={onLegacySelect} />}
                 <LegacyButton label="Agenda / Follow-ups" view="agenda" Icone={CalendarClock} active={pathname === "/" && activeLegacyView === "agenda"} embedded={embedded} onLegacySelect={onLegacySelect} />
                 <LegacyButton label="Pipeline B2B" view="funil" Icone={GitBranch} active={pathname === "/" && activeLegacyView === "funil"} embedded={embedded} onLegacySelect={onLegacySelect} />
-                <LegacyButton label="Convênios" view="convenios" Icone={Handshake} active={pathname === "/" && activeLegacyView === "convenios"} embedded={embedded} onLegacySelect={onLegacySelect} />
               </div>
             )}
           </section>
