@@ -16,7 +16,7 @@ export default async function SetupPage() {
   return (
     <AuthShell
       titulo="Configurar administrador"
-      subtitulo="Crie a primeira conta de gerência para iniciar o CRM."
+      subtitulo="Crie a primeira conta de gerência para iniciar o UniConecta."
     >
       <SetupForm exigeEmail={exigeEmail} />
     </AuthShell>
