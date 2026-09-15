@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/client"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Suspense, useEffect, useMemo, useState } from "react"
+import { Eye, EyeOff } from "lucide-react"
 import { AuthShell } from "@/components/auth/auth-shell"
 import { authRedirectUrl, browserOrigin } from "@/lib/auth/urls"
 
@@ -40,7 +41,7 @@ const MENSAGENS_URL: Record<string, string> = {
 }
 
 const inputCls =
-  "rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#88005b] focus:ring-2 focus:ring-[#88005b]/20"
+  "h-11 w-full rounded-xl border border-[#ded1d9] bg-white px-3.5 text-sm text-slate-900 shadow-[0_1px_2px_rgba(36,21,31,0.02)] outline-none transition placeholder:text-slate-400 hover:border-[#cdbbc5] focus:border-[#88005b] focus:ring-3 focus:ring-[#88005b]/10"
 
 function LoginInner() {
   const router = useRouter()
@@ -50,6 +51,7 @@ function LoginInner() {
   const [modo, setModo] = useState<Modo>("login")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [mostrarSenha, setMostrarSenha] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
   const [carregando, setCarregando] = useState(false)
@@ -130,17 +132,17 @@ function LoginInner() {
   }
 
   const titulos: Record<Modo, { titulo: string; subtitulo: string }> = {
-    login: { titulo: "Entrar", subtitulo: "Acesso ao CRM Comercial UniMetrocamp Wyden." },
-    recuperar: { titulo: "Recuperar senha", subtitulo: "Enviaremos um link para redefinir sua senha." },
-    reenviar: { titulo: "Reenviar confirmação", subtitulo: "Reenvie o link de confirmação de e-mail." },
+    login: { titulo: "Bem-vindo ao UniConecta", subtitulo: "Acesse sua conta para continuar." },
+    recuperar: { titulo: "Recuperar senha", subtitulo: "Enviaremos um link seguro para você definir uma nova senha." },
+    reenviar: { titulo: "Confirmar e-mail", subtitulo: "Reenvie o link de confirmação para concluir seu acesso." },
   }
 
   return (
     <AuthShell titulo={titulos[modo].titulo} subtitulo={titulos[modo].subtitulo}>
       {modo === "login" && (
-        <form onSubmit={entrar} className="flex flex-col gap-4">
+        <form onSubmit={entrar} className="flex flex-col gap-4.5">
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="email" className="text-xs font-medium text-slate-700">E-mail</label>
+            <label htmlFor="email" className="text-sm font-medium text-slate-700">E-mail corporativo</label>
             <input
               id="email"
               type="email"
@@ -152,60 +154,84 @@ function LoginInner() {
               placeholder="seu.email@unimetrocamp.edu.br"
             />
           </div>
+
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="password" className="text-xs font-medium text-slate-700">Senha</label>
-            <input
-              id="password"
-              type="password"
-              required
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className={inputCls}
-              placeholder="••••••••"
-            />
+            <div className="flex items-center justify-between gap-3">
+              <label htmlFor="password" className="text-sm font-medium text-slate-700">Senha</label>
+              <button
+                type="button"
+                onClick={() => { setModo("recuperar"); setErro(null); setAviso(null) }}
+                className="rounded text-xs font-semibold text-[#88005b] underline-offset-4 hover:underline"
+              >
+                Esqueci minha senha
+              </button>
+            </div>
+            <div className="relative">
+              <input
+                id="password"
+                type={mostrarSenha ? "text" : "password"}
+                required
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className={`${inputCls} pr-11`}
+                placeholder="••••••••"
+              />
+              <button
+                type="button"
+                onClick={() => setMostrarSenha((atual) => !atual)}
+                className="absolute inset-y-0 right-0 grid w-11 place-items-center rounded-r-xl text-slate-400 transition hover:text-[#88005b] focus-visible:text-[#88005b]"
+                aria-label={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
+                aria-pressed={mostrarSenha}
+              >
+                {mostrarSenha ? <EyeOff className="h-4 w-4" aria-hidden /> : <Eye className="h-4 w-4" aria-hidden />}
+              </button>
+            </div>
           </div>
-          {erro && <p className="text-sm text-[#ff1a00]" role="alert">{erro}</p>}
-          {aviso && <p className="text-sm text-[#00302b]" role="status">{aviso}</p>}
+
+          {erro && (
+            <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm text-rose-700" role="alert">
+              {erro}
+            </p>
+          )}
+          {aviso && (
+            <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm text-emerald-800" role="status">
+              {aviso}
+            </p>
+          )}
+
           {precisaConfirmar && (
             <button
               type="button"
               onClick={() => { setModo("reenviar"); setErro(null) }}
-              className="self-start text-xs font-medium text-[#88005b] underline-offset-4 hover:underline"
+              className="self-start rounded text-xs font-semibold text-[#88005b] underline-offset-4 hover:underline"
             >
               Reenviar e-mail de confirmação
             </button>
           )}
+
           <button
             type="submit"
             disabled={carregando}
-            className="mt-1 rounded-md bg-[#88005b] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#6d0049] disabled:opacity-60"
+            className="mt-1 h-11 rounded-xl bg-[#88005b] px-4 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(136,0,91,0.18)] transition hover:bg-[#72004d] focus-visible:ring-3 focus-visible:ring-[#88005b]/20 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {carregando ? "Entrando…" : "Entrar"}
           </button>
-          <div className="flex items-center justify-between gap-3 text-xs">
-            <button
-              type="button"
-              onClick={() => { setModo("recuperar"); setErro(null); setAviso(null) }}
-              className="font-medium text-slate-500 underline-offset-4 hover:underline"
-            >
-              Esqueci minha senha
-            </button>
-            <button
-              type="button"
-              onClick={() => { setModo("reenviar"); setErro(null); setAviso(null) }}
-              className="font-medium text-slate-500 underline-offset-4 hover:underline"
-            >
-              Reenviar confirmação
-            </button>
-          </div>
+
+          <button
+            type="button"
+            onClick={() => { setModo("reenviar"); setErro(null); setAviso(null) }}
+            className="mx-auto rounded text-xs font-medium text-slate-500 underline-offset-4 transition hover:text-[#88005b] hover:underline"
+          >
+            Reenviar confirmação de e-mail
+          </button>
         </form>
       )}
 
       {modo !== "login" && (
-        <form onSubmit={modo === "recuperar" ? recuperar : reenviar} className="flex flex-col gap-4">
+        <form onSubmit={modo === "recuperar" ? recuperar : reenviar} className="flex flex-col gap-4.5">
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="email2" className="text-xs font-medium text-slate-700">E-mail</label>
+            <label htmlFor="email2" className="text-sm font-medium text-slate-700">E-mail corporativo</label>
             <input
               id="email2"
               type="email"
@@ -217,28 +243,35 @@ function LoginInner() {
               placeholder="seu.email@unimetrocamp.edu.br"
             />
           </div>
-          {erro && <p className="text-sm text-[#ff1a00]" role="alert">{erro}</p>}
-          {aviso && <p className="text-sm text-[#00302b]" role="status">{aviso}</p>}
+          {erro && <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm text-rose-700" role="alert">{erro}</p>}
+          {aviso && <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm text-emerald-800" role="status">{aviso}</p>}
           <button
             type="submit"
             disabled={carregando}
-            className="mt-1 rounded-md bg-[#88005b] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#6d0049] disabled:opacity-60"
+            className="mt-1 h-11 rounded-xl bg-[#88005b] px-4 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(136,0,91,0.18)] transition hover:bg-[#72004d] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {carregando ? "Enviando…" : modo === "recuperar" ? "Enviar link de redefinição" : "Reenviar confirmação"}
           </button>
           <button
             type="button"
             onClick={() => { setModo("login"); setErro(null); setAviso(null) }}
-            className="self-start text-xs font-medium text-slate-500 underline-offset-4 hover:underline"
+            className="self-start rounded text-xs font-semibold text-[#88005b] underline-offset-4 hover:underline"
           >
             Voltar ao login
           </button>
         </form>
       )}
 
-      <p className="mt-6 border-t border-slate-100 pt-4 text-center text-[11px] text-slate-400">
-        Acesso corporativo · UniMetrocamp Wyden
-      </p>
+      <div className="mt-7 flex items-center justify-between gap-4 border-t border-[#f0e6ec] pt-5">
+        <p className="text-[11px] leading-relaxed text-slate-400">Acesso exclusivo da equipe UniMetrocamp</p>
+        <img
+          src="/brand/unimetrocamp-color.svg"
+          alt="UniMetrocamp Wyden"
+          width={150}
+          height={33}
+          className="h-auto w-[112px] shrink-0 opacity-90"
+        />
+      </div>
     </AuthShell>
   )
 }
