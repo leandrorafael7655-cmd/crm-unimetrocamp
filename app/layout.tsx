@@ -7,10 +7,12 @@ const geistSans = Geist({ subsets: ['latin'], variable: '--font-geist-sans' })
 const geistMono = Geist_Mono({ subsets: ['latin'], variable: '--font-geist-mono' })
 
 export const metadata: Metadata = {
-  title: 'CRM B2B · UniMetrocamp Wyden',
+  title: {
+    default: 'CRM Comercial · UniMetrocamp Wyden',
+    template: '%s · CRM Comercial | UniMetrocamp Wyden',
+  },
   description:
-    'Gestão comercial de convênios empresariais: carteira, fila de prioridade, funil, agenda e geração de links de inscrição.',
-  generator: 'v0.app',
+    'CRM Comercial da UniMetrocamp Wyden para gestão B2B, High School, metas, SuperVestibular, mapa e planejamento de rotas.',
 }
 
 export const viewport: Viewport = {
