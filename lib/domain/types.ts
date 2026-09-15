@@ -61,6 +61,11 @@ export interface Empresa {
   ultimoContato: string
   proximaAcao: string
   dataProximaAcao: string
+  /** Agenda estruturada do próximo passo B2B para convite iCalendar. */
+  proximaAcaoInicio?: string
+  proximaAcaoFim?: string
+  proximaAcaoLocal?: string
+  proximaAcaoOwnerId?: string | null
   dataEntrada: string
   linkInscricao: string
   linkConsultor: string
