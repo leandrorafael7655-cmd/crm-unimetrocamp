@@ -78,7 +78,7 @@ function LegacyButton({
   if (embedded && onLegacySelect) {
     return (
       <button type="button" onClick={() => onLegacySelect({ view, focus })} className={submenuClass(active)} aria-current={active ? "page" : undefined}>
-        <Icone className={`h-4 w-4 shrink-0 ${active ? "text-[#ff8a52]" : "text-white/52"}`} aria-hidden />
+        <Icone className={`h-4 w-4 shrink-0 ${active ? "text-[#FA4616]" : "text-white/52"}`} aria-hidden />
         <span>{label}</span>
       </button>
     )
@@ -88,7 +88,7 @@ function LegacyButton({
   if (focus) query.set("focus", focus)
   return (
     <Link href={`/?${query.toString()}`} className={submenuClass(active)} aria-current={active ? "page" : undefined}>
-      <Icone className={`h-4 w-4 shrink-0 ${active ? "text-[#ff8a52]" : "text-white/52"}`} aria-hidden />
+      <Icone className={`h-4 w-4 shrink-0 ${active ? "text-[#FA4616]" : "text-white/52"}`} aria-hidden />
       <span>{label}</span>
     </Link>
   )
@@ -97,7 +97,7 @@ function LegacyButton({
 function NavLink({ href, label, Icone, active }: { href: string; label: string; Icone: typeof Building2; active: boolean }) {
   return (
     <Link href={href} className={submenuClass(active)} aria-current={active ? "page" : undefined}>
-      <Icone className={`h-4 w-4 shrink-0 ${active ? "text-[#ff8a52]" : "text-white/52"}`} aria-hidden />
+      <Icone className={`h-4 w-4 shrink-0 ${active ? "text-[#FA4616]" : "text-white/52"}`} aria-hidden />
       <span>{label}</span>
     </Link>
   )
@@ -127,7 +127,7 @@ function GroupButton({
           : "border-transparent text-white/82 hover:bg-white/[0.06] hover:text-white"
       }`}
     >
-      <Icone className={`h-4 w-4 shrink-0 ${open ? "text-[#ff8a52]" : "text-white/60"}`} aria-hidden />
+      <Icone className={`h-4 w-4 shrink-0 ${open ? "text-[#FA4616]" : "text-white/60"}`} aria-hidden />
       <span className="flex-1 text-left">{label}</span>
       <ChevronDown className={`h-4 w-4 text-white/45 transition-transform ${open ? "rotate-180" : ""}`} aria-hidden />
     </button>
@@ -250,7 +250,7 @@ export function SystemSidebar({ role, userName }: { role?: RoleInput; userName?:
 
   return (
     <nav className="flex w-full shrink-0 flex-col bg-[linear-gradient(180deg,#680046_0%,#520037_100%)] text-white md:min-h-screen md:w-64 md:shadow-[8px_0_30px_rgba(70,0,47,0.08)]">
-      <Link href="/dashboard" className="border-b border-white/10 px-4 py-4 transition hover:bg-white/[0.04] md:px-5 md:py-5">
+      <Link href="/dashboard" className="border-b border-white/10 bg-[#880058] px-4 py-4 transition hover:brightness-[1.03] md:px-5 md:py-5">
         <img
           src="/brand/unimetrocamp-on-purple.svg"
           alt="UniMetrocamp Wyden"
@@ -260,10 +260,10 @@ export function SystemSidebar({ role, userName }: { role?: RoleInput; userName?:
         />
         <div className="mt-3 flex items-end justify-between gap-2">
           <div>
-            <p className="text-xl font-bold tracking-[-0.025em] text-white">UniConecta<span className="text-[#ff6a22]">.</span></p>
+            <p className="text-xl font-bold tracking-[-0.025em] text-white">UniConecta<span className="text-[#FA4616]">.</span></p>
             <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-white/48">Gestão comercial integrada</p>
           </div>
-          <span className="mb-1 h-5 w-1 rounded-full bg-[#ff6a22]" aria-hidden />
+          <span className="mb-1 h-5 w-1 rounded-full bg-[#FA4616]" aria-hidden />
         </div>
       </Link>
 
