@@ -1,18 +1,27 @@
 "use client"
 
 import { useMemo, useState, useTransition } from "react"
+import { useRouter } from "next/navigation"
 import {
   Search, Plus, X, ArrowUp, ArrowDown, Route, Save, Navigation, MapPin,
-  Clock, Building2, GraduationCap, Sparkles, LocateFixed, AlertTriangle, CheckCircle2,
+  Clock, Building2, GraduationCap, Sparkles, LocateFixed, AlertTriangle,
+  CheckCircle2, Home, Pencil, FolderOpen,
 } from "lucide-react"
 import {
-  otimizarRotaAction, salvarPlanoAction,
+  otimizarRotaAction, salvarPlanoAction, sugerirProximidadeAction,
   type ParadaPayload,
 } from "@/app/actions/routes"
-import { sugerirProximidadeAction } from "@/app/actions/routes"
+import {
+  carregarPlanoSalvoAction,
+  salvarMeuEnderecoAction,
+} from "@/app/actions/route-preferences"
+import { UNIMETROCAMP_ORIGIN } from "@/lib/domain/route-origins"
 
 /* ── tipos locais (evita importar módulos server-only no cliente) ── */
 type Tipo = "company" | "school"
+type OrigemModo = "campus" | "home" | "gps" | "saved"
+type DestinoModo = "same" | "campus" | "home" | "saved"
+
 interface Ponto {
   id: string
   tipo: Tipo
@@ -48,8 +57,28 @@ interface Selecionada {
   visit_minutes: string
   eta?: string
 }
+interface MeuEndereco {
+  logradouro: string
+  numero: string
+  complemento: string
+  bairro: string
+  cidade: string
+  cep: string
+  lat: number
+  lng: number
+  label: string
+}
+interface CoordRotulo {
+  lat: number
+  lng: number
+  label: string
+}
 
-const BASE = { lng: -47.0626, lat: -22.9099, label: "Base (RMC)" }
+const CAMPUS: CoordRotulo = {
+  lat: UNIMETROCAMP_ORIGIN.lat,
+  lng: UNIMETROCAMP_ORIGIN.lng,
+  label: UNIMETROCAMP_ORIGIN.label,
+}
 const LIMITE_PARADAS = 10 // origem + destino + 10 = 12 coords (limite Mapbox v1)
 
 function fmtDur(s: number): string {
@@ -60,18 +89,30 @@ function fmtDur(s: number): string {
 function fmtDist(m: number): string {
   return m >= 1000 ? `${(m / 1000).toFixed(1)} km` : `${m} m`
 }
+function brData(iso: string): string {
+  const [a, m, d] = iso.split("-")
+  return a && m && d ? `${d}/${m}/${a}` : iso
+}
+function perto(a: { lat: number; lng: number }, b: { lat: number; lng: number }, tolerancia = 0.001): boolean {
+  return Math.abs(a.lat - b.lat) <= tolerancia && Math.abs(a.lng - b.lng) <= tolerancia
+}
 
 export function RoutePlanner({
   pontos,
   planosRecentes,
+  meuEnderecoInicial,
 }: {
   pontos: Ponto[]
   planosRecentes: PlanoResumo[]
+  meuEnderecoInicial: MeuEndereco | null
 }) {
+  const router = useRouter()
   const [planDate, setPlanDate] = useState(() => new Date().toISOString().slice(0, 10))
-  const [origem, setOrigem] = useState({ ...BASE })
-  const [destino, setDestino] = useState({ ...BASE })
-  const [terminarNaBase, setTerminarNaBase] = useState(true)
+  const [meuEndereco, setMeuEndereco] = useState<MeuEndereco | null>(meuEnderecoInicial)
+  const [origemModo, setOrigemModo] = useState<OrigemModo>("campus")
+  const [origem, setOrigem] = useState<CoordRotulo>({ ...CAMPUS })
+  const [destinoModo, setDestinoModo] = useState<DestinoModo>("same")
+  const [destinoSalvo, setDestinoSalvo] = useState<CoordRotulo | null>(null)
   const [departure, setDeparture] = useState("08:00")
   const [returnTime, setReturnTime] = useState("")
   const [avgVisit, setAvgVisit] = useState("45")
@@ -82,18 +123,49 @@ export function RoutePlanner({
   const [aviso, setAviso] = useState<{ tipo: "erro" | "ok" | "limite"; texto: string } | null>(null)
   const [sugestoes, setSugestoes] = useState<Sugestao[]>([])
   const [planoId, setPlanoId] = useState<string | null>(null)
+  const [mostrarEndereco, setMostrarEndereco] = useState(false)
+  const [formEndereco, setFormEndereco] = useState({
+    logradouro: meuEnderecoInicial?.logradouro ?? "",
+    numero: meuEnderecoInicial?.numero ?? "",
+    complemento: meuEnderecoInicial?.complemento ?? "",
+    bairro: meuEnderecoInicial?.bairro ?? "",
+    cidade: meuEnderecoInicial?.cidade ?? "Campinas",
+    cep: meuEnderecoInicial?.cep ?? "",
+  })
+
   const [otimizando, iniciarOtimizacao] = useTransition()
   const [salvando, iniciarSalvar] = useTransition()
   const [sugerindo, iniciarSugestao] = useTransition()
+  const [abrindo, iniciarAbrir] = useTransition()
+  const [salvandoEndereco, iniciarSalvarEndereco] = useTransition()
 
   const idsSelecionados = useMemo(() => new Set(selecionadas.map((s) => s.ponto.id)), [selecionadas])
+  const mapaPontos = useMemo(() => new Map(pontos.map((p) => [`${p.tipo}:${p.id}`, p])), [pontos])
 
   const filtrados = useMemo(() => {
     const t = busca.trim().toLowerCase()
     const base = pontos.filter((p) => !idsSelecionados.has(p.id))
     if (!t) return base.slice(0, 40)
-    return base.filter((p) => p.nome.toLowerCase().includes(t) || (p.cidade ?? "").toLowerCase().includes(t)).slice(0, 40)
+    return base
+      .filter((p) => p.nome.toLowerCase().includes(t) || (p.cidade ?? "").toLowerCase().includes(t))
+      .slice(0, 40)
   }, [pontos, busca, idsSelecionados])
+
+  const destinoFinal = useMemo<CoordRotulo>(() => {
+    if (destinoModo === "same") return origem
+    if (destinoModo === "campus") return { ...CAMPUS }
+    if (destinoModo === "home" && meuEndereco) {
+      return { lat: meuEndereco.lat, lng: meuEndereco.lng, label: meuEndereco.label }
+    }
+    if (destinoModo === "saved" && destinoSalvo) return destinoSalvo
+    return origem
+  }, [destinoModo, destinoSalvo, meuEndereco, origem])
+
+  function resetarResultado() {
+    setOtimizado(false)
+    setTotais(null)
+    setAviso(null)
+  }
 
   function adicionar(p: Ponto) {
     if (idsSelecionados.has(p.id)) return
@@ -113,15 +185,29 @@ export function RoutePlanner({
       return arr
     })
     setOtimizado(false)
-    setAviso({ tipo: "erro", texto: "Ordem alterada manualmente — saiu da rota otimizada. Otimize novamente se quiser." })
+    setAviso({ tipo: "erro", texto: "Ordem alterada manualmente — otimize novamente se quiser recalcular a rota." })
   }
   function atualizar(id: string, campo: "fixed_time" | "visit_minutes", valor: string) {
     setSelecionadas((prev) => prev.map((s) => (s.ponto.id === id ? { ...s, [campo]: valor } : s)))
   }
-  function resetarResultado() {
-    setOtimizado(false)
-    setTotais(null)
-    setAviso(null)
+
+  function selecionarOrigem(modo: OrigemModo) {
+    if (modo === "campus") {
+      setOrigemModo("campus")
+      setOrigem({ ...CAMPUS })
+      resetarResultado()
+      return
+    }
+    if (modo === "home") {
+      if (!meuEndereco) {
+        setMostrarEndereco(true)
+        setAviso({ tipo: "erro", texto: "Cadastre seu endereço antes de usá-lo como ponto de partida." })
+        return
+      }
+      setOrigemModo("home")
+      setOrigem({ lat: meuEndereco.lat, lng: meuEndereco.lng, label: meuEndereco.label })
+      resetarResultado()
+    }
   }
 
   function usarMinhaLocalizacao() {
@@ -131,12 +217,31 @@ export function RoutePlanner({
     }
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setOrigem({ lng: pos.coords.longitude, lat: pos.coords.latitude, label: "Minha localização" })
-        setAviso({ tipo: "ok", texto: "Origem definida pela sua localização atual." })
+        setOrigemModo("gps")
+        setOrigem({ lng: pos.coords.longitude, lat: pos.coords.latitude, label: "Minha localização atual" })
+        setAviso({ tipo: "ok", texto: "Origem definida pela localização atual. Ela vale apenas para esta rota." })
+        setOtimizado(false)
       },
       () => setAviso({ tipo: "erro", texto: "Não foi possível obter sua localização (permissão negada?)." }),
       { enableHighAccuracy: true, timeout: 8000 },
     )
+  }
+
+  function salvarEndereco() {
+    iniciarSalvarEndereco(async () => {
+      const r = await salvarMeuEnderecoAction(formEndereco)
+      if (!r.ok || !r.endereco) {
+        setAviso({ tipo: "erro", texto: r.message })
+        return
+      }
+      setMeuEndereco(r.endereco)
+      setOrigemModo("home")
+      setOrigem({ lat: r.endereco.lat, lng: r.endereco.lng, label: r.endereco.label })
+      setMostrarEndereco(false)
+      setAviso({ tipo: "ok", texto: r.message })
+      setOtimizado(false)
+      router.refresh()
+    })
   }
 
   function montarParadas(): ParadaPayload[] {
@@ -158,11 +263,10 @@ export function RoutePlanner({
     if (selecionadas.length > LIMITE_PARADAS) {
       setAviso({
         tipo: "limite",
-        texto: `Você tem ${selecionadas.length} paradas. O limite por rota é ${LIMITE_PARADAS} (origem + destino + ${LIMITE_PARADAS}). Divida em dois dias ou remova paradas.`,
+        texto: `Você tem ${selecionadas.length} paradas. O limite por rota é ${LIMITE_PARADAS}. Divida em dois dias ou remova paradas.`,
       })
       return
     }
-    const destinoFinal = terminarNaBase ? { ...BASE } : destino
     iniciarOtimizacao(async () => {
       const r = await otimizarRotaAction({
         origem: { lat: origem.lat, lng: origem.lng },
@@ -177,9 +281,7 @@ export function RoutePlanner({
       }
       if (!r.ok || r.erro) {
         setAviso({ tipo: "erro", texto: r.erro ?? "Falha ao otimizar." })
-        // preserva ordem manual; não marca como otimizado
       }
-      // reordena conforme resultado
       const ordemIndex = new Map(r.ordem.map((id, i) => [id, i]))
       setSelecionadas((prev) =>
         [...prev]
@@ -199,7 +301,6 @@ export function RoutePlanner({
       setAviso({ tipo: "erro", texto: "Nada para salvar." })
       return
     }
-    const destinoFinal = terminarNaBase ? { ...BASE } : destino
     iniciarSalvar(async () => {
       const r = await salvarPlanoAction({
         id: planoId,
@@ -227,10 +328,104 @@ export function RoutePlanner({
       })
       if (r.ok) {
         setPlanoId(r.id ?? null)
-        setAviso({ tipo: "ok", texto: "Plano salvo." })
+        setAviso({ tipo: "ok", texto: "Plano salvo. Você poderá reabri-lo em Planos recentes." })
+        router.refresh()
       } else {
         setAviso({ tipo: "erro", texto: r.message ?? "Erro ao salvar." })
       }
+    })
+  }
+
+  function abrirPlano(id: string) {
+    iniciarAbrir(async () => {
+      const r = await carregarPlanoSalvoAction(id)
+      if (!r) {
+        setAviso({ tipo: "erro", texto: "Não foi possível abrir esse plano." })
+        return
+      }
+
+      const carregadas: Selecionada[] = []
+      let ignoradas = 0
+      for (const s of r.paradas) {
+        const existente = mapaPontos.get(`${s.entity_type}:${s.entity_id}`)
+        if (existente) {
+          carregadas.push({
+            ponto: existente,
+            fixed_time: s.fixed_time ?? "",
+            visit_minutes: s.visit_minutes == null ? "" : String(s.visit_minutes),
+            eta: s.estimated_arrival ?? undefined,
+          })
+        } else if (s.lat != null && s.lng != null) {
+          carregadas.push({
+            ponto: {
+              id: s.entity_id,
+              tipo: s.entity_type,
+              nome: s.nome,
+              cidade: s.cidade,
+              bairro: null,
+              lat: s.lat,
+              lng: s.lng,
+              etapa: null,
+              classificacao: null,
+              dono: null,
+            },
+            fixed_time: s.fixed_time ?? "",
+            visit_minutes: s.visit_minutes == null ? "" : String(s.visit_minutes),
+            eta: s.estimated_arrival ?? undefined,
+          })
+        } else {
+          ignoradas++
+        }
+      }
+
+      const origemCarregada: CoordRotulo = {
+        lat: r.origin_lat ?? CAMPUS.lat,
+        lng: r.origin_lng ?? CAMPUS.lng,
+        label: r.origin_label ?? CAMPUS.label,
+      }
+      setOrigem(origemCarregada)
+      if (perto(origemCarregada, CAMPUS)) setOrigemModo("campus")
+      else if (meuEndereco && perto(origemCarregada, meuEndereco)) setOrigemModo("home")
+      else setOrigemModo("saved")
+
+      const destinoCarregado: CoordRotulo = {
+        lat: r.destination_lat ?? origemCarregada.lat,
+        lng: r.destination_lng ?? origemCarregada.lng,
+        label: r.destination_label ?? origemCarregada.label,
+      }
+      if (perto(destinoCarregado, origemCarregada)) {
+        setDestinoModo("same")
+        setDestinoSalvo(null)
+      } else if (perto(destinoCarregado, CAMPUS)) {
+        setDestinoModo("campus")
+        setDestinoSalvo(null)
+      } else if (meuEndereco && perto(destinoCarregado, meuEndereco)) {
+        setDestinoModo("home")
+        setDestinoSalvo(null)
+      } else {
+        setDestinoModo("saved")
+        setDestinoSalvo(destinoCarregado)
+      }
+
+      setPlanoId(r.id)
+      setPlanDate(r.plan_date)
+      setDeparture((r.departure_time ?? "08:00").slice(0, 5))
+      setReturnTime((r.return_time ?? "").slice(0, 5))
+      setAvgVisit(String(r.avg_visit_minutes ?? 45))
+      setSelecionadas(carregadas)
+      setOtimizado(r.status === "otimizada" || Boolean(r.optimized_at))
+      setTotais(
+        r.total_distance_m != null && r.total_duration_s != null
+          ? { dist: r.total_distance_m, dur: r.total_duration_s }
+          : null,
+      )
+      setSugestoes([])
+      setAviso({
+        tipo: ignoradas ? "erro" : "ok",
+        texto: ignoradas
+          ? `Plano aberto, mas ${ignoradas} parada(s) sem coordenadas foram ignoradas.`
+          : "Plano salvo aberto. Você pode editar, otimizar novamente ou abrir no Google Maps.",
+      })
     })
   }
 
@@ -257,7 +452,6 @@ export function RoutePlanner({
   }
 
   function urlGoogleMaps(): string {
-    const destinoFinal = terminarNaBase ? { ...BASE } : destino
     const wp = selecionadas.map((s) => `${s.ponto.lat},${s.ponto.lng}`).join("|")
     const u = new URL("https://www.google.com/maps/dir/")
     u.searchParams.set("api", "1")
@@ -305,22 +499,95 @@ export function RoutePlanner({
                 className="rounded-md border border-border bg-background px-2 py-1.5" />
             </label>
           </div>
-          <div className="mt-3 flex flex-col gap-2 text-sm">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-xs text-muted-foreground">Origem: <strong className="text-foreground">{origem.label}</strong></span>
-              <button onClick={usarMinhaLocalizacao}
-                className="flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs transition hover:bg-muted">
-                <LocateFixed className="h-3.5 w-3.5" /> Minha localização
-              </button>
-            </div>
-            <label className="flex items-center gap-2 text-xs text-muted-foreground">
-              <input type="checkbox" checked={terminarNaBase} onChange={(e) => setTerminarNaBase(e.target.checked)} />
-              Terminar na base (RMC)
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <label className="flex flex-col gap-1">
+              <span className="text-xs font-medium text-muted-foreground">Ponto de partida</span>
+              <select
+                value={origemModo === "gps" || origemModo === "saved" ? origemModo : origemModo}
+                onChange={(e) => selecionarOrigem(e.target.value as OrigemModo)}
+                className="rounded-md border border-border bg-background px-2 py-2 text-sm"
+              >
+                <option value="campus">UniMetrocamp</option>
+                <option value="home">Meu endereço</option>
+                {origemModo === "gps" && <option value="gps">Minha localização atual</option>}
+                {origemModo === "saved" && <option value="saved">Origem do plano salvo</option>}
+              </select>
+            </label>
+            <label className="flex flex-col gap-1">
+              <span className="text-xs font-medium text-muted-foreground">Destino final</span>
+              <select
+                value={destinoModo}
+                onChange={(e) => { setDestinoModo(e.target.value as DestinoModo); resetarResultado() }}
+                className="rounded-md border border-border bg-background px-2 py-2 text-sm"
+              >
+                <option value="same">Voltar ao ponto de partida</option>
+                <option value="campus">UniMetrocamp</option>
+                {meuEndereco && <option value="home">Meu endereço</option>}
+                {destinoModo === "saved" && <option value="saved">Destino do plano salvo</option>}
+              </select>
             </label>
           </div>
+
+          <div className="mt-3 rounded-md border border-border/70 bg-muted/30 p-3">
+            <div className="flex items-start gap-2">
+              <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#88005b]" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium">{origem.label}</p>
+                {origemModo === "campus" && <p className="text-xs text-muted-foreground">{UNIMETROCAMP_ORIGIN.address}</p>}
+                {origemModo === "home" && meuEndereco && <p className="text-xs text-muted-foreground">Endereço pessoal salvo apenas para sua conta.</p>}
+              </div>
+            </div>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <button onClick={() => setMostrarEndereco((v) => !v)}
+                className="flex items-center gap-1.5 rounded-md border border-border bg-background px-2 py-1.5 text-xs transition hover:bg-muted">
+                {meuEndereco ? <Pencil className="h-3.5 w-3.5" /> : <Home className="h-3.5 w-3.5" />}
+                {meuEndereco ? "Editar meu endereço" : "Cadastrar meu endereço"}
+              </button>
+              <button onClick={usarMinhaLocalizacao}
+                className="flex items-center gap-1.5 rounded-md border border-border bg-background px-2 py-1.5 text-xs transition hover:bg-muted">
+                <LocateFixed className="h-3.5 w-3.5" /> Usar localização atual
+              </button>
+            </div>
+          </div>
+
+          {mostrarEndereco && (
+            <div className="mt-3 rounded-md border border-[#88005b]/20 bg-[#88005b]/5 p-3">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <div>
+                  <p className="text-sm font-semibold">Meu endereço</p>
+                  <p className="text-xs text-muted-foreground">Privado: cada usuário vê apenas o próprio endereço.</p>
+                </div>
+                <button onClick={() => setMostrarEndereco(false)} className="rounded p-1 hover:bg-muted" aria-label="Fechar"><X className="h-4 w-4" /></button>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <input placeholder="Rua / avenida" value={formEndereco.logradouro}
+                  onChange={(e) => setFormEndereco({ ...formEndereco, logradouro: e.target.value })}
+                  className="rounded-md border border-border bg-background px-2 py-1.5 text-sm" />
+                <input placeholder="Número" value={formEndereco.numero}
+                  onChange={(e) => setFormEndereco({ ...formEndereco, numero: e.target.value })}
+                  className="rounded-md border border-border bg-background px-2 py-1.5 text-sm" />
+                <input placeholder="Complemento" value={formEndereco.complemento}
+                  onChange={(e) => setFormEndereco({ ...formEndereco, complemento: e.target.value })}
+                  className="rounded-md border border-border bg-background px-2 py-1.5 text-sm" />
+                <input placeholder="Bairro" value={formEndereco.bairro}
+                  onChange={(e) => setFormEndereco({ ...formEndereco, bairro: e.target.value })}
+                  className="rounded-md border border-border bg-background px-2 py-1.5 text-sm" />
+                <input placeholder="Cidade" value={formEndereco.cidade}
+                  onChange={(e) => setFormEndereco({ ...formEndereco, cidade: e.target.value })}
+                  className="rounded-md border border-border bg-background px-2 py-1.5 text-sm" />
+                <input placeholder="CEP" value={formEndereco.cep}
+                  onChange={(e) => setFormEndereco({ ...formEndereco, cep: e.target.value })}
+                  className="rounded-md border border-border bg-background px-2 py-1.5 text-sm" />
+              </div>
+              <button onClick={salvarEndereco} disabled={salvandoEndereco}
+                className="mt-3 flex items-center gap-1.5 rounded-md bg-[#00302b] px-3 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50">
+                <Save className="h-4 w-4" /> {salvandoEndereco ? "Localizando e salvando…" : "Salvar meu endereço"}
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* busca de pontos */}
         <div className="rounded-lg border border-border bg-card p-4">
           <h2 className="mb-3 text-sm font-semibold">Adicionar paradas</h2>
           <div className="relative mb-3">
@@ -346,7 +613,6 @@ export function RoutePlanner({
           </ul>
         </div>
 
-        {/* sugestão de proximidade */}
         <div className="rounded-lg border border-border bg-card p-4">
           <div className="mb-2 flex items-center justify-between">
             <h2 className="flex items-center gap-1.5 text-sm font-semibold">
@@ -392,6 +658,7 @@ export function RoutePlanner({
         <div className="rounded-lg border border-border bg-card p-4">
           <div className="mb-3 flex flex-wrap items-center gap-2">
             <h2 className="text-sm font-semibold">Rota ({selecionadas.length})</h2>
+            {planoId && <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">plano aberto</span>}
             {otimizado && (
               <span className="flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">
                 <CheckCircle2 className="h-3 w-3" /> Otimizada
@@ -404,17 +671,16 @@ export function RoutePlanner({
             )}
           </div>
 
-          {/* origem */}
           <div className="mb-1 flex items-center gap-2 rounded-md bg-[#00302b]/5 px-2 py-1.5 text-sm dark:bg-white/5">
             <MapPin className="h-4 w-4 text-[#00302b] dark:text-[#b4fcf1]" />
             <span className="font-medium">Origem</span>
-            <span className="text-muted-foreground">{origem.label} · {departure}</span>
+            <span className="truncate text-muted-foreground">{origem.label} · {departure}</span>
           </div>
 
           <ol className="flex flex-col gap-1.5">
             {selecionadas.length === 0 && (
               <li className="rounded-md border border-dashed border-border px-3 py-6 text-center text-sm text-muted-foreground">
-                Nenhuma parada. Adicione empresas e escolas à esquerda.
+                Nenhuma parada. Adicione empresas e escolas à esquerda ou abra um plano salvo.
               </li>
             )}
             {selecionadas.map((s, i) => (
@@ -450,11 +716,10 @@ export function RoutePlanner({
             ))}
           </ol>
 
-          {/* destino */}
           <div className="mt-1 flex items-center gap-2 rounded-md bg-[#00302b]/5 px-2 py-1.5 text-sm dark:bg-white/5">
             <MapPin className="h-4 w-4 text-[#00302b] dark:text-[#b4fcf1]" />
             <span className="font-medium">Destino</span>
-            <span className="text-muted-foreground">{terminarNaBase ? BASE.label : destino.label}</span>
+            <span className="truncate text-muted-foreground">{destinoFinal.label}</span>
           </div>
 
           {excedeu && (
@@ -470,7 +735,7 @@ export function RoutePlanner({
             </button>
             <button onClick={salvar} disabled={salvando || selecionadas.length === 0}
               className="flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm font-medium transition hover:bg-muted disabled:opacity-50">
-              <Save className="h-4 w-4" /> {salvando ? "Salvando…" : "Salvar plano"}
+              <Save className="h-4 w-4" /> {salvando ? "Salvando…" : planoId ? "Atualizar plano" : "Salvar plano"}
             </button>
             <button onClick={abrirNavegacao} disabled={selecionadas.length === 0}
               className="flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm font-medium transition hover:bg-muted disabled:opacity-50">
@@ -479,16 +744,34 @@ export function RoutePlanner({
           </div>
         </div>
 
-        {/* planos recentes */}
         {planosRecentes.length > 0 && (
           <div className="rounded-lg border border-border bg-card p-4">
-            <h2 className="mb-2 text-sm font-semibold">Planos recentes</h2>
+            <div className="mb-2 flex items-center gap-2">
+              <FolderOpen className="h-4 w-4 text-[#88005b]" />
+              <h2 className="text-sm font-semibold">Planos recentes</h2>
+              <span className="text-xs text-muted-foreground">clique para reabrir</span>
+            </div>
             <ul className="flex flex-col gap-1 text-sm">
               {planosRecentes.map((p) => (
-                <li key={p.id} className="flex items-center gap-2 rounded-md px-2 py-1.5 text-muted-foreground">
-                  <span className="font-medium text-foreground">{p.plan_date}</span>
-                  <span className="rounded-full bg-muted px-2 py-0.5 text-xs">{p.status}</span>
-                  {p.total_distance_m != null && <span className="ml-auto text-xs">{fmtDist(p.total_distance_m)} · {p.total_duration_s ? fmtDur(p.total_duration_s) : "—"}</span>}
+                <li key={p.id}>
+                  <button
+                    onClick={() => abrirPlano(p.id)}
+                    disabled={abrindo}
+                    className={`flex w-full items-center gap-2 rounded-md border px-2 py-2 text-left transition hover:bg-muted disabled:opacity-50 ${
+                      planoId === p.id ? "border-[#88005b]/40 bg-[#88005b]/5" : "border-transparent"
+                    }`}
+                  >
+                    <span className="font-medium text-foreground">{brData(p.plan_date)}</span>
+                    <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{p.status}</span>
+                    {p.total_distance_m != null && (
+                      <span className="ml-auto text-xs text-muted-foreground">
+                        {fmtDist(p.total_distance_m)} · {p.total_duration_s ? fmtDur(p.total_duration_s) : "—"}
+                      </span>
+                    )}
+                    <span className="flex items-center gap-1 text-xs font-medium text-[#88005b]">
+                      <FolderOpen className="h-3.5 w-3.5" /> Abrir
+                    </span>
+                  </button>
                 </li>
               ))}
             </ul>
