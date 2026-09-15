@@ -43,13 +43,6 @@ interface SystemSidebarMenuProps {
   onLegacySelect?: (selection: LegacyB2BSelection) => void
 }
 
-const GROUP_LABELS: Record<GroupKey, string> = {
-  b2b: "B2B",
-  "high-school": "High School",
-  routes: "Rotas",
-  settings: "Configurações",
-}
-
 function groupForPath(pathname: string): GroupKey {
   if (pathname.startsWith("/high-school") || pathname.startsWith("/supervest")) return "high-school"
   if (pathname.startsWith("/mapa")) return "routes"
@@ -58,10 +51,10 @@ function groupForPath(pathname: string): GroupKey {
 }
 
 function submenuClass(active: boolean) {
-  return `flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-[13px] transition ${
+  return `flex min-h-9 w-full items-center gap-2 rounded-lg border px-3 py-2 text-left text-[13px] transition ${
     active
-      ? "bg-white/10 font-medium text-white"
-      : "text-[#b4fcf1]/70 hover:bg-white/5 hover:text-white"
+      ? "border-white/10 bg-white/[0.12] font-semibold text-white shadow-sm"
+      : "border-transparent text-white/68 hover:bg-white/[0.07] hover:text-white"
   }`
 }
 
@@ -84,8 +77,8 @@ function LegacyButton({
 }) {
   if (embedded && onLegacySelect) {
     return (
-      <button type="button" onClick={() => onLegacySelect({ view, focus })} className={submenuClass(active)}>
-        <Icone className="h-4 w-4 shrink-0" />
+      <button type="button" onClick={() => onLegacySelect({ view, focus })} className={submenuClass(active)} aria-current={active ? "page" : undefined}>
+        <Icone className={`h-4 w-4 shrink-0 ${active ? "text-[#ff8a52]" : "text-white/52"}`} aria-hidden />
         <span>{label}</span>
       </button>
     )
@@ -94,8 +87,8 @@ function LegacyButton({
   const query = new URLSearchParams({ view })
   if (focus) query.set("focus", focus)
   return (
-    <Link href={`/?${query.toString()}`} className={submenuClass(false)}>
-      <Icone className="h-4 w-4 shrink-0" />
+    <Link href={`/?${query.toString()}`} className={submenuClass(active)} aria-current={active ? "page" : undefined}>
+      <Icone className={`h-4 w-4 shrink-0 ${active ? "text-[#ff8a52]" : "text-white/52"}`} aria-hidden />
       <span>{label}</span>
     </Link>
   )
@@ -103,10 +96,41 @@ function LegacyButton({
 
 function NavLink({ href, label, Icone, active }: { href: string; label: string; Icone: typeof Building2; active: boolean }) {
   return (
-    <Link href={href} className={submenuClass(active)}>
-      <Icone className="h-4 w-4 shrink-0" />
+    <Link href={href} className={submenuClass(active)} aria-current={active ? "page" : undefined}>
+      <Icone className={`h-4 w-4 shrink-0 ${active ? "text-[#ff8a52]" : "text-white/52"}`} aria-hidden />
       <span>{label}</span>
     </Link>
+  )
+}
+
+function GroupButton({
+  group,
+  label,
+  Icone,
+  open,
+  onClick,
+}: {
+  group: GroupKey
+  label: string
+  Icone: typeof Building2
+  open: boolean
+  onClick: (group: GroupKey) => void
+}) {
+  return (
+    <button
+      type="button"
+      aria-expanded={open}
+      onClick={() => onClick(group)}
+      className={`flex min-h-11 w-full items-center gap-2.5 rounded-xl border px-3 py-2.5 text-sm font-semibold transition ${
+        open
+          ? "border-white/10 bg-white/[0.09] text-white shadow-sm"
+          : "border-transparent text-white/82 hover:bg-white/[0.06] hover:text-white"
+      }`}
+    >
+      <Icone className={`h-4 w-4 shrink-0 ${open ? "text-[#ff8a52]" : "text-white/60"}`} aria-hidden />
+      <span className="flex-1 text-left">{label}</span>
+      <ChevronDown className={`h-4 w-4 text-white/45 transition-transform ${open ? "rotate-180" : ""}`} aria-hidden />
+    </button>
   )
 }
 
@@ -140,16 +164,11 @@ export function SystemSidebarMenu({ role, embedded = false, activeLegacyView = "
   const toggle = (group: GroupKey) => setOpenGroup((current) => (current === group ? null : group))
 
   return (
-    <div className={embedded ? "px-2 py-2" : "px-2 pb-3"}>
+    <div className={embedded ? "px-2 py-2" : "px-2.5 pb-3"}>
       <div className="space-y-1.5">
         {allowedGroups.includes("b2b") && (
           <section>
-            <button type="button" aria-expanded={openGroup === "b2b"} onClick={() => toggle("b2b")}
-              className={`flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold transition ${openGroup === "b2b" ? "bg-white/10 text-white" : "text-[#b4fcf1] hover:bg-white/5 hover:text-white"}`}>
-              <Building2 className="h-4 w-4 shrink-0" />
-              <span className="flex-1 text-left">B2B</span>
-              <ChevronDown className={`h-4 w-4 transition-transform ${openGroup === "b2b" ? "rotate-180" : ""}`} />
-            </button>
+            <GroupButton group="b2b" label="B2B" Icone={Building2} open={openGroup === "b2b"} onClick={toggle} />
             {openGroup === "b2b" && (
               <div className="ml-3 mt-1 space-y-0.5 border-l border-white/10 pl-2">
                 <LegacyButton label="Painel" view="painel" Icone={CircleGauge} active={pathname === "/" && activeLegacyView === "painel"} embedded={embedded} onLegacySelect={onLegacySelect} />
@@ -165,12 +184,7 @@ export function SystemSidebarMenu({ role, embedded = false, activeLegacyView = "
 
         {allowedGroups.includes("high-school") && (
           <section>
-            <button type="button" aria-expanded={openGroup === "high-school"} onClick={() => toggle("high-school")}
-              className={`flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold transition ${openGroup === "high-school" ? "bg-white/10 text-white" : "text-[#b4fcf1] hover:bg-white/5 hover:text-white"}`}>
-              <GraduationCap className="h-4 w-4 shrink-0" />
-              <span className="flex-1 text-left">High School</span>
-              <ChevronDown className={`h-4 w-4 transition-transform ${openGroup === "high-school" ? "rotate-180" : ""}`} />
-            </button>
+            <GroupButton group="high-school" label="High School" Icone={GraduationCap} open={openGroup === "high-school"} onClick={toggle} />
             {openGroup === "high-school" && (
               <div className="ml-3 mt-1 space-y-0.5 border-l border-white/10 pl-2">
                 <NavLink href="/high-school" label="Painel" Icone={CircleGauge} active={pathname === "/high-school"} />
@@ -185,12 +199,7 @@ export function SystemSidebarMenu({ role, embedded = false, activeLegacyView = "
 
         {allowedGroups.includes("routes") && (
           <section>
-            <button type="button" aria-expanded={openGroup === "routes"} onClick={() => toggle("routes")}
-              className={`flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold transition ${openGroup === "routes" ? "bg-white/10 text-white" : "text-[#b4fcf1] hover:bg-white/5 hover:text-white"}`}>
-              <Route className="h-4 w-4 shrink-0" />
-              <span className="flex-1 text-left">Rotas</span>
-              <ChevronDown className={`h-4 w-4 transition-transform ${openGroup === "routes" ? "rotate-180" : ""}`} />
-            </button>
+            <GroupButton group="routes" label="Rotas" Icone={Route} open={openGroup === "routes"} onClick={toggle} />
             {openGroup === "routes" && (
               <div className="ml-3 mt-1 space-y-0.5 border-l border-white/10 pl-2">
                 {can(canonicalRole, "map.read") && <NavLink href="/mapa" label="Mapa de locais" Icone={MapPinned} active={pathname === "/mapa"} />}
@@ -202,12 +211,7 @@ export function SystemSidebarMenu({ role, embedded = false, activeLegacyView = "
 
         {allowedGroups.includes("settings") && (
           <section>
-            <button type="button" aria-expanded={openGroup === "settings"} onClick={() => toggle("settings")}
-              className={`flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold transition ${openGroup === "settings" ? "bg-white/10 text-white" : "text-[#b4fcf1] hover:bg-white/5 hover:text-white"}`}>
-              <Settings className="h-4 w-4 shrink-0" />
-              <span className="flex-1 text-left">Configurações</span>
-              <ChevronDown className={`h-4 w-4 transition-transform ${openGroup === "settings" ? "rotate-180" : ""}`} />
-            </button>
+            <GroupButton group="settings" label="Configurações" Icone={Settings} open={openGroup === "settings"} onClick={toggle} />
             {openGroup === "settings" && (
               <div className="ml-3 mt-1 space-y-0.5 border-l border-white/10 pl-2">
                 <NavLink href="/auth/reset-password" label="Alterar minha senha" Icone={KeyRound} active={pathname === "/auth/reset-password"} />
@@ -245,19 +249,35 @@ export function SystemSidebar({ role, userName }: { role?: RoleInput; userName?:
   }
 
   return (
-    <nav className="flex w-full shrink-0 flex-col bg-[#00302b] text-white md:min-h-screen md:w-64">
-      <Link href="/dashboard" className="hidden border-b border-white/10 px-5 py-5 transition hover:bg-white/5 md:block">
-        <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-[#b4fcf1]">UniMetrocamp Wyden</p>
-        <p className="mt-1 text-base font-semibold text-white">Comercial</p>
-        <p className="mt-0.5 text-[11px] text-[#b4fcf1]/60">CRM B2B · High School · Rotas</p>
+    <nav className="flex w-full shrink-0 flex-col bg-[linear-gradient(180deg,#680046_0%,#520037_100%)] text-white md:min-h-screen md:w-64 md:shadow-[8px_0_30px_rgba(70,0,47,0.08)]">
+      <Link href="/dashboard" className="border-b border-white/10 px-4 py-4 transition hover:bg-white/[0.04] md:px-5 md:py-5">
+        <img
+          src="/brand/unimetrocamp-on-purple.svg"
+          alt="UniMetrocamp Wyden"
+          width={300}
+          height={75}
+          className="h-auto w-[148px] md:w-[160px]"
+        />
+        <div className="mt-3 flex items-end justify-between gap-2">
+          <div>
+            <p className="text-xl font-bold tracking-[-0.025em] text-white">UniConecta<span className="text-[#ff6a22]">.</span></p>
+            <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-white/48">Gestão comercial integrada</p>
+          </div>
+          <span className="mb-1 h-5 w-1 rounded-full bg-[#ff6a22]" aria-hidden />
+        </div>
       </Link>
-      <div className="min-h-0 flex-1 overflow-y-auto py-2"><SystemSidebarMenu role={role} /></div>
-      <div className="hidden border-t border-white/10 px-5 py-4 md:block">
+
+      <div className="min-h-0 flex-1 overflow-y-auto py-2.5">
+        <SystemSidebarMenu role={role} />
+      </div>
+
+      <div className="border-t border-white/10 px-4 py-3.5 md:px-5 md:py-4">
         {userName && <p className="truncate text-sm font-semibold text-white">{userName}</p>}
-        <p className="mt-0.5 text-[11px] text-[#b4fcf1]/60">{rotuloRole(role)}</p>
-        <div className="mt-2 flex items-center gap-3 text-[11px]">
-          <button type="button" disabled={signingOut} onClick={sair} className="text-[#b4fcf1] hover:underline disabled:opacity-50">{signingOut ? "saindo…" : "sair"}</button>
-          <Link href="/auth/reset-password" className="text-[#b4fcf1]/65 hover:text-[#b4fcf1] hover:underline">trocar senha</Link>
+        <p className="mt-0.5 text-[11px] text-white/48">{rotuloRole(role)}</p>
+        <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
+          <button type="button" disabled={signingOut} onClick={sair} className="rounded font-medium text-white/75 underline-offset-4 hover:text-white hover:underline disabled:opacity-50">{signingOut ? "saindo…" : "sair"}</button>
+          <span className="h-3 w-px bg-white/15" aria-hidden />
+          <Link href="/auth/reset-password" className="rounded text-white/58 underline-offset-4 hover:text-white hover:underline">trocar senha</Link>
         </div>
       </div>
     </nav>
