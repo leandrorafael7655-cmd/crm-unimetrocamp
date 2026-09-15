@@ -7,7 +7,7 @@ import { useEffect, useState } from "react"
 import { AuthShell } from "@/components/auth/auth-shell"
 
 const inputCls =
-  "rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#88005b] focus:ring-2 focus:ring-[#88005b]/20"
+  "h-11 w-full rounded-xl border border-[#ded1d9] bg-white px-3.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-[#cdbbc5] focus:border-[#88005b] focus:ring-3 focus:ring-[#88005b]/10"
 
 export default function ResetPasswordPage() {
   const router = useRouter()
@@ -55,25 +55,25 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <AuthShell titulo="Definir nova senha" subtitulo="Escolha uma senha pessoal para o seu acesso ao CRM.">
+    <AuthShell titulo="Definir nova senha" subtitulo="Escolha uma senha pessoal para o seu acesso ao UniConecta.">
       {checandoSessao ? (
         <p className="text-sm text-slate-500">Validando seu acesso…</p>
       ) : semSessao ? (
-        <div className="space-y-3">
-          <p className="text-sm text-[#ff1a00]">
+        <div className="space-y-4">
+          <p className="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-3 text-sm text-rose-700">
             O link de recuperação expirou ou esta sessão não é mais válida.
           </p>
           <Link
             href="/auth/login"
-            className="inline-flex rounded-md bg-[#88005b] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#6d0049]"
+            className="inline-flex min-h-11 items-center rounded-xl bg-[#88005b] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#72004d]"
           >
             Voltar ao login e solicitar novo link
           </Link>
         </div>
       ) : (
-        <form onSubmit={salvar} className="flex flex-col gap-4">
+        <form onSubmit={salvar} className="flex flex-col gap-4.5">
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="senha" className="text-xs font-medium text-slate-700">Nova senha</label>
+            <label htmlFor="senha" className="text-sm font-medium text-slate-700">Nova senha</label>
             <input
               id="senha"
               type="password"
@@ -87,7 +87,7 @@ export default function ResetPasswordPage() {
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="confirma" className="text-xs font-medium text-slate-700">Confirmar senha</label>
+            <label htmlFor="confirma" className="text-sm font-medium text-slate-700">Confirmar senha</label>
             <input
               id="confirma"
               type="password"
@@ -100,11 +100,11 @@ export default function ResetPasswordPage() {
               placeholder="Repita a nova senha"
             />
           </div>
-          {erro && <p className="text-sm text-[#ff1a00]" role="alert">{erro}</p>}
+          {erro && <p className="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-3 text-sm text-rose-700" role="alert">{erro}</p>}
           <button
             type="submit"
             disabled={carregando}
-            className="mt-1 rounded-md bg-[#88005b] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#6d0049] disabled:opacity-60"
+            className="mt-1 h-11 rounded-xl bg-[#88005b] px-4 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(136,0,91,0.18)] transition hover:bg-[#72004d] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {carregando ? "Salvando…" : "Salvar nova senha"}
           </button>
