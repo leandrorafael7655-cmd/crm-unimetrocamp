@@ -77,7 +77,7 @@ export function PageHeader({ titulo, descricao, acao }: { titulo: string; descri
   return (
     <header className="mb-6 flex flex-wrap items-end justify-between gap-3 border-b border-[#eee3e9] pb-4">
       <div>
-        <div className="mb-2 h-1 w-8 rounded-full bg-[#ff5b16]" aria-hidden />
+        <div className="mb-2 h-1 w-8 rounded-full bg-[#FA4616]" aria-hidden />
         <h1 className="text-xl font-semibold tracking-[-0.02em] text-slate-900 text-balance sm:text-2xl">{titulo}</h1>
         {descricao && <p className="mt-1 text-sm text-slate-500">{descricao}</p>}
       </div>
