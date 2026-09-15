@@ -1,9 +1,8 @@
 "use client"
 
 import { createClient } from "@/lib/supabase/client"
-import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Suspense, useEffect, useState } from "react"
+import { Suspense, useEffect, useMemo, useState } from "react"
 import { AuthShell } from "@/components/auth/auth-shell"
 import { authRedirectUrl, browserOrigin } from "@/lib/auth/urls"
 
@@ -25,6 +24,13 @@ function mensagemDeCodigo(code?: string, status?: number): string {
   }
 }
 
+function destinoSeguro(next: string | null): string {
+  if (!next) return "/dashboard"
+  if (!next.startsWith("/") || next.startsWith("//")) return "/dashboard"
+  if (next.startsWith("/auth/")) return "/dashboard"
+  return next
+}
+
 const MENSAGENS_URL: Record<string, string> = {
   "sem-perfil": "Não encontramos um perfil vinculado a esta conta. Procure a gerência.",
   inativo: "Seu acesso está desativado. Procure a gerência.",
@@ -39,6 +45,7 @@ const inputCls =
 function LoginInner() {
   const router = useRouter()
   const params = useSearchParams()
+  const destino = useMemo(() => destinoSeguro(params.get("next")), [params])
 
   const [modo, setModo] = useState<Modo>("login")
   const [email, setEmail] = useState("")
@@ -69,11 +76,11 @@ function LoginInner() {
         if (code === "email_not_confirmed") setPrecisaConfirmar(true)
         throw error
       }
-      router.push("/")
+      router.push(destino)
       router.refresh()
     } catch (err) {
       const { code, status } = (err ?? {}) as { code?: string; status?: number }
-      console.error("[v0] login error:", err)
+      console.error("[auth] login error:", err)
       setErro(mensagemDeCodigo(code, status))
     } finally {
       setCarregando(false)
@@ -88,13 +95,13 @@ function LoginInner() {
     try {
       const supabase = createClient()
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
-        redirectTo: authRedirectUrl(browserOrigin()),
+        redirectTo: authRedirectUrl(browserOrigin(), "/auth/reset-password"),
       })
       if (error) throw error
-      setAviso("Se existir uma conta com este e-mail, enviaremos um link. Não recebeu? Peça à gerência para redefinir seu acesso.")
+      setAviso("Se existir uma conta com este e-mail, enviaremos um link para redefinir a senha.")
     } catch (err) {
-      console.error("[v0] reset error:", err)
-      setAviso("Se existir uma conta com este e-mail, enviaremos um link. Não recebeu? Peça à gerência para redefinir seu acesso.")
+      console.error("[auth] reset error:", err)
+      setAviso("Se existir uma conta com este e-mail, enviaremos um link para redefinir a senha.")
     } finally {
       setCarregando(false)
     }
@@ -110,12 +117,12 @@ function LoginInner() {
       const { error } = await supabase.auth.resend({
         type: "signup",
         email: email.trim().toLowerCase(),
-        options: { emailRedirectTo: authRedirectUrl(browserOrigin()) },
+        options: { emailRedirectTo: authRedirectUrl(browserOrigin(), "/dashboard") },
       })
       if (error) throw error
       setAviso("Se o e-mail estiver pendente de confirmação, reenviamos o link de acesso.")
     } catch (err) {
-      console.error("[v0] resend error:", err)
+      console.error("[auth] resend error:", err)
       setAviso("Se o e-mail estiver pendente de confirmação, reenviamos o link de acesso.")
     } finally {
       setCarregando(false)
@@ -123,7 +130,7 @@ function LoginInner() {
   }
 
   const titulos: Record<Modo, { titulo: string; subtitulo: string }> = {
-    login: { titulo: "Entrar", subtitulo: "Acesso restrito à equipe comercial da unidade." },
+    login: { titulo: "Entrar", subtitulo: "Acesso ao CRM Comercial UniMetrocamp Wyden." },
     recuperar: { titulo: "Recuperar senha", subtitulo: "Enviaremos um link para redefinir sua senha." },
     reenviar: { titulo: "Reenviar confirmação", subtitulo: "Reenvie o link de confirmação de e-mail." },
   }
@@ -134,32 +141,63 @@ function LoginInner() {
         <form onSubmit={entrar} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <label htmlFor="email" className="text-xs font-medium text-slate-700">E-mail</label>
-            <input id="email" type="email" required autoComplete="email" value={email}
-              onChange={(e) => setEmail(e.target.value)} className={inputCls}
-              placeholder="voce@unimetrocamp.com.br" />
+            <input
+              id="email"
+              type="email"
+              required
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className={inputCls}
+              placeholder="seu.email@unimetrocamp.edu.br"
+            />
           </div>
           <div className="flex flex-col gap-1.5">
             <label htmlFor="password" className="text-xs font-medium text-slate-700">Senha</label>
-            <input id="password" type="password" required autoComplete="current-password" value={password}
-              onChange={(e) => setPassword(e.target.value)} className={inputCls} placeholder="••••••••" />
+            <input
+              id="password"
+              type="password"
+              required
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className={inputCls}
+              placeholder="••••••••"
+            />
           </div>
           {erro && <p className="text-sm text-[#ff1a00]" role="alert">{erro}</p>}
           {aviso && <p className="text-sm text-[#00302b]" role="status">{aviso}</p>}
           {precisaConfirmar && (
-            <button type="button" onClick={() => { setModo("reenviar"); setErro(null) }}
-              className="self-start text-xs font-medium text-[#88005b] underline-offset-4 hover:underline">
+            <button
+              type="button"
+              onClick={() => { setModo("reenviar"); setErro(null) }}
+              className="self-start text-xs font-medium text-[#88005b] underline-offset-4 hover:underline"
+            >
               Reenviar e-mail de confirmação
             </button>
           )}
-          <button type="submit" disabled={carregando}
-            className="mt-1 rounded-md bg-[#88005b] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#6d0049] disabled:opacity-60">
+          <button
+            type="submit"
+            disabled={carregando}
+            className="mt-1 rounded-md bg-[#88005b] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#6d0049] disabled:opacity-60"
+          >
             {carregando ? "Entrando…" : "Entrar"}
           </button>
-          <div className="flex items-center justify-between text-xs">
-            <button type="button" onClick={() => { setModo("recuperar"); setErro(null); setAviso(null) }}
-              className="font-medium text-slate-500 underline-offset-4 hover:underline">Esqueci minha senha</button>
-            <button type="button" onClick={() => { setModo("reenviar"); setErro(null); setAviso(null) }}
-              className="font-medium text-slate-500 underline-offset-4 hover:underline">Reenviar confirmação</button>
+          <div className="flex items-center justify-between gap-3 text-xs">
+            <button
+              type="button"
+              onClick={() => { setModo("recuperar"); setErro(null); setAviso(null) }}
+              className="font-medium text-slate-500 underline-offset-4 hover:underline"
+            >
+              Esqueci minha senha
+            </button>
+            <button
+              type="button"
+              onClick={() => { setModo("reenviar"); setErro(null); setAviso(null) }}
+              className="font-medium text-slate-500 underline-offset-4 hover:underline"
+            >
+              Reenviar confirmação
+            </button>
           </div>
         </form>
       )}
@@ -168,34 +206,39 @@ function LoginInner() {
         <form onSubmit={modo === "recuperar" ? recuperar : reenviar} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <label htmlFor="email2" className="text-xs font-medium text-slate-700">E-mail</label>
-            <input id="email2" type="email" required autoComplete="email" value={email}
-              onChange={(e) => setEmail(e.target.value)} className={inputCls}
-              placeholder="voce@unimetrocamp.com.br" />
+            <input
+              id="email2"
+              type="email"
+              required
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className={inputCls}
+              placeholder="seu.email@unimetrocamp.edu.br"
+            />
           </div>
           {erro && <p className="text-sm text-[#ff1a00]" role="alert">{erro}</p>}
           {aviso && <p className="text-sm text-[#00302b]" role="status">{aviso}</p>}
-          <button type="submit" disabled={carregando}
-            className="mt-1 rounded-md bg-[#88005b] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#6d0049] disabled:opacity-60">
+          <button
+            type="submit"
+            disabled={carregando}
+            className="mt-1 rounded-md bg-[#88005b] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#6d0049] disabled:opacity-60"
+          >
             {carregando ? "Enviando…" : modo === "recuperar" ? "Enviar link de redefinição" : "Reenviar confirmação"}
           </button>
-          <button type="button" onClick={() => { setModo("login"); setErro(null); setAviso(null) }}
-            className="self-start text-xs font-medium text-slate-500 underline-offset-4 hover:underline">
+          <button
+            type="button"
+            onClick={() => { setModo("login"); setErro(null); setAviso(null) }}
+            className="self-start text-xs font-medium text-slate-500 underline-offset-4 hover:underline"
+          >
             Voltar ao login
           </button>
         </form>
       )}
 
-      <div className="mt-6 border-t border-slate-100 pt-4">
-        <p className="text-center text-xs text-slate-400">
-          Só explorando?{" "}
-          <Link href="/demo" className="font-medium text-slate-500 underline-offset-4 hover:underline">
-            Abrir modo demonstração
-          </Link>
-        </p>
-        <p className="mt-2 text-center text-xs text-slate-300">
-          <Link href="/setup" className="underline-offset-4 hover:underline">Primeiro acesso — configurar administrador</Link>
-        </p>
-      </div>
+      <p className="mt-6 border-t border-slate-100 pt-4 text-center text-[11px] text-slate-400">
+        Acesso corporativo · UniMetrocamp Wyden
+      </p>
     </AuthShell>
   )
 }

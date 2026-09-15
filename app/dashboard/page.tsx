@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation"
 import Link from "next/link"
+import { redirect } from "next/navigation"
 import { getActor } from "@/lib/auth/guards"
 import { rotuloRole } from "@/lib/domain/roles"
 import { escopoDashboard } from "@/lib/domain/dashboard-scope"
@@ -20,7 +20,6 @@ import {
 import { construirFilaHS, ETAPAS_HS_ATIVAS } from "@/lib/domain/high-school"
 import { GoalCard } from "@/components/goals/goal-cards"
 import { BlocoModulo, Kpi, KpiGrid, BlocoErro, BlocoVazio } from "@/components/dashboard/dashboard-ui"
-import { Building2, GraduationCap, Target, Map as MapIcon, Sparkles, Settings } from "lucide-react"
 
 export const dynamic = "force-dynamic"
 
@@ -29,8 +28,6 @@ const brData = (iso: string) => (iso ? iso.split("-").reverse().join("/") : "—
 function hojeISO() {
   return new Date().toISOString().slice(0, 10)
 }
-
-/* ── carregadores compostos que reusam o domínio já existente ── */
 
 async function carregarHS(hoje: string) {
   const [escolas, acoes, grades, seriesPorEscola] = await Promise.all([
@@ -53,7 +50,6 @@ async function carregarHS(hoje: string) {
 async function carregarSupervest() {
   const ciclos = await listSupervestCycles()
   if (ciclos.length === 0) return { ciclo: null as CicloSupervest | null, apur: null }
-  // Prioriza um ciclo em andamento; senão, o mais recente (a lista já vem desc).
   const emAndamento = ciclos.find((c) => c.status !== "encerrado" && c.status !== "cancelado")
   const ciclo = emAndamento ?? ciclos[0]
   const apur = await apuracaoSupervest(ciclo.id)
@@ -64,14 +60,10 @@ export default async function DashboardGeral() {
   const actor = await getActor()
   if (!actor) redirect("/auth/login")
 
-  const role = actor.role
   const hoje = hojeISO()
-
-  // Auto-recuperação: se o cron semanal não rodou, fecha a lacuna agora.
-  // Idempotente, auto-gated e à prova de erro (nunca quebra o render).
   await garantirFechamentoEmDia()
 
-  const { verB2B, soCarteiraPropria, verHS, verSV, verMetas, verMapa } = escopoDashboard(role)
+  const { verB2B, soCarteiraPropria, verHS, verSV, verMetas, verMapa } = escopoDashboard(actor.role)
 
   const [b2bR, hsR, svR, metasR, mapaR] = await Promise.allSettled([
     verB2B ? resumoB2B(soCarteiraPropria ? actor.id : null) : Promise.resolve(null),
@@ -89,95 +81,62 @@ export default async function DashboardGeral() {
     verMapa ? resumoMapa() : Promise.resolve(null),
   ])
 
-  const links = [
-    verB2B && { href: "/", rotulo: "CRM B2B", Icone: Building2 },
-    verHS && { href: "/high-school", rotulo: "High School", Icone: GraduationCap },
-    verSV && { href: "/supervest", rotulo: "SuperVestibular", Icone: Sparkles },
-    verMetas && { href: "/gestao/metas", rotulo: "Central de Metas", Icone: Target },
-    verMapa && { href: "/mapa", rotulo: "Mapa", Icone: MapIcon },
-    (role === "gerente" || role === "supervisor") && {
-      href: "/gestao/configuracoes",
-      rotulo: "Configurações",
-      Icone: Settings,
-    },
-  ].filter(Boolean) as { href: string; rotulo: string; Icone: typeof Building2 }[]
-
   return (
-    <div className="min-h-screen bg-slate-100 font-sans text-slate-900">
-      {/* cabeçalho da marca */}
-      <header className="bg-brand-rail">
-        <div className="mx-auto flex max-w-[1200px] flex-wrap items-center justify-between gap-3 px-4 py-5 sm:px-6">
+    <div className="px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-[1240px]">
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
           <div>
-            <p className="text-lg font-semibold text-white text-balance">Painel Geral</p>
-            <p className="text-xs text-brand-suave/70">UniMetrocamp Wyden · visão consolidada</p>
+            <p className="text-xs font-medium uppercase tracking-[0.14em] text-brand">Visão geral</p>
+            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900">Painel Comercial</h1>
+            <p className="mt-1 text-sm text-slate-500">
+              {actor.full_name} · {rotuloRole(actor.role)} · {brData(hoje)}
+            </p>
           </div>
-          <div className="text-right">
-            <p className="text-sm font-medium text-white">{actor.full_name}</p>
-            <span className="mt-0.5 inline-flex items-center rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-medium text-brand-suave">
-              {rotuloRole(role)}
-            </span>
-          </div>
+          <p className="text-xs text-slate-400">Dados consolidados dos módulos ativos</p>
         </div>
-        {/* atalhos de módulo */}
-        <nav aria-label="Módulos" className="mx-auto max-w-[1200px] px-4 pb-3 sm:px-6">
-          <ul className="flex flex-wrap gap-2">
-            {links.map(({ href, rotulo, Icone }) => (
-              <li key={href}>
-                <Link
-                  href={href}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-medium text-brand-suave transition hover:bg-white/10 hover:text-white"
-                >
-                  <Icone className="h-3.5 w-3.5" />
-                  {rotulo}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      </header>
 
-      <main className="mx-auto max-w-[1200px] px-4 py-6 sm:px-6">
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-          {/* ── B2B ── */}
           {verB2B && (
             <BlocoModulo
               titulo="Comercial B2B"
-              subtitulo={soCarteiraPropria ? "Sua carteira" : "Carteira geral"}
+              subtitulo={soCarteiraPropria ? "Sua carteira e próximos passos" : "Carteira geral e próximos passos"}
               href="/"
-              hrefRotulo="Abrir CRM"
+              hrefRotulo="Abrir B2B"
             >
               {b2bR.status === "rejected" ? (
                 <BlocoErro mensagem={String((b2bR.reason as Error)?.message ?? "")} />
               ) : b2bR.value && b2bR.value.carteira === 0 ? (
-                <BlocoVazio texto="Nenhuma empresa na carteira ainda." />
+                <BlocoVazio texto="Nenhuma empresa cadastrada na carteira." />
               ) : b2bR.value ? (
                 <KpiGrid>
-                  <Kpi rotulo="Carteira" valor={b2bR.value.carteira} tom="brand" />
-                  <Kpi rotulo="Conveniadas" valor={b2bR.value.conveniadas} tom="ok" />
+                  <Kpi rotulo="Empresas" valor={b2bR.value.carteira} tom="brand" />
+                  <Kpi rotulo="Em negociação" valor={b2bR.value.emNegociacao} tom="ok" />
                   <Kpi
                     rotulo="Follow-up atrasado"
                     valor={b2bR.value.followupAtrasado}
                     tom={b2bR.value.followupAtrasado > 0 ? "critico" : "neutro"}
                   />
-                  <Kpi rotulo="Sem próximo passo" valor={b2bR.value.semProximaAcao} tom="alerta" />
                   <Kpi
-                    rotulo="Conveniada sem link"
-                    valor={b2bR.value.conveniadaSemLink}
-                    tom={b2bR.value.conveniadaSemLink > 0 ? "critico" : "neutro"}
-                    detalhe="matrículas não atribuídas"
+                    rotulo="Sem próximo passo"
+                    valor={b2bR.value.semProximaAcao}
+                    tom={b2bR.value.semProximaAcao > 0 ? "alerta" : "neutro"}
+                  />
+                  <Kpi
+                    rotulo="+30 dias sem contato"
+                    valor={b2bR.value.semContato30d}
+                    tom={b2bR.value.semContato30d > 0 ? "alerta" : "neutro"}
                   />
                 </KpiGrid>
               ) : null}
             </BlocoModulo>
           )}
 
-          {/* ── High School ── */}
           {verHS && (
             <BlocoModulo
               titulo="High School"
-              subtitulo="Relacionamento com escolas"
+              subtitulo="Relacionamento com escolas e ações de campo"
               href="/high-school"
-              hrefRotulo="Abrir módulo"
+              hrefRotulo="Abrir High School"
             >
               {hsR.status === "rejected" ? (
                 <BlocoErro mensagem={String((hsR.reason as Error)?.message ?? "")} />
@@ -193,44 +152,52 @@ export default async function DashboardGeral() {
                       valor={hsR.value.criticas}
                       tom={hsR.value.criticas > 0 ? "critico" : "neutro"}
                     />
+                    <Kpi
+                      rotulo="Para hoje"
+                      valor={hsR.value.paraHoje}
+                      tom={hsR.value.paraHoje > 0 ? "alerta" : "neutro"}
+                    />
                   </KpiGrid>
+
                   {hsR.value.topFila.length > 0 && (
-                    <ul className="mt-3 space-y-1.5">
-                      {hsR.value.topFila.map((item) => (
-                        <li key={item.escola.id}>
-                          <Link
-                            href={`/high-school/escolas/${item.escola.id}`}
-                            className="flex items-center justify-between gap-2 rounded-md border border-slate-100 px-2.5 py-1.5 text-xs transition hover:border-slate-200 hover:bg-slate-50"
-                          >
-                            <span className="truncate font-medium text-slate-700">{item.escola.nome}</span>
-                            <span
-                              className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
-                                item.nivel === "critico"
-                                  ? "bg-rose-50 text-rose-600"
-                                  : item.nivel === "hoje"
-                                    ? "bg-amber-50 text-amber-700"
-                                    : "bg-slate-100 text-slate-500"
-                              }`}
+                    <div className="mt-3 border-t border-slate-100 pt-3">
+                      <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-slate-400">Prioridades</p>
+                      <ul className="space-y-1.5">
+                        {hsR.value.topFila.map((item) => (
+                          <li key={item.escola.id}>
+                            <Link
+                              href={`/high-school/escolas/${item.escola.id}`}
+                              className="flex items-center justify-between gap-2 rounded-md border border-slate-100 px-2.5 py-1.5 text-xs transition hover:border-slate-200 hover:bg-slate-50"
                             >
-                              {item.motivos[0]}
-                            </span>
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
+                              <span className="truncate font-medium text-slate-700">{item.escola.nome}</span>
+                              <span
+                                className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+                                  item.nivel === "critico"
+                                    ? "bg-rose-50 text-rose-600"
+                                    : item.nivel === "hoje"
+                                      ? "bg-amber-50 text-amber-700"
+                                      : "bg-slate-100 text-slate-500"
+                                }`}
+                              >
+                                {item.motivos[0]}
+                              </span>
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   )}
                 </>
               ) : null}
             </BlocoModulo>
           )}
 
-          {/* ── SuperVestibular ── */}
           {verSV && (
             <BlocoModulo
               titulo="SuperVestibular"
-              subtitulo="Captação e inscrições"
+              subtitulo="Acompanhamento da campanha atual"
               href="/supervest"
-              hrefRotulo="Abrir módulo"
+              hrefRotulo="Abrir SuperVest"
             >
               {svR.status === "rejected" ? (
                 <BlocoErro mensagem={String((svR.reason as Error)?.message ?? "")} />
@@ -264,7 +231,6 @@ export default async function DashboardGeral() {
             </BlocoModulo>
           )}
 
-          {/* ── Execução de campo / Metas ── */}
           {verMetas && (
             <BlocoModulo
               titulo="Execução de campo"
@@ -288,16 +254,15 @@ export default async function DashboardGeral() {
                   ))}
                 </div>
               ) : (
-                <BlocoVazio texto="Nenhuma meta geral ativa no período." />
+                <BlocoVazio texto="Nenhuma meta ativa no período." />
               )}
             </BlocoModulo>
           )}
 
-          {/* ── Resumo do mapa ── */}
           {verMapa && (
             <BlocoModulo
-              titulo="Cobertura no mapa"
-              subtitulo="Geolocalização de empresas e escolas"
+              titulo="Mapa & Rotas"
+              subtitulo="Cobertura de empresas e escolas geolocalizadas"
               href="/mapa"
               hrefRotulo="Abrir mapa"
             >
@@ -307,13 +272,13 @@ export default async function DashboardGeral() {
                 <KpiGrid>
                   <Kpi rotulo="Empresas no mapa" valor={mapaR.value.empresasGeo} tom="brand" />
                   <Kpi
-                    rotulo="Empresas sem endereço"
+                    rotulo="Empresas sem localização"
                     valor={mapaR.value.empresasSemGeo}
                     tom={mapaR.value.empresasSemGeo > 0 ? "alerta" : "neutro"}
                   />
                   <Kpi rotulo="Escolas no mapa" valor={mapaR.value.escolasGeo} tom="ok" />
                   <Kpi
-                    rotulo="Escolas sem endereço"
+                    rotulo="Escolas sem localização"
                     valor={mapaR.value.escolasSemGeo}
                     tom={mapaR.value.escolasSemGeo > 0 ? "alerta" : "neutro"}
                   />
@@ -322,7 +287,7 @@ export default async function DashboardGeral() {
             </BlocoModulo>
           )}
         </div>
-      </main>
+      </div>
     </div>
   )
 }

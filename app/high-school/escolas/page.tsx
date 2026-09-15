@@ -2,7 +2,7 @@ import Link from "next/link"
 import { getActor } from "@/lib/auth/guards"
 import { can } from "@/lib/domain/roles"
 import { listSchools, listOwners } from "@/lib/data/high-school-queries"
-import { CORES_ETAPA_HS } from "@/lib/domain/high-school"
+import { CORES_ETAPA_HS, TODAS_ETAPAS_HS } from "@/lib/domain/high-school"
 import { PageHeader, Card, Chip, EmptyState } from "@/components/high-school/hs-ui"
 import { EscolaForm } from "@/components/high-school/escola-form"
 
@@ -16,6 +16,7 @@ export default async function EscolasPage({
   const sp = await searchParams
   const actor = await getActor()
   const podeEscrever = actor ? can(actor.role, "hs.write") : false
+  const filtroAtivo = Boolean(sp.busca || sp.etapa)
 
   const [escolas, owners] = await Promise.all([
     listSchools({ busca: sp.busca, etapa: sp.etapa }),
@@ -27,31 +28,51 @@ export default async function EscolasPage({
     <>
       <PageHeader
         titulo="Escolas"
-        descricao={`${escolas.length} escola(s) no relacionamento High School`}
+        descricao={`${escolas.length} escola(s) encontrada(s)`}
         acao={podeEscrever ? <EscolaForm owners={owners} /> : undefined}
       />
 
-      <form className="mb-4 flex flex-wrap gap-2" action="/high-school/escolas">
+      <form className="mb-4 flex flex-wrap items-center gap-2" action="/high-school/escolas">
         <input
           name="busca"
           defaultValue={sp.busca}
           placeholder="Buscar por nome…"
-          className="min-w-[200px] flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand"
+          className="min-w-[220px] flex-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
         />
-        <button className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
-          Buscar
+        <select
+          name="etapa"
+          defaultValue={sp.etapa ?? ""}
+          className="min-w-[220px] rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand"
+        >
+          <option value="">Todas as etapas</option>
+          {TODAS_ETAPAS_HS.map((etapa) => (
+            <option key={etapa} value={etapa}>{etapa}</option>
+          ))}
+        </select>
+        <button className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white transition hover:opacity-90">
+          Filtrar
         </button>
+        {filtroAtivo && (
+          <Link
+            href="/high-school/escolas"
+            className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm text-slate-600 transition hover:bg-slate-50"
+          >
+            Limpar
+          </Link>
+        )}
       </form>
 
       {escolas.length === 0 ? (
         <EmptyState
-          titulo="Nenhuma escola encontrada"
+          titulo={filtroAtivo ? "Nenhuma escola encontrada" : "Nenhuma escola cadastrada"}
           descricao={
-            podeEscrever
-              ? "Cadastre a primeira escola — basta nome e cidade; CNPJ e INEP são opcionais."
-              : "Ainda não há escolas cadastradas."
+            filtroAtivo
+              ? "Tente ajustar a busca ou limpar os filtros."
+              : podeEscrever
+                ? "Cadastre a primeira escola — basta nome e cidade; CNPJ e INEP são opcionais."
+                : "Ainda não há escolas cadastradas."
           }
-          acao={podeEscrever ? <EscolaForm owners={owners} /> : undefined}
+          acao={!filtroAtivo && podeEscrever ? <EscolaForm owners={owners} /> : undefined}
         />
       ) : (
         <Card className="overflow-hidden">
