@@ -42,7 +42,7 @@ export function ModuleShell({
                       : "text-white/68 hover:bg-white/5 hover:text-white"
                   }`}
                 >
-                  <Icone className={`h-4 w-4 shrink-0 ${ativo(href) ? "text-[#ff8a52]" : ""}`} />
+                  <Icone className={`h-4 w-4 shrink-0 ${ativo(href) ? "text-[#FA4616]" : ""}`} />
                   {rotulo}
                 </Link>
               </li>
