@@ -10,6 +10,7 @@ import {
   ChevronDown,
   CircleGauge,
   GraduationCap,
+  KeyRound,
   Link2,
   MapPinned,
   Route,
@@ -52,7 +53,7 @@ const GROUP_LABELS: Record<GroupKey, string> = {
 function groupForPath(pathname: string): GroupKey {
   if (pathname.startsWith("/high-school") || pathname.startsWith("/supervest")) return "high-school"
   if (pathname.startsWith("/mapa")) return "routes"
-  if (pathname.startsWith("/gestao")) return "settings"
+  if (pathname.startsWith("/gestao") || pathname.startsWith("/auth/reset-password")) return "settings"
   return "b2b"
 }
 
@@ -209,10 +210,11 @@ export function SystemSidebarMenu({ role, embedded = false, activeLegacyView = "
             </button>
             {openGroup === "settings" && (
               <div className="ml-3 mt-1 space-y-0.5 border-l border-white/10 pl-2">
+                <NavLink href="/auth/reset-password" label="Alterar minha senha" Icone={KeyRound} active={pathname === "/auth/reset-password"} />
                 {(can(canonicalRole, "goals.read.own") || can(canonicalRole, "goals.read.all")) && <NavLink href="/gestao/metas" label="Central de Metas" Icone={Target} active={pathname.startsWith("/gestao/metas")} />}
                 {isManager && (
                   <>
-                    <LegacyButton label="Equipe" view="equipe" focus="equipe" Icone={Users} active={pathname === "/" && activeLegacyView === "equipe"} embedded={embedded} onLegacySelect={onLegacySelect} />
+                    <LegacyButton label="Gestão de usuários" view="equipe" focus="equipe" Icone={Users} active={pathname === "/" && activeLegacyView === "equipe"} embedded={embedded} onLegacySelect={onLegacySelect} />
                     <LegacyButton label="Links" view="equipe" focus="links" Icone={Link2} active={false} embedded={embedded} onLegacySelect={onLegacySelect} />
                     <NavLink href="/gestao/configuracoes" label="Integrações" Icone={SlidersHorizontal} active={pathname.startsWith("/gestao/configuracoes")} />
                   </>
