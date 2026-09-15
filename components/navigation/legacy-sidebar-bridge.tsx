@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
 import { createPortal } from "react-dom"
 import { SystemSidebarMenu, type LegacyB2BSelection } from "@/components/navigation/system-sidebar"
@@ -54,6 +55,27 @@ function scrollToFocus(focus: LegacyB2BSelection["focus"]) {
   }, 120)
 }
 
+function EmbeddedBrand() {
+  return (
+    <Link href="/dashboard" className="block border-b border-white/10 px-4 py-4 transition hover:bg-white/[0.04]">
+      <img
+        src="/brand/unimetrocamp-on-purple.svg"
+        alt="UniMetrocamp Wyden"
+        width={300}
+        height={75}
+        className="h-auto w-[150px]"
+      />
+      <div className="mt-3 flex items-end justify-between gap-2">
+        <div>
+          <p className="text-xl font-bold tracking-[-0.025em] text-white">UniConecta<span className="text-[#ff6a22]">.</span></p>
+          <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-white/48">Gestão comercial integrada</p>
+        </div>
+        <span className="mb-1 h-5 w-1 rounded-full bg-[#ff6a22]" aria-hidden />
+      </div>
+    </Link>
+  )
+}
+
 export function LegacySidebarBridge({ role }: { role?: string | null }) {
   const [host, setHost] = useState<HTMLDivElement | null>(null)
   const [legacyNav, setLegacyNav] = useState<HTMLElement | null>(null)
@@ -75,15 +97,16 @@ export function LegacySidebarBridge({ role }: { role?: string | null }) {
       const oldListDisplay = list?.style.display ?? ""
       const oldHsDisplay = highSchoolSection?.style.display ?? ""
       const oldRoutesDisplay = oldSharedRoutes?.style.display ?? ""
+      const oldBrandDisplay = brand?.style.display ?? ""
 
       if (list) list.style.display = "none"
       if (highSchoolSection) highSchoolSection.style.display = "none"
       if (oldSharedRoutes) oldSharedRoutes.style.display = "none"
+      if (brand) brand.style.display = "none"
 
       const container = document.createElement("div")
       container.dataset.unifiedSidebarHost = "true"
-      if (brand) brand.insertAdjacentElement("afterend", container)
-      else nav.prepend(container)
+      nav.prepend(container)
       setHost(container)
 
       const buttons = Object.keys(LEGACY_LABEL)
@@ -119,6 +142,7 @@ export function LegacySidebarBridge({ role }: { role?: string | null }) {
         if (list) list.style.display = oldListDisplay
         if (highSchoolSection) highSchoolSection.style.display = oldHsDisplay
         if (oldSharedRoutes) oldSharedRoutes.style.display = oldRoutesDisplay
+        if (brand) brand.style.display = oldBrandDisplay
       }
     }
 
@@ -159,7 +183,10 @@ export function LegacySidebarBridge({ role }: { role?: string | null }) {
   if (!host) return null
 
   return createPortal(
-    <SystemSidebarMenu role={role} embedded activeLegacyView={activeView} onLegacySelect={select} />,
+    <>
+      <EmbeddedBrand />
+      <SystemSidebarMenu role={role} embedded activeLegacyView={activeView} onLegacySelect={select} />
+    </>,
     host,
   )
 }
