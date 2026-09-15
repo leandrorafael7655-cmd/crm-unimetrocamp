@@ -11,7 +11,7 @@ export default async function GestaoLayout({ children }: { children: React.React
   if (!can(actor.role, "goals.read.all")) redirect("/")
 
   return (
-    <div className="min-h-screen bg-slate-100 font-sans text-slate-900 md:flex">
+    <div className="min-h-screen bg-[#faf7f9] font-sans text-slate-900 md:flex">
       <SystemSidebar role={actor.role} userName={actor.full_name} />
       <main className="min-w-0 flex-1 p-4 sm:p-6">{children}</main>
     </div>

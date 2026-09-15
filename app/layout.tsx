@@ -8,16 +8,16 @@ const geistMono = Geist_Mono({ subsets: ['latin'], variable: '--font-geist-mono'
 
 export const metadata: Metadata = {
   title: {
-    default: 'CRM Comercial · UniMetrocamp Wyden',
-    template: '%s · CRM Comercial | UniMetrocamp Wyden',
+    default: 'UniConecta · UniMetrocamp | Wyden',
+    template: '%s · UniConecta | UniMetrocamp Wyden',
   },
   description:
-    'CRM Comercial da UniMetrocamp Wyden para gestão B2B, High School, metas, SuperVestibular, mapa e planejamento de rotas.',
+    'UniConecta é a plataforma de gestão comercial integrada da UniMetrocamp | Wyden para B2B, High School, metas, SuperVestibular, mapas e rotas.',
 }
 
 export const viewport: Viewport = {
   colorScheme: 'light',
-  themeColor: '#00302b',
+  themeColor: '#88005b',
 }
 
 export default function RootLayout({
