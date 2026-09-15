@@ -72,15 +72,15 @@ export const EQUIPE_PADRAO: Pessoa[] = [
   { nome: "Consultor 2", papel: "Consultor", tag: "consultor2" },
 ]
 
-/* Identidade do produto UniConecta, mantida sob a marca UniMetrocamp | Wyden. */
+/* Identidade interna do UniConecta com o rail verde original do CRM. */
 export const MARCA_PADRAO = {
   nomeUnidade: "UniMetrocamp | Wyden",
-  corPrimaria: "#88005b", // roxo institucional — ações, links e destaques
-  corRail: "#5f003f", // roxo profundo — menu lateral e superfícies escuras
-  corSuave: "#f7dcec", // lavanda clara — fundos leves e texto sobre o rail
-  corAlerta: "#ff1a00", // vermelho — crítico operacional
-  corAtencao: "#ffa21c", // âmbar — atenção e classificação Ouro
-  logoUrl: "/brand/unimetrocamp-color.svg",
+  corPrimaria: "#88005b", // magenta permanece para ações comerciais
+  corRail: "#00302b", // verde profundo — menu lateral e cabeçalhos escuros
+  corSuave: "#b4fcf1", // menta — apoio e contraste no rail
+  corAlerta: "#ff1a00",
+  corAtencao: "#ffa21c",
+  logoUrl: "", // a interface interna usa apenas a marca do produto UniConecta
 }
 
 export const CONFIG_PADRAO: Config = {
