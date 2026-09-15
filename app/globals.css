@@ -141,7 +141,6 @@
   }
 }
 
-/* Superfícies recorrentes do UniConecta. */
 .uniconecta-surface {
   background: #faf7f9;
 }
@@ -153,8 +152,8 @@
   box-shadow: 0 1px 2px rgb(54 16 39 / 0.04), 0 10px 28px rgb(54 16 39 / 0.04);
 }
 
-/* O B2B legado injeta a paleta armazenada pelo usuário. Estas regras de maior
-   especificidade garantem o novo rail roxo sem alterar cores semânticas de status. */
+/* O B2B legado injeta uma paleta armazenada pelo usuário. Estas regras de maior
+   especificidade aplicam a identidade UniConecta sem tocar nas cores de status. */
 body .bg-slate-900 {
   background-color: #5f003f !important;
 }
@@ -166,4 +165,31 @@ body .hover\:bg-slate-800:hover {
 }
 body .border-slate-800 {
   border-color: rgb(255 255 255 / 0.12) !important;
+}
+body .bg-teal-700 {
+  background-color: #88005b !important;
+}
+body .bg-teal-50 {
+  background-color: #fbf2f7 !important;
+}
+body .text-teal-700,
+body .text-teal-800 {
+  color: #88005b !important;
+}
+body .border-teal-200,
+body .border-teal-300 {
+  border-color: #e8c8da !important;
+}
+body .hover\:bg-teal-800:hover {
+  background-color: #72004d !important;
+}
+body .hover\:bg-teal-50:hover {
+  background-color: #f8e7f1 !important;
+}
+body .hover\:text-teal-700:hover,
+body .hover\:text-teal-800:hover {
+  color: #72004d !important;
+}
+body .focus\:border-teal-600:focus {
+  border-color: #88005b !important;
 }
