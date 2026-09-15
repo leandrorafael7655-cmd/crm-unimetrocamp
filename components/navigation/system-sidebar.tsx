@@ -12,7 +12,6 @@ import {
   GraduationCap,
   Handshake,
   Link2,
-  ListFilter,
   MapPinned,
   Route,
   School,
@@ -140,14 +139,14 @@ export function SystemSidebarMenu({
   }, [canonicalRole])
 
   const inferred = allowedGroups.includes(groupForPath(pathname)) ? groupForPath(pathname) : allowedGroups[0] ?? "b2b"
-  const [openGroup, setOpenGroup] = useState<GroupKey>(inferred)
+  const [openGroup, setOpenGroup] = useState<GroupKey | null>(inferred)
 
   useEffect(() => {
     const current = groupForPath(pathname)
     if (allowedGroups.includes(current)) setOpenGroup(current)
   }, [pathname, allowedGroups])
 
-  const toggle = (group: GroupKey) => setOpenGroup((current) => (current === group ? group : group))
+  const toggle = (group: GroupKey) => setOpenGroup((current) => (current === group ? null : group))
 
   return (
     <div className={embedded ? "px-2 py-2" : "px-2 pb-3"}>
