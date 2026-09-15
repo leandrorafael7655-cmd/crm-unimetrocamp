@@ -7,6 +7,7 @@ import {
   Building2,
   Briefcase,
   CalendarClock,
+  CalendarDays,
   ChevronDown,
   CircleGauge,
   GraduationCap,
@@ -21,11 +22,12 @@ import {
   Target,
   Users,
   GitBranch,
+  UserRound,
 } from "lucide-react"
 import { can, normalizeRole, rotuloRole } from "@/lib/domain/roles"
 import { createClient } from "@/lib/supabase/client"
 
-type GroupKey = "b2b" | "high-school" | "routes" | "settings"
+type GroupKey = "b2b" | "high-school" | "routes" | "attendance" | "settings"
 type LegacyView = "painel" | "carteira" | "consulta" | "empresas" | "agenda" | "funil" | "equipe"
 type LegacyFocus = "equipe" | "links" | undefined
 
@@ -46,6 +48,7 @@ interface SystemSidebarMenuProps {
 function groupForPath(pathname: string): GroupKey {
   if (pathname.startsWith("/high-school") || pathname.startsWith("/supervest")) return "high-school"
   if (pathname.startsWith("/mapa")) return "routes"
+  if (pathname.startsWith("/atendimento")) return "attendance"
   if (pathname.startsWith("/gestao") || pathname.startsWith("/auth/reset-password")) return "settings"
   return "b2b"
 }
@@ -58,15 +61,7 @@ function submenuClass(active: boolean) {
   }`
 }
 
-function LegacyButton({
-  label,
-  view,
-  focus,
-  Icone,
-  active,
-  embedded,
-  onLegacySelect,
-}: {
+function LegacyButton({ label, view, focus, Icone, active, embedded, onLegacySelect }: {
   label: string
   view: LegacyView
   focus?: LegacyFocus
@@ -83,7 +78,6 @@ function LegacyButton({
       </button>
     )
   }
-
   const query = new URLSearchParams({ view })
   if (focus) query.set("focus", focus)
   return (
@@ -103,13 +97,7 @@ function NavLink({ href, label, Icone, active }: { href: string; label: string; 
   )
 }
 
-function GroupButton({
-  group,
-  label,
-  Icone,
-  open,
-  onClick,
-}: {
+function GroupButton({ group, label, Icone, open, onClick }: {
   group: GroupKey
   label: string
   Icone: typeof Building2
@@ -122,9 +110,7 @@ function GroupButton({
       aria-expanded={open}
       onClick={() => onClick(group)}
       className={`flex min-h-11 w-full items-center gap-2.5 rounded-xl border px-3 py-2.5 text-sm font-semibold transition ${
-        open
-          ? "border-white/10 bg-white/[0.09] text-white shadow-sm"
-          : "border-transparent text-[#b4fcf1] hover:bg-white/[0.06] hover:text-white"
+        open ? "border-white/10 bg-white/[0.09] text-white shadow-sm" : "border-transparent text-[#b4fcf1] hover:bg-white/[0.06] hover:text-white"
       }`}
     >
       <Icone className={`h-4 w-4 shrink-0 ${open ? "text-[#b4fcf1]" : "text-[#b4fcf1]/62"}`} aria-hidden />
@@ -144,12 +130,8 @@ export function SystemSidebarMenu({ role, embedded = false, activeLegacyView = "
     if (can(canonicalRole, "b2b.read.all") || can(canonicalRole, "b2b.read.own")) result.push("b2b")
     if (can(canonicalRole, "hs.read")) result.push("high-school")
     if (can(canonicalRole, "map.read") || can(canonicalRole, "routes.plan")) result.push("routes")
-    if (
-      can(canonicalRole, "goals.read.own") ||
-      can(canonicalRole, "goals.read.all") ||
-      can(canonicalRole, "team.manage") ||
-      can(canonicalRole, "settings.write")
-    ) result.push("settings")
+    if (can(canonicalRole, "attendance.read")) result.push("attendance")
+    if (can(canonicalRole, "goals.read.own") || can(canonicalRole, "goals.read.all") || can(canonicalRole, "team.manage") || can(canonicalRole, "settings.write")) result.push("settings")
     return result
   }, [canonicalRole])
 
@@ -209,6 +191,18 @@ export function SystemSidebarMenu({ role, embedded = false, activeLegacyView = "
           </section>
         )}
 
+        {allowedGroups.includes("attendance") && (
+          <section>
+            <GroupButton group="attendance" label="Atendimento" Icone={CalendarDays} open={openGroup === "attendance"} onClick={toggle} />
+            {openGroup === "attendance" && (
+              <div className="ml-3 mt-1 space-y-0.5 border-l border-white/10 pl-2">
+                <NavLink href="/atendimento" label={isManager ? "Escala" : "Programação"} Icone={CalendarDays} active={pathname === "/atendimento"} />
+                <NavLink href="/atendimento/minha-agenda" label="Minha agenda" Icone={UserRound} active={pathname.startsWith("/atendimento/minha-agenda")} />
+              </div>
+            )}
+          </section>
+        )}
+
         {allowedGroups.includes("settings") && (
           <section>
             <GroupButton group="settings" label="Configurações" Icone={Settings} open={openGroup === "settings"} onClick={toggle} />
@@ -235,7 +229,6 @@ export function SystemSidebarMenu({ role, embedded = false, activeLegacyView = "
 export function SystemSidebar({ role, userName }: { role?: RoleInput; userName?: string | null }) {
   const router = useRouter()
   const [signingOut, setSigningOut] = useState(false)
-
   const sair = async () => {
     setSigningOut(true)
     try {
@@ -243,9 +236,7 @@ export function SystemSidebar({ role, userName }: { role?: RoleInput; userName?:
       await supabase.auth.signOut()
       router.push("/auth/login")
       router.refresh()
-    } finally {
-      setSigningOut(false)
-    }
+    } finally { setSigningOut(false) }
   }
 
   return (
@@ -255,11 +246,7 @@ export function SystemSidebar({ role, userName }: { role?: RoleInput; userName?:
         <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#b4fcf1]/62">Gestão comercial integrada</p>
         <div className="mt-3 h-1 w-8 rounded-full bg-[#b4fcf1]/75" aria-hidden />
       </Link>
-
-      <div className="min-h-0 flex-1 overflow-y-auto py-2.5">
-        <SystemSidebarMenu role={role} />
-      </div>
-
+      <div className="min-h-0 flex-1 overflow-y-auto py-2.5"><SystemSidebarMenu role={role} /></div>
       <div className="border-t border-white/10 px-4 py-3.5 md:px-5 md:py-4">
         {userName && <p className="truncate text-sm font-semibold text-white">{userName}</p>}
         <p className="mt-0.5 text-[11px] text-[#b4fcf1]/55">{rotuloRole(role)}</p>
