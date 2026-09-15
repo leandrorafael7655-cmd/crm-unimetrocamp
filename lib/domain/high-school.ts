@@ -53,7 +53,25 @@ export const STATUS_ACAO_HS = ["agendada", "confirmada", "realizada", "cancelada
 export type StatusAcaoHS = (typeof STATUS_ACAO_HS)[number]
 
 export const POTENCIAIS_HS = ["Alto", "Médio", "Baixo"] as const
-export const CLASSIFICACOES_HS = ["Estratégica", "Prioritária", "Regular", "Sem potencial"] as const
+
+/** Classificação comercial das escolas — mesma nomenclatura visual do B2B. */
+export const CLASSIFICACOES_HS = ["Ouro", "Prata", "Bronze"] as const
+export type ClassificacaoHS = (typeof CLASSIFICACOES_HS)[number]
+
+/** Compatibilidade com registros antigos do High School. */
+export function normalizarClassificacaoHS(valor: unknown): string {
+  const atual = String(valor ?? "").trim()
+  if (atual === "Estratégica") return "Ouro"
+  if (atual === "Prioritária") return "Prata"
+  if (atual === "Regular") return "Bronze"
+  return atual
+}
+
+export const CORES_CLASSIFICACAO_HS: Record<string, string> = {
+  Ouro: "bg-amber-100 text-amber-900 border-amber-300",
+  Prata: "bg-slate-200 text-slate-800 border-slate-300",
+  Bronze: "bg-orange-100 text-orange-900 border-orange-300",
+}
 
 /** Ações que contam como "divulgação SuperVest" para regras da fila. */
 export const ACOES_SUPERVEST = ["Divulgação SuperVestibular", "Ação de captação"]
@@ -192,7 +210,7 @@ export function mapEscolaRow(r: Record<string, unknown>): Escola {
     etapa: String(r.relationship_stage ?? "Mapeada"),
     status: (r.relationship_status as string) ?? "",
     potencial: (r.potential as string) ?? "",
-    classificacao: (r.classification as string) ?? "",
+    classificacao: normalizarClassificacaoHS(r.classification),
     primaryOwnerId: (r.primary_owner_id as string) ?? null,
     ultimaAcaoEm: (r.last_action_at as string) ?? null,
     proximaAcao: (r.next_action as string) ?? "",
@@ -282,10 +300,11 @@ export interface ItemFilaHS {
   nivel: NivelHS
 }
 
+/* Mantém a mesma cadência operacional anterior, apenas com nova nomenclatura. */
 const LIMITE_SEM_ACAO: Record<string, number> = {
-  Estratégica: 21,
-  Prioritária: 30,
-  Regular: 45,
+  Ouro: 21,
+  Prata: 30,
+  Bronze: 45,
 }
 
 export interface FilaHSEntrada {
@@ -327,7 +346,7 @@ export function construirFilaHS({
   }
 
   for (const e of escolas) {
-    if (["Sem potencial"].includes(e.classificacao || "") || e.etapa === "Sem potencial") continue
+    if (e.etapa === "Sem potencial") continue
     if (["Sem retorno", "Relacionamento pausado"].includes(e.etapa || "")) continue
 
     const doEscola = acoesPorEscola.get(e.id) ?? []
@@ -345,13 +364,13 @@ export function construirFilaHS({
       push(e, "Escola em relacionamento sem próximo passo", 150, "hoje")
     }
 
-    // escola estratégica há muito sem ação
-    const limite = LIMITE_SEM_ACAO[e.classificacao || "Regular"] ?? 45
+    // classificação define a cadência de acompanhamento
+    const limite = LIMITE_SEM_ACAO[e.classificacao || "Bronze"] ?? 45
     const semAcao = e.ultimaAcaoEm ? diffDias(e.ultimaAcaoEm, hoje) : null
-    if (e.classificacao === "Estratégica" && (semAcao === null || semAcao > limite)) {
+    if (e.classificacao === "Ouro" && (semAcao === null || semAcao > limite)) {
       push(
         e,
-        semAcao === null ? "Escola estratégica ainda sem ação registrada" : `Escola estratégica há ${semAcao} dias sem ação`,
+        semAcao === null ? "Escola Ouro ainda sem ação registrada" : `Escola Ouro há ${semAcao} dias sem ação`,
         190,
         "critico",
       )
