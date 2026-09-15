@@ -53,8 +53,8 @@ function groupForPath(pathname: string): GroupKey {
 function submenuClass(active: boolean) {
   return `flex min-h-9 w-full items-center gap-2 rounded-lg border px-3 py-2 text-left text-[13px] transition ${
     active
-      ? "border-white/10 bg-white/[0.12] font-semibold text-white shadow-sm"
-      : "border-transparent text-white/68 hover:bg-white/[0.07] hover:text-white"
+      ? "border-white/10 bg-white/[0.11] font-semibold text-white shadow-sm"
+      : "border-transparent text-[#b4fcf1]/72 hover:bg-white/[0.06] hover:text-white"
   }`
 }
 
@@ -78,7 +78,7 @@ function LegacyButton({
   if (embedded && onLegacySelect) {
     return (
       <button type="button" onClick={() => onLegacySelect({ view, focus })} className={submenuClass(active)} aria-current={active ? "page" : undefined}>
-        <Icone className={`h-4 w-4 shrink-0 ${active ? "text-[#FA4616]" : "text-white/52"}`} aria-hidden />
+        <Icone className={`h-4 w-4 shrink-0 ${active ? "text-[#b4fcf1]" : "text-[#b4fcf1]/48"}`} aria-hidden />
         <span>{label}</span>
       </button>
     )
@@ -88,7 +88,7 @@ function LegacyButton({
   if (focus) query.set("focus", focus)
   return (
     <Link href={`/?${query.toString()}`} className={submenuClass(active)} aria-current={active ? "page" : undefined}>
-      <Icone className={`h-4 w-4 shrink-0 ${active ? "text-[#FA4616]" : "text-white/52"}`} aria-hidden />
+      <Icone className={`h-4 w-4 shrink-0 ${active ? "text-[#b4fcf1]" : "text-[#b4fcf1]/48"}`} aria-hidden />
       <span>{label}</span>
     </Link>
   )
@@ -97,7 +97,7 @@ function LegacyButton({
 function NavLink({ href, label, Icone, active }: { href: string; label: string; Icone: typeof Building2; active: boolean }) {
   return (
     <Link href={href} className={submenuClass(active)} aria-current={active ? "page" : undefined}>
-      <Icone className={`h-4 w-4 shrink-0 ${active ? "text-[#FA4616]" : "text-white/52"}`} aria-hidden />
+      <Icone className={`h-4 w-4 shrink-0 ${active ? "text-[#b4fcf1]" : "text-[#b4fcf1]/48"}`} aria-hidden />
       <span>{label}</span>
     </Link>
   )
@@ -124,12 +124,12 @@ function GroupButton({
       className={`flex min-h-11 w-full items-center gap-2.5 rounded-xl border px-3 py-2.5 text-sm font-semibold transition ${
         open
           ? "border-white/10 bg-white/[0.09] text-white shadow-sm"
-          : "border-transparent text-white/82 hover:bg-white/[0.06] hover:text-white"
+          : "border-transparent text-[#b4fcf1] hover:bg-white/[0.06] hover:text-white"
       }`}
     >
-      <Icone className={`h-4 w-4 shrink-0 ${open ? "text-[#FA4616]" : "text-white/60"}`} aria-hidden />
+      <Icone className={`h-4 w-4 shrink-0 ${open ? "text-[#b4fcf1]" : "text-[#b4fcf1]/62"}`} aria-hidden />
       <span className="flex-1 text-left">{label}</span>
-      <ChevronDown className={`h-4 w-4 text-white/45 transition-transform ${open ? "rotate-180" : ""}`} aria-hidden />
+      <ChevronDown className={`h-4 w-4 text-[#b4fcf1]/45 transition-transform ${open ? "rotate-180" : ""}`} aria-hidden />
     </button>
   )
 }
@@ -249,22 +249,11 @@ export function SystemSidebar({ role, userName }: { role?: RoleInput; userName?:
   }
 
   return (
-    <nav className="flex w-full shrink-0 flex-col bg-[linear-gradient(180deg,#680046_0%,#520037_100%)] text-white md:min-h-screen md:w-64 md:shadow-[8px_0_30px_rgba(70,0,47,0.08)]">
-      <Link href="/dashboard" className="border-b border-white/10 bg-[#880058] px-4 py-4 transition hover:brightness-[1.03] md:px-5 md:py-5">
-        <img
-          src="/brand/unimetrocamp-on-purple.svg"
-          alt="UniMetrocamp Wyden"
-          width={300}
-          height={75}
-          className="h-auto w-[148px] md:w-[160px]"
-        />
-        <div className="mt-3 flex items-end justify-between gap-2">
-          <div>
-            <p className="text-xl font-bold tracking-[-0.025em] text-white">UniConecta<span className="text-[#FA4616]">.</span></p>
-            <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-white/48">Gestão comercial integrada</p>
-          </div>
-          <span className="mb-1 h-5 w-1 rounded-full bg-[#FA4616]" aria-hidden />
-        </div>
+    <nav className="flex w-full shrink-0 flex-col bg-[linear-gradient(180deg,#00302b_0%,#00251f_100%)] text-white md:min-h-screen md:w-64 md:shadow-[8px_0_30px_rgba(0,48,43,0.10)]">
+      <Link href="/dashboard" className="border-b border-white/10 px-4 py-5 transition hover:bg-white/[0.04] md:px-5 md:py-6">
+        <p className="text-2xl font-bold tracking-[-0.035em] text-white">UniConecta</p>
+        <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#b4fcf1]/62">Gestão comercial integrada</p>
+        <div className="mt-3 h-1 w-8 rounded-full bg-[#b4fcf1]/75" aria-hidden />
       </Link>
 
       <div className="min-h-0 flex-1 overflow-y-auto py-2.5">
@@ -273,11 +262,11 @@ export function SystemSidebar({ role, userName }: { role?: RoleInput; userName?:
 
       <div className="border-t border-white/10 px-4 py-3.5 md:px-5 md:py-4">
         {userName && <p className="truncate text-sm font-semibold text-white">{userName}</p>}
-        <p className="mt-0.5 text-[11px] text-white/48">{rotuloRole(role)}</p>
+        <p className="mt-0.5 text-[11px] text-[#b4fcf1]/55">{rotuloRole(role)}</p>
         <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
-          <button type="button" disabled={signingOut} onClick={sair} className="rounded font-medium text-white/75 underline-offset-4 hover:text-white hover:underline disabled:opacity-50">{signingOut ? "saindo…" : "sair"}</button>
+          <button type="button" disabled={signingOut} onClick={sair} className="rounded font-medium text-[#b4fcf1] underline-offset-4 hover:text-white hover:underline disabled:opacity-50">{signingOut ? "saindo…" : "sair"}</button>
           <span className="h-3 w-px bg-white/15" aria-hidden />
-          <Link href="/auth/reset-password" className="rounded text-white/58 underline-offset-4 hover:text-white hover:underline">trocar senha</Link>
+          <Link href="/auth/reset-password" className="rounded text-[#b4fcf1]/65 underline-offset-4 hover:text-white hover:underline">trocar senha</Link>
         </div>
       </div>
     </nav>

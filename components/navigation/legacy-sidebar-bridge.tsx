@@ -57,21 +57,10 @@ function scrollToFocus(focus: LegacyB2BSelection["focus"]) {
 
 function EmbeddedBrand() {
   return (
-    <Link href="/dashboard" className="block border-b border-white/10 bg-[#880058] px-4 py-4 transition hover:brightness-[1.03]">
-      <img
-        src="/brand/unimetrocamp-on-purple.svg"
-        alt="UniMetrocamp Wyden"
-        width={300}
-        height={75}
-        className="h-auto w-[150px]"
-      />
-      <div className="mt-3 flex items-end justify-between gap-2">
-        <div>
-          <p className="text-xl font-bold tracking-[-0.025em] text-white">UniConecta<span className="text-[#FA4616]">.</span></p>
-          <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-white/48">Gestão comercial integrada</p>
-        </div>
-        <span className="mb-1 h-5 w-1 rounded-full bg-[#FA4616]" aria-hidden />
-      </div>
+    <Link href="/dashboard" className="block border-b border-white/10 px-4 py-5 transition hover:bg-white/[0.04]">
+      <p className="text-2xl font-bold tracking-[-0.035em] text-white">UniConecta</p>
+      <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#b4fcf1]/62">Gestão comercial integrada</p>
+      <div className="mt-3 h-1 w-8 rounded-full bg-[#b4fcf1]/75" aria-hidden />
     </Link>
   )
 }
