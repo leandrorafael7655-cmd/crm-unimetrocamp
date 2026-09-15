@@ -4,6 +4,7 @@ import { ArrowLeft, Map as MapIcon } from "lucide-react"
 import { getActor } from "@/lib/auth/guards"
 import { can } from "@/lib/domain/roles"
 import { pontosDisponiveis, listarPlanos } from "@/lib/data/route-queries"
+import { obterMeuEnderecoRota } from "@/lib/data/route-preferences"
 import { RoutePlanner } from "@/components/routes/route-planner"
 
 export const dynamic = "force-dynamic"
@@ -13,7 +14,11 @@ export default async function RotasPage() {
   if (!actor) redirect("/auth/login")
   if (!can(actor.role, "routes.plan")) redirect("/")
 
-  const [pontos, planos] = await Promise.all([pontosDisponiveis(), listarPlanos(20)])
+  const [pontos, planos, meuEndereco] = await Promise.all([
+    pontosDisponiveis(),
+    listarPlanos(20),
+    obterMeuEnderecoRota(),
+  ])
 
   return (
     <div className="flex min-h-screen flex-col bg-background font-sans text-foreground">
@@ -29,11 +34,11 @@ export default async function RotasPage() {
           <MapIcon className="h-4 w-4" />
           <h1 className="text-sm font-semibold text-white">Planejador de Rotas</h1>
         </div>
-        <span className="ml-auto text-xs text-[#b4fcf1]/60">Otimização Mapbox · RMC</span>
+        <span className="ml-auto text-xs text-[#b4fcf1]/60">Otimização Mapbox · empresas + escolas</span>
       </header>
 
       <main className="flex-1">
-        <RoutePlanner pontos={pontos} planosRecentes={planos} />
+        <RoutePlanner pontos={pontos} planosRecentes={planos} meuEnderecoInicial={meuEndereco} />
       </main>
     </div>
   )
