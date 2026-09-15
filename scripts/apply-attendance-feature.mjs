@@ -61,4 +61,40 @@ patchFile("components/crm-app.jsx", [
   },
 ])
 
+patchFile("app/actions/high-school.ts", [
+  {
+    label: "importar dispatcher de calendário",
+    from: `import { REDES_ESCOLA, TODAS_ETAPAS_HS, STATUS_ACAO_HS, TIPOS_ACAO_HS } from "@/lib/domain/high-school"`,
+    to: `import { REDES_ESCOLA, TODAS_ETAPAS_HS, STATUS_ACAO_HS, TIPOS_ACAO_HS } from "@/lib/domain/high-school"\nimport { flushCalendarQueue } from "@/lib/calendar/calendar-dispatch"`,
+  },
+  {
+    label: "despachar convite ao salvar ação escolar",
+    from: `    revalidarHS()\n    revalidatePath(\`/high-school/escolas/\${input.escolaId}\`)\n    return { ok: true, message: "Ação salva.", id: acaoId }`,
+    to: `    revalidarHS()\n    revalidatePath(\`/high-school/escolas/\${input.escolaId}\`)\n    const dispatch = await flushCalendarQueue(supabase, { batches: 2, limit: 25 })\n    const calendarCandidate = Boolean(input.primaryOwnerId && input.inicio && input.fim && ["agendada", "confirmada", "reagendada"].includes(status))\n    const message = calendarCandidate && !dispatch.configured\n      ? "Ação salva. O convite ficou pendente até o provedor de e-mail ser configurado."\n      : calendarCandidate && dispatch.sent > 0\n        ? "Ação salva. Convite enviado ao provedor de e-mail."\n        : "Ação salva."\n    return { ok: true, message, id: acaoId }`,
+  },
+  {
+    label: "despachar ao mudar status escolar",
+    from: `    revalidarHS()\n    if (escolaId) revalidatePath(\`/high-school/escolas/\${escolaId}\`)\n    return { ok: true, message: "Status atualizado." }`,
+    to: `    revalidarHS()\n    if (escolaId) revalidatePath(\`/high-school/escolas/\${escolaId}\`)\n    await flushCalendarQueue(supabase, { batches: 2, limit: 25 })\n    return { ok: true, message: "Status atualizado. Alterações de calendário foram processadas quando aplicável." }`,
+  },
+  {
+    label: "despachar cancelamento ao excluir ação escolar",
+    from: `    revalidarHS()\n    if (escolaId) revalidatePath(\`/high-school/escolas/\${escolaId}\`)\n    return { ok: true, message: "Ação removida." }`,
+    to: `    revalidarHS()\n    if (escolaId) revalidatePath(\`/high-school/escolas/\${escolaId}\`)\n    await flushCalendarQueue(supabase, { batches: 2, limit: 25 })\n    return { ok: true, message: "Ação removida. O cancelamento de calendário foi processado quando aplicável." }`,
+  },
+])
+
+patchFile("app/actions/attendance.ts", [
+  {
+    label: "consultar compromissos B2B com horário exato",
+    from: `      admin.from("activities").select("id,data,primary_owner_id,tipo,status").in("primary_owner_id", userIds).gte("data", start).lte("data", end),`,
+    to: `      admin.from("companies").select("id,nome_fantasia,razao_social,proxima_acao,data_proxima_acao,next_action_owner_id,next_action_start_time,next_action_end_time").in("next_action_owner_id", userIds).gte("data_proxima_acao", start).lte("data_proxima_acao", end),`,
+  },
+  {
+    label: "validar conflito B2B com sobreposição real",
+    from: `      if ((b2bRes.data ?? []).some((a: any) => a.primary_owner_id === occ.userId && a.data === occ.date)) {\n        issues.push({ severity: "warning", code: "b2b_activity", date: occ.date, message: \`\${occ.responsibleName} possui atividade B2B registrada neste dia; confira o horário manualmente.\` })\n      }`,
+    to: `      for (const company of b2bRes.data ?? []) {\n        if (company.next_action_owner_id !== occ.userId || company.data_proxima_acao !== occ.date) continue\n        if (!company.next_action_start_time || !company.next_action_end_time) continue\n        if (overlaps(occ.startTime, occ.endTime, padTime(company.next_action_start_time), padTime(company.next_action_end_time))) {\n          const companyName = company.nome_fantasia || company.razao_social || "empresa"\n          issues.push({ severity: "warning", code: "b2b_activity", date: occ.date, message: \`\${occ.responsibleName} tem compromisso B2B com \${companyName} no mesmo horário.\` })\n        }\n      }`,
+  },
+])
+
 console.log("[attendance] patches aplicados")
