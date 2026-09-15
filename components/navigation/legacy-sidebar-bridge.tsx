@@ -20,16 +20,23 @@ function normalizeText(value: string | null | undefined) {
   return (value ?? "").replace(/\s+/g, " ").trim()
 }
 
-function findLegacyNav(): HTMLElement | null {
-  return Array.from(document.querySelectorAll<HTMLElement>("nav")).find((nav) => {
-    const text = normalizeText(nav.textContent)
+function findLegacyList(nav: HTMLElement): HTMLElement | null {
+  return Array.from(nav.querySelectorAll<HTMLElement>("ul")).find((list) => {
+    const text = normalizeText(list.textContent)
     return text.includes("Minha carteira") && text.includes("Todas as empresas") && text.includes("Funil")
   }) ?? null
 }
 
+function findLegacyNav(): HTMLElement | null {
+  return Array.from(document.querySelectorAll<HTMLElement>("nav")).find((nav) => Boolean(findLegacyList(nav))) ?? null
+}
+
 function findLegacyButton(nav: HTMLElement, view: LegacyView): HTMLButtonElement | null {
+  const list = findLegacyList(nav)
+  if (!list) return null
+
   const label = LEGACY_LABEL[view]
-  return Array.from(nav.querySelectorAll<HTMLButtonElement>("button")).find(
+  return Array.from(list.querySelectorAll<HTMLButtonElement>("button")).find(
     (button) => normalizeText(button.textContent) === label,
   ) ?? null
 }
@@ -59,7 +66,7 @@ export function LegacySidebarBridge({ role }: { role?: string | null }) {
     const mount = (nav: HTMLElement) => {
       setLegacyNav(nav)
 
-      const list = nav.querySelector<HTMLElement>("ul")
+      const list = findLegacyList(nav)
       const highSchoolLink = nav.querySelector<HTMLAnchorElement>('a[href="/high-school"]')
       const highSchoolSection = highSchoolLink?.parentElement ?? null
       const oldSharedRoutes = nav.querySelector<HTMLElement>("[data-shared-route-nav]")
@@ -139,7 +146,9 @@ export function LegacySidebarBridge({ role }: { role?: string | null }) {
     () => (selection: LegacyB2BSelection) => {
       if (!legacyNav) return
       const button = findLegacyButton(legacyNav, selection.view)
-      button?.click()
+      if (!button) return
+
+      button.click()
       setActiveView(selection.view)
       scrollToFocus(selection.focus)
       if (window.location.search) window.history.replaceState({}, "", window.location.pathname)
