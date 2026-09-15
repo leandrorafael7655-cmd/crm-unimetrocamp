@@ -7,7 +7,7 @@ import { getSchool360, listOwners, listGradeLevels } from "@/lib/data/high-schoo
 import { Card, Chip, SectionTitle } from "@/components/high-school/hs-ui"
 import { EscolaForm } from "@/components/high-school/escola-form"
 import { ContatosPanel, EstimativasPanel, AcoesPanel } from "@/components/high-school/escola-360-panels"
-import { CORES_ETAPA_HS } from "@/lib/domain/high-school"
+import { CORES_CLASSIFICACAO_HS, CORES_ETAPA_HS } from "@/lib/domain/high-school"
 
 export const dynamic = "force-dynamic"
 
@@ -43,8 +43,10 @@ export default async function Escola360Page({ params }: { params: Promise<{ id: 
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-xl font-semibold text-slate-900 text-balance">{escola.nome}</h1>
+              {escola.classificacao && (
+                <Chip className={CORES_CLASSIFICACAO_HS[escola.classificacao]}>{escola.classificacao}</Chip>
+              )}
               <Chip className={CORES_ETAPA_HS[escola.etapa]}>{escola.etapa}</Chip>
-              {escola.classificacao && <Chip>{escola.classificacao}</Chip>}
             </div>
             <p className="mt-1 text-sm text-slate-500">
               {escola.rede}
