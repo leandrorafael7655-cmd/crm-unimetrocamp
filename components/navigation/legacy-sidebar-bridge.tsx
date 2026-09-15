@@ -13,7 +13,6 @@ const LEGACY_LABEL: Record<LegacyView, string> = {
   empresas: "Todas as empresas",
   agenda: "Agenda",
   funil: "Funil",
-  convenios: "Convênios",
   equipe: "Equipe e links",
 }
 
@@ -24,7 +23,7 @@ function normalizeText(value: string | null | undefined) {
 function findLegacyNav(): HTMLElement | null {
   return Array.from(document.querySelectorAll<HTMLElement>("nav")).find((nav) => {
     const text = normalizeText(nav.textContent)
-    return text.includes("Minha carteira") && text.includes("Convênios")
+    return text.includes("Minha carteira") && text.includes("Todas as empresas") && text.includes("Funil")
   }) ?? null
 }
 
@@ -54,63 +53,85 @@ export function LegacySidebarBridge({ role }: { role?: string | null }) {
   const [activeView, setActiveView] = useState<LegacyView>("painel")
 
   useEffect(() => {
-    const nav = findLegacyNav()
-    if (!nav) return
-    setLegacyNav(nav)
+    let cleanupMounted: (() => void) | null = null
+    let waitObserver: MutationObserver | null = null
 
-    const list = nav.querySelector<HTMLElement>("ul")
-    const highSchoolLink = nav.querySelector<HTMLAnchorElement>('a[href="/high-school"]')
-    const highSchoolSection = highSchoolLink?.parentElement ?? null
-    const oldSharedRoutes = nav.querySelector<HTMLElement>("[data-shared-route-nav]")
-    const brand = nav.querySelector<HTMLElement>("div.hidden")
+    const mount = (nav: HTMLElement) => {
+      setLegacyNav(nav)
 
-    const oldListDisplay = list?.style.display ?? ""
-    const oldHsDisplay = highSchoolSection?.style.display ?? ""
-    const oldRoutesDisplay = oldSharedRoutes?.style.display ?? ""
+      const list = nav.querySelector<HTMLElement>("ul")
+      const highSchoolLink = nav.querySelector<HTMLAnchorElement>('a[href="/high-school"]')
+      const highSchoolSection = highSchoolLink?.parentElement ?? null
+      const oldSharedRoutes = nav.querySelector<HTMLElement>("[data-shared-route-nav]")
+      const brand = nav.querySelector<HTMLElement>("div.hidden")
 
-    if (list) list.style.display = "none"
-    if (highSchoolSection) highSchoolSection.style.display = "none"
-    if (oldSharedRoutes) oldSharedRoutes.style.display = "none"
+      const oldListDisplay = list?.style.display ?? ""
+      const oldHsDisplay = highSchoolSection?.style.display ?? ""
+      const oldRoutesDisplay = oldSharedRoutes?.style.display ?? ""
 
-    const container = document.createElement("div")
-    container.dataset.unifiedSidebarHost = "true"
-    if (brand) brand.insertAdjacentElement("afterend", container)
-    else nav.prepend(container)
-    setHost(container)
+      if (list) list.style.display = "none"
+      if (highSchoolSection) highSchoolSection.style.display = "none"
+      if (oldSharedRoutes) oldSharedRoutes.style.display = "none"
 
-    const buttons = Object.keys(LEGACY_LABEL)
-      .map((view) => findLegacyButton(nav, view as LegacyView))
-      .filter(Boolean) as HTMLButtonElement[]
+      const container = document.createElement("div")
+      container.dataset.unifiedSidebarHost = "true"
+      if (brand) brand.insertAdjacentElement("afterend", container)
+      else nav.prepend(container)
+      setHost(container)
 
-    const syncActive = () => {
-      const active = (Object.keys(LEGACY_LABEL) as LegacyView[]).find((view) => {
-        const button = findLegacyButton(nav, view)
-        return button?.className.includes("bg-slate-800")
-      })
-      if (active) setActiveView(active)
+      const buttons = Object.keys(LEGACY_LABEL)
+        .map((view) => findLegacyButton(nav, view as LegacyView))
+        .filter(Boolean) as HTMLButtonElement[]
+
+      const syncActive = () => {
+        const active = (Object.keys(LEGACY_LABEL) as LegacyView[]).find((view) => {
+          const button = findLegacyButton(nav, view)
+          return button?.className.includes("bg-slate-800")
+        })
+        if (active) setActiveView(active)
+      }
+
+      syncActive()
+      const activeObserver = new MutationObserver(syncActive)
+      buttons.forEach((button) => activeObserver.observe(button, { attributes: true, attributeFilter: ["class"] }))
+
+      const query = new URLSearchParams(window.location.search)
+      const requestedView = query.get("view") as LegacyView | null
+      const focus = query.get("focus") as LegacyB2BSelection["focus"] | null
+      if (requestedView && requestedView in LEGACY_LABEL) {
+        window.setTimeout(() => {
+          findLegacyButton(nav, requestedView)?.click()
+          setActiveView(requestedView)
+          scrollToFocus(focus ?? undefined)
+        }, 0)
+      }
+
+      cleanupMounted = () => {
+        activeObserver.disconnect()
+        container.remove()
+        if (list) list.style.display = oldListDisplay
+        if (highSchoolSection) highSchoolSection.style.display = oldHsDisplay
+        if (oldSharedRoutes) oldSharedRoutes.style.display = oldRoutesDisplay
+      }
     }
 
-    syncActive()
-    const observer = new MutationObserver(syncActive)
-    buttons.forEach((button) => observer.observe(button, { attributes: true, attributeFilter: ["class"] }))
-
-    const query = new URLSearchParams(window.location.search)
-    const requestedView = query.get("view") as LegacyView | null
-    const focus = query.get("focus") as LegacyB2BSelection["focus"] | null
-    if (requestedView && requestedView in LEGACY_LABEL) {
-      window.setTimeout(() => {
-        findLegacyButton(nav, requestedView)?.click()
-        setActiveView(requestedView)
-        scrollToFocus(focus ?? undefined)
-      }, 0)
+    const existing = findLegacyNav()
+    if (existing) {
+      mount(existing)
+    } else {
+      waitObserver = new MutationObserver(() => {
+        const nav = findLegacyNav()
+        if (!nav) return
+        waitObserver?.disconnect()
+        waitObserver = null
+        mount(nav)
+      })
+      waitObserver.observe(document.body, { childList: true, subtree: true })
     }
 
     return () => {
-      observer.disconnect()
-      container.remove()
-      if (list) list.style.display = oldListDisplay
-      if (highSchoolSection) highSchoolSection.style.display = oldHsDisplay
-      if (oldSharedRoutes) oldSharedRoutes.style.display = oldRoutesDisplay
+      waitObserver?.disconnect()
+      cleanupMounted?.()
     }
   }, [])
 
