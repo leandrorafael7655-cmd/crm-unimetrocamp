@@ -4,6 +4,10 @@
     {
       "path": "/api/cron/close-weeks",
       "schedule": "0 6 * * 1"
+    },
+    {
+      "path": "/api/cron/calendar-invites",
+      "schedule": "15 10 * * *"
     }
   ]
 }
