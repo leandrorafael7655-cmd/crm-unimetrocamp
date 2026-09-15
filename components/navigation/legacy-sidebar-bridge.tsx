@@ -48,7 +48,7 @@ function scrollToFocus(focus: LegacyB2BSelection["focus"]) {
   }, 120)
 }
 
-export function LegacySidebarBridge({ role }: { role: string }) {
+export function LegacySidebarBridge({ role }: { role?: string | null }) {
   const [host, setHost] = useState<HTMLDivElement | null>(null)
   const [legacyNav, setLegacyNav] = useState<HTMLElement | null>(null)
   const [activeView, setActiveView] = useState<LegacyView>("painel")
@@ -129,12 +129,7 @@ export function LegacySidebarBridge({ role }: { role: string }) {
   if (!host) return null
 
   return createPortal(
-    <SystemSidebarMenu
-      role={role}
-      embedded
-      activeLegacyView={activeView}
-      onLegacySelect={select}
-    />,
+    <SystemSidebarMenu role={role} embedded activeLegacyView={activeView} onLegacySelect={select} />,
     host,
   )
 }
