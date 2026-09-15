@@ -15,7 +15,7 @@ export async function SystemShell({
   if (!actor.active) redirect("/auth/login?erro=inativo")
 
   return (
-    <div className="min-h-screen bg-slate-100 font-sans text-slate-900 md:flex">
+    <div className="min-h-screen bg-[#faf7f9] font-sans text-slate-900 md:flex">
       <SystemSidebar role={actor.role} userName={actor.full_name} />
       <main className={mainClassName}>{children}</main>
     </div>
