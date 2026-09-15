@@ -8,8 +8,8 @@
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
   --color-brand: #88005b;
-  --color-brand-rail: #5f003f;
-  --color-brand-suave: #f7dcec;
+  --color-brand-rail: #00302b;
+  --color-brand-suave: #b4fcf1;
   --color-brand-orange: #FA4616;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -53,68 +53,68 @@
 
 :root {
   color-scheme: light;
-  --background: #faf7f9;
-  --foreground: #24151f;
+  --background: #f7faf9;
+  --foreground: #162522;
   --card: #ffffff;
-  --card-foreground: #24151f;
+  --card-foreground: #162522;
   --popover: #ffffff;
-  --popover-foreground: #24151f;
+  --popover-foreground: #162522;
   --primary: #88005b;
   --primary-foreground: #ffffff;
-  --secondary: #f6edf3;
-  --secondary-foreground: #5f003f;
-  --muted: #f5f1f3;
-  --muted-foreground: #71616b;
-  --accent: #fff1ea;
-  --accent-foreground: #8d2c00;
+  --secondary: #eef7f5;
+  --secondary-foreground: #00302b;
+  --muted: #f3f7f6;
+  --muted-foreground: #60706c;
+  --accent: #e9fbf7;
+  --accent-foreground: #00302b;
   --destructive: #d92d20;
-  --border: #eadfe6;
-  --input: #ded1d9;
-  --ring: #a82a7d;
-  --chart-1: #88005b;
-  --chart-2: #FA4616;
-  --chart-3: #b64a90;
-  --chart-4: #6f6470;
+  --border: #dbe7e4;
+  --input: #cfddda;
+  --ring: #0f766e;
+  --chart-1: #00302b;
+  --chart-2: #0f766e;
+  --chart-3: #4a8f87;
+  --chart-4: #6f7d7a;
   --chart-5: #c98729;
   --radius: 0.75rem;
-  --sidebar: #5f003f;
+  --sidebar: #00302b;
   --sidebar-foreground: #ffffff;
   --sidebar-primary: #ffffff;
-  --sidebar-primary-foreground: #5f003f;
+  --sidebar-primary-foreground: #00302b;
   --sidebar-accent: rgb(255 255 255 / 0.1);
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: rgb(255 255 255 / 0.12);
-  --sidebar-ring: #FA4616;
+  --sidebar-ring: #b4fcf1;
 }
 
 .dark {
   color-scheme: dark;
-  --background: #22131d;
-  --foreground: #fff9fc;
-  --card: #331426;
-  --card-foreground: #fff9fc;
-  --popover: #331426;
-  --popover-foreground: #fff9fc;
-  --primary: #e675b8;
-  --primary-foreground: #2c061f;
-  --secondary: #4a243a;
-  --secondary-foreground: #fff9fc;
-  --muted: #402235;
-  --muted-foreground: #d9becd;
-  --accent: #5b2813;
-  --accent-foreground: #ffd5c3;
+  --background: #10201d;
+  --foreground: #f5fffc;
+  --card: #17302b;
+  --card-foreground: #f5fffc;
+  --popover: #17302b;
+  --popover-foreground: #f5fffc;
+  --primary: #b4fcf1;
+  --primary-foreground: #00302b;
+  --secondary: #23433d;
+  --secondary-foreground: #f5fffc;
+  --muted: #1d3934;
+  --muted-foreground: #bdd2cd;
+  --accent: #21453e;
+  --accent-foreground: #d9fff8;
   --destructive: #ff7569;
   --border: rgb(255 255 255 / 0.12);
   --input: rgb(255 255 255 / 0.16);
-  --ring: #e675b8;
-  --sidebar: #3e002a;
+  --ring: #b4fcf1;
+  --sidebar: #00302b;
   --sidebar-foreground: #ffffff;
   --sidebar-primary: #ffffff;
-  --sidebar-primary-foreground: #5f003f;
+  --sidebar-primary-foreground: #00302b;
   --sidebar-accent: rgb(255 255 255 / 0.1);
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: rgb(255 255 255 / 0.12);
-  --sidebar-ring: #FA4616;
+  --sidebar-ring: #b4fcf1;
 }
 
 @layer base {
@@ -123,7 +123,7 @@
   }
 
   html {
-    background: #faf7f9;
+    background: #f7faf9;
   }
 
   body {
@@ -132,64 +132,64 @@
   }
 
   :focus-visible {
-    outline: 2px solid #a82a7d;
+    outline: 2px solid #0f766e;
     outline-offset: 2px;
   }
 
   ::selection {
-    background: rgb(136 0 91 / 0.16);
+    background: rgb(180 252 241 / 0.55);
   }
 }
 
 .uniconecta-surface {
-  background: #faf7f9;
+  background: #f7faf9;
 }
 
 .uniconecta-card {
-  border: 1px solid #eadfe6;
+  border: 1px solid #dbe7e4;
   border-radius: 1rem;
   background: #fff;
-  box-shadow: 0 1px 2px rgb(54 16 39 / 0.04), 0 10px 28px rgb(54 16 39 / 0.04);
+  box-shadow: 0 1px 2px rgb(0 48 43 / 0.025), 0 10px 28px rgb(0 48 43 / 0.035);
 }
 
 /* O B2B legado injeta uma paleta armazenada pelo usuário. Estas regras de maior
-   especificidade aplicam a identidade UniConecta sem tocar nas cores de status. */
+   especificidade restauram o rail verde anterior sem tocar nas cores de status. */
 body .bg-slate-900 {
-  background-color: #5f003f !important;
+  background-color: #00302b !important;
 }
 body .bg-slate-800 {
-  background-color: #74004f !important;
+  background-color: #004b43 !important;
 }
 body .hover\:bg-slate-800:hover {
-  background-color: #74004f !important;
+  background-color: #004b43 !important;
 }
 body .border-slate-800 {
-  border-color: rgb(255 255 255 / 0.12) !important;
+  border-color: #1a5f57 !important;
 }
 body .bg-teal-700 {
   background-color: #88005b !important;
 }
 body .bg-teal-50 {
-  background-color: #fbf2f7 !important;
+  background-color: #f4fffc !important;
 }
 body .text-teal-700,
 body .text-teal-800 {
-  color: #88005b !important;
+  color: #00685f !important;
 }
 body .border-teal-200,
 body .border-teal-300 {
-  border-color: #e8c8da !important;
+  border-color: #b4e9df !important;
 }
 body .hover\:bg-teal-800:hover {
-  background-color: #72004d !important;
+  background-color: #00685f !important;
 }
 body .hover\:bg-teal-50:hover {
-  background-color: #f8e7f1 !important;
+  background-color: #eafbf7 !important;
 }
 body .hover\:text-teal-700:hover,
 body .hover\:text-teal-800:hover {
-  color: #72004d !important;
+  color: #00554d !important;
 }
 body .focus\:border-teal-600:focus {
-  border-color: #88005b !important;
+  border-color: #0f766e !important;
 }
