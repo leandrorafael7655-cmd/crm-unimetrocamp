@@ -9,6 +9,7 @@ export interface ActorProfile {
   id: string
   email: string | null
   full_name: string
+  legal_full_name: string
   display_name: string
   role: Role
   active: boolean
@@ -30,9 +31,12 @@ export async function getActor(): Promise<ActorProfile | null> {
     .maybeSingle()
 
   if (!profile) return null
+  const displayName = profileDisplayName(profile)
   return {
     ...profile,
-    display_name: profileDisplayName(profile),
+    legal_full_name: profile.full_name,
+    full_name: displayName,
+    display_name: displayName,
     role: normalizeRole(profile.role),
   } as ActorProfile
 }
