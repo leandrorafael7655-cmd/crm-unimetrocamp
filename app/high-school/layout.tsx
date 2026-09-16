@@ -17,7 +17,7 @@ export default async function HighSchoolLayout({ children }: { children: ReactNo
 
   return (
     <div className="min-h-screen bg-[#faf7f9] font-sans text-slate-900 md:flex">
-      <SystemSidebar role={actor.role} userName={actor.full_name} />
+      <SystemSidebar role={actor.role} userName={actor.display_name} />
       <main className="min-w-0 flex-1 p-4 sm:p-6">
         {!podeEscrever && (
           <div className="mb-4 flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm text-amber-900 shadow-sm">
