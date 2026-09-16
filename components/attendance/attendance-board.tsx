@@ -247,16 +247,21 @@ export function AttendanceBoard({ initial, personalOnly = false }: { initial: an
             <p className="font-semibold">{data.providerStatus?.error ? "Não foi possível verificar o serviço de convites" : "Convites por e-mail pendentes de configuração"}</p>
             <p className="mt-0.5 text-xs leading-relaxed">{data.providerStatus?.error
               ? "A consulta ao serviço falhou. Atualize a página para tentar novamente. Se persistir, solicite a verificação da conexão com o serviço de envio."
-              : "A escala pode ser publicada, mas os convites dependem da configuração do remetente e da autorização do Microsoft 365."}</p>
+              : "A escala pode ser publicada, mas os convites dependem da configuração de um serviço de e-mail e de um remetente autorizado."}</p>
             {Array.isArray(data.providerStatus?.missing) && data.providerStatus.missing.length > 0 && (
               <p className="mt-2 text-xs leading-relaxed">Falta configurar: {data.providerStatus.missing.map((key: string) => ({
-                CALENDAR_SMTP_USER: "caixa de envio",
+                CALENDAR_SMTP_HOST: "servidor de envio",
+                CALENDAR_SMTP_PASS: "credencial do serviço de envio",
+                CALENDAR_SMTP_USER: "usuário do serviço de envio",
                 CALENDAR_FROM_EMAIL: "remetente",
                 CALENDAR_ORGANIZER_EMAIL: "organizador dos convites",
                 CALENDAR_OAUTH_TENANT_ID: "organização Microsoft 365",
                 CALENDAR_OAUTH_CLIENT_ID: "aplicativo Microsoft 365",
                 CALENDAR_OAUTH_CLIENT_SECRET: "credencial do aplicativo Microsoft 365",
               } as Record<string, string>)[key] || "parâmetro do serviço").join(", ")}.</p>
+            )}
+            {Array.isArray(data.providerStatus?.invalid) && data.providerStatus.invalid.length > 0 && (
+              <p className="mt-2 text-xs leading-relaxed">Há configurações inválidas no serviço de e-mail. Verifique o provedor, a porta e os endereços do remetente e do organizador.</p>
             )}
           </div>
         </div>
