@@ -7,39 +7,60 @@ const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const env = (name: string) => (Deno.env.get(name) || "").trim();
+
 const requiredConfig = () => ({
-  host: env("CALENDAR_SMTP_HOST"),
-  port: env("CALENDAR_SMTP_PORT"),
+  host: env("CALENDAR_SMTP_HOST") || "smtp.office365.com",
+  port: env("CALENDAR_SMTP_PORT") || "587",
   user: env("CALENDAR_SMTP_USER"),
-  pass: env("CALENDAR_SMTP_PASS"),
   from: env("CALENDAR_FROM_EMAIL"),
   organizer: env("CALENDAR_ORGANIZER_EMAIL"),
-  secure: env("CALENDAR_SMTP_SECURE").toLowerCase() === "true",
+  tenantId: env("CALENDAR_OAUTH_TENANT_ID"),
+  clientId: env("CALENDAR_OAUTH_CLIENT_ID"),
+  clientSecret: env("CALENDAR_OAUTH_CLIENT_SECRET"),
   crmUrl: (env("CALENDAR_CRM_URL") || "https://unimetrocamp.vercel.app").replace(/\/+$/, ""),
 });
 
 function configurationStatus() {
   const cfg = requiredConfig();
   const missing = [
-    ["CALENDAR_SMTP_HOST", cfg.host],
-    ["CALENDAR_SMTP_PORT", cfg.port],
     ["CALENDAR_SMTP_USER", cfg.user],
-    ["CALENDAR_SMTP_PASS", cfg.pass],
     ["CALENDAR_FROM_EMAIL", cfg.from],
     ["CALENDAR_ORGANIZER_EMAIL", cfg.organizer],
+    ["CALENDAR_OAUTH_TENANT_ID", cfg.tenantId],
+    ["CALENDAR_OAUTH_CLIENT_ID", cfg.clientId],
+    ["CALENDAR_OAUTH_CLIENT_SECRET", cfg.clientSecret],
   ].filter(([, value]) => !value).map(([name]) => name);
   return { configured: missing.length === 0, missing };
+}
+
+async function microsoftAccessToken(cfg: ReturnType<typeof requiredConfig>) {
+  const body = new URLSearchParams({
+    client_id: cfg.clientId,
+    client_secret: cfg.clientSecret,
+    grant_type: "client_credentials",
+    scope: "https://outlook.office365.com/.default",
+  });
+  const response = await fetch(
+    `https://login.microsoftonline.com/${encodeURIComponent(cfg.tenantId)}/oauth2/v2.0/token`,
+    {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body,
+    },
+  );
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || !data?.access_token) {
+    const detail = data?.error_description || data?.error || `HTTP ${response.status}`;
+    throw new Error(`Falha ao obter token OAuth do Microsoft 365: ${String(detail).slice(0, 700)}`);
+  }
+  return String(data.access_token);
 }
 
 function operationalName(recipient: any) {
   const tag = String(recipient?.consultant_tag || "").trim();
   if (tag) {
     if (/^[a-z0-9_-]+$/.test(tag)) {
-      return tag
-        .split(/[-_]+/)
-        .filter(Boolean)
-        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-        .join(" ");
+      return tag.split(/[-_]+/).filter(Boolean).map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(" ");
     }
     return tag;
   }
@@ -47,11 +68,7 @@ function operationalName(recipient: any) {
 }
 
 function esc(value: string | null | undefined) {
-  return (value || "")
-    .replace(/\\/g, "\\\\")
-    .replace(/\r?\n/g, "\\n")
-    .replace(/,/g, "\\,")
-    .replace(/;/g, "\\;");
+  return (value || "").replace(/\\/g, "\\\\").replace(/\r?\n/g, "\\n").replace(/,/g, "\\,").replace(/;/g, "\\;");
 }
 
 function localStamp(iso: string, timeZone = "America/Sao_Paulo") {
@@ -102,7 +119,7 @@ function buildIcs(event: any, recipient: any, operation: "REQUEST" | "CANCEL", o
     `SUMMARY:${esc(event.title)}`,
     `DESCRIPTION:${esc(description)}`,
     event.location ? `LOCATION:${esc(event.location)}` : null,
-    `ORGANIZER:mailto:${organizer}`,
+    `ORGANIZER;CN=UniConecta:mailto:${organizer}`,
     `ATTENDEE;CN=${esc(recipientName)};RSVP=TRUE:mailto:${recipient.email}`,
     `URL:${link}`,
     operation === "CANCEL" ? "STATUS:CANCELLED" : "STATUS:CONFIRMED",
@@ -116,15 +133,11 @@ function buildIcs(event: any, recipient: any, operation: "REQUEST" | "CANCEL", o
 async function authorize(req: Request) {
   const authorization = req.headers.get("Authorization") || "";
   const token = authorization.replace(/^Bearer\s+/i, "").trim();
-
   if (token && token === SERVICE_KEY) return { system: true, userId: null };
 
-  const client = createClient(SUPABASE_URL, ANON_KEY, {
-    global: { headers: { Authorization: authorization } },
-  });
+  const client = createClient(SUPABASE_URL, ANON_KEY, { global: { headers: { Authorization: authorization } } });
   const { data: { user }, error } = await client.auth.getUser();
   if (error || !user) throw new Error("Não autenticado.");
-
   const { data: profile } = await client.from("profiles").select("active").eq("id", user.id).maybeSingle();
   if (!profile?.active) throw new Error("Usuário inativo.");
   return { system: false, userId: user.id };
@@ -138,22 +151,37 @@ Deno.serve(async (req: Request) => {
     const config = configurationStatus();
 
     if (action === "status") {
-      return Response.json({ ok: true, ...config, provider: "smtp+nodemailer", deliveryTracking: false });
+      return Response.json({
+        ok: true,
+        ...config,
+        provider: "microsoft365-smtp-oauth2",
+        authMode: "client_credentials",
+        deliveryTracking: false,
+      });
     }
     if (action !== "process") return Response.json({ ok: false, message: "Ação inválida." }, { status: 400 });
-
     if (!config.configured) {
       return Response.json({
         ok: false,
         configured: false,
         missing: config.missing,
-        message: "Provedor de calendário pendente de configuração.",
+        provider: "microsoft365-smtp-oauth2",
+        message: "Microsoft 365 OAuth pendente de configuração.",
       }, { status: 503 });
     }
 
-    const admin = createClient(SUPABASE_URL, SERVICE_KEY, {
-      auth: { persistSession: false, autoRefreshToken: false },
+    const cfg = requiredConfig();
+    const accessToken = await microsoftAccessToken(cfg);
+    const transport = nodemailer.createTransport({
+      host: cfg.host,
+      port: Number(cfg.port),
+      secure: false,
+      requireTLS: true,
+      auth: { type: "OAuth2", user: cfg.user, accessToken },
     });
+    await transport.verify();
+
+    const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
     const limit = Math.max(1, Math.min(50, Number(body?.limit || 20)));
     const now = new Date().toISOString();
     const { data: jobs, error: jobsError } = await admin
@@ -164,14 +192,6 @@ Deno.serve(async (req: Request) => {
       .order("created_at", { ascending: true })
       .limit(limit);
     if (jobsError) throw jobsError;
-
-    const cfg = requiredConfig();
-    const transport = nodemailer.createTransport({
-      host: cfg.host,
-      port: Number(cfg.port),
-      secure: cfg.secure,
-      auth: { user: cfg.user, pass: cfg.pass },
-    });
 
     let sent = 0;
     let failed = 0;
@@ -192,23 +212,16 @@ Deno.serve(async (req: Request) => {
       claimedCount++;
 
       try {
-        const { data: event, error: eventError } = await admin
-          .from("calendar_events").select("*").eq("id", job.calendar_event_id).single();
+        const { data: event, error: eventError } = await admin.from("calendar_events").select("*").eq("id", job.calendar_event_id).single();
         if (eventError || !event) throw new Error(eventError?.message || "Evento não encontrado");
 
         const operation = job.operation as "REQUEST" | "CANCEL";
         const sequenceMatches = Number(job.event_sequence) === Number(event.sequence);
         const stateMatches = operation === "REQUEST" ? event.status === "active" : event.status === "cancelled";
-
         if (!sequenceMatches || !stateMatches) {
           await admin.from("calendar_invite_jobs").update({
-            status: "sent_provider",
-            provider: "superseded",
-            provider_message_id: null,
-            last_error: null,
-            next_attempt_at: null,
-            sent_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
+            status: "sent_provider", provider: "superseded", provider_message_id: null,
+            last_error: null, next_attempt_at: null, sent_at: new Date().toISOString(), updated_at: new Date().toISOString(),
           }).eq("id", job.id);
           superseded++;
           results.push({ id: job.id, status: "superseded" });
@@ -219,13 +232,11 @@ Deno.serve(async (req: Request) => {
           .from("profiles").select("id,full_name,consultant_tag,email,active").eq("id", event.recipient_user_id).single();
         if (recipientError || !recipient) throw new Error(recipientError?.message || "Destinatário não encontrado");
         if (!recipient.active) throw new Error("Destinatário inativo no UniConecta");
-        if (!recipient.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient.email)) {
-          throw new Error("Destinatário sem e-mail válido");
-        }
+        if (!recipient.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient.email)) throw new Error("Destinatário sem e-mail válido");
 
         const ics = buildIcs(event, recipient, operation, cfg.organizer, cfg.crmUrl);
         const info = await transport.sendMail({
-          from: cfg.from,
+          from: `UniConecta <${cfg.from}>`,
           to: recipient.email,
           subject: operation === "CANCEL" ? `Cancelado: ${event.title}` : event.title,
           text: `${event.title}\n\nConsulte os detalhes no UniConecta.`,
@@ -233,13 +244,9 @@ Deno.serve(async (req: Request) => {
         });
 
         await admin.from("calendar_invite_jobs").update({
-          status: "sent_provider",
-          provider: "smtp",
-          provider_message_id: String(info.messageId || ""),
-          last_error: null,
-          next_attempt_at: null,
-          sent_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+          status: "sent_provider", provider: "microsoft365-smtp-oauth2",
+          provider_message_id: String(info.messageId || ""), last_error: null, next_attempt_at: null,
+          sent_at: new Date().toISOString(), updated_at: new Date().toISOString(),
         }).eq("id", job.id);
         sent++;
         results.push({ id: job.id, status: "sent_provider" });
@@ -248,10 +255,7 @@ Deno.serve(async (req: Request) => {
         const delayMinutes = Math.min(240, Math.pow(2, Math.min(attempts, 6)) * 5);
         const nextAttempt = new Date(Date.now() + delayMinutes * 60_000).toISOString();
         await admin.from("calendar_invite_jobs").update({
-          status: "failed",
-          last_error: message.slice(0, 1000),
-          next_attempt_at: nextAttempt,
-          updated_at: new Date().toISOString(),
+          status: "failed", last_error: message.slice(0, 1000), next_attempt_at: nextAttempt, updated_at: new Date().toISOString(),
         }).eq("id", job.id);
         failed++;
         results.push({ id: job.id, status: "failed", error: message });
@@ -259,15 +263,8 @@ Deno.serve(async (req: Request) => {
     }
 
     return Response.json({
-      ok: true,
-      configured: true,
-      selected: (jobs || []).length,
-      processed: claimedCount,
-      sent,
-      failed,
-      superseded,
-      results,
-      deliveryTracking: false,
+      ok: true, configured: true, selected: (jobs || []).length, processed: claimedCount,
+      sent, failed, superseded, results, provider: "microsoft365-smtp-oauth2", deliveryTracking: false,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
