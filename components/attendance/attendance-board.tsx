@@ -243,7 +243,22 @@ export function AttendanceBoard({ initial, personalOnly = false }: { initial: an
       {!data.providerStatus?.configured && canManage && (
         <div className="mb-4 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           <Mail className="mt-0.5 h-4 w-4 shrink-0" />
-          <div><p className="font-semibold">Convites por e-mail pendentes de configuração</p><p className="mt-0.5 text-xs leading-relaxed">A escala pode ser criada e publicada normalmente. O UniConecta não simulará envio: os convites permanecerão pendentes até existir um SMTP autorizado com remetente válido.</p></div>
+          <div>
+            <p className="font-semibold">{data.providerStatus?.error ? "Não foi possível verificar o serviço de convites" : "Convites por e-mail pendentes de configuração"}</p>
+            <p className="mt-0.5 text-xs leading-relaxed">{data.providerStatus?.error
+              ? "A consulta ao serviço falhou. Atualize a página para tentar novamente. Se persistir, solicite a verificação da conexão com o serviço de envio."
+              : "A escala pode ser publicada, mas os convites dependem da configuração do remetente e da autorização do Microsoft 365."}</p>
+            {Array.isArray(data.providerStatus?.missing) && data.providerStatus.missing.length > 0 && (
+              <p className="mt-2 text-xs leading-relaxed">Falta configurar: {data.providerStatus.missing.map((key: string) => ({
+                CALENDAR_SMTP_USER: "caixa de envio",
+                CALENDAR_FROM_EMAIL: "remetente",
+                CALENDAR_ORGANIZER_EMAIL: "organizador dos convites",
+                CALENDAR_OAUTH_TENANT_ID: "organização Microsoft 365",
+                CALENDAR_OAUTH_CLIENT_ID: "aplicativo Microsoft 365",
+                CALENDAR_OAUTH_CLIENT_SECRET: "credencial do aplicativo Microsoft 365",
+              } as Record<string, string>)[key] || "parâmetro do serviço").join(", ")}.</p>
+            )}
+          </div>
         </div>
       )}
 
