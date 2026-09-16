@@ -92,6 +92,21 @@ apply("components/team/gerenciar-usuarios.tsx", [
     to: '`Excluir ${u.display_name} (${u.email})?',
   },
   {
+    label: "tag field label",
+    from: '<span className="text-[11px] font-medium text-slate-600">Tag (opcional)</span>',
+    to: '<span className="text-[11px] font-medium text-slate-600">Nome no CRM (Tag)</span>',
+  },
+  {
+    label: "tag field placeholder",
+    from: 'placeholder="automática"',
+    to: 'placeholder="Ex.: Madu, Junior França"',
+  },
+  {
+    label: "tag explanation",
+    from: 'O e-mail cadastrado no usuário é o e-mail usado para convites de Atendimento, ações de empresas e ações de escolas. Marcar “Incluir no Atendimento” apenas o habilita para a escala — não cria compromissos automaticamente.',
+    to: 'O Nome no CRM (Tag) é como a pessoa aparece operacionalmente em filtros, responsáveis, agendas e registros. Se ficar vazio, o sistema gera uma Tag a partir do nome. O nome completo continua preservado no cadastro. O e-mail cadastrado é usado para convites de Atendimento, ações de empresas e ações de escolas.',
+  },
+  {
     label: "managed user table operational name",
     from: '<div className="text-slate-900">{u.full_name}</div>\n                    <div className="font-mono text-[11px] text-slate-400">{u.email}</div>',
     to: '<div className="font-medium text-slate-900">{u.display_name}</div>\n                    {u.full_name !== u.display_name && <div className="text-[11px] text-slate-500">{u.full_name}</div>}\n                    <div className="font-mono text-[11px] text-slate-400">{u.email}</div>',
