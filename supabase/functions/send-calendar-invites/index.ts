@@ -8,29 +8,69 @@ const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const env = (name: string) => (Deno.env.get(name) || "").trim();
 
-const requiredConfig = () => ({
-  host: env("CALENDAR_SMTP_HOST") || "smtp.office365.com",
-  port: env("CALENDAR_SMTP_PORT") || "587",
-  user: env("CALENDAR_SMTP_USER"),
-  from: env("CALENDAR_FROM_EMAIL"),
-  organizer: env("CALENDAR_ORGANIZER_EMAIL"),
-  tenantId: env("CALENDAR_OAUTH_TENANT_ID"),
-  clientId: env("CALENDAR_OAUTH_CLIENT_ID"),
-  clientSecret: env("CALENDAR_OAUTH_CLIENT_SECRET"),
-  crmUrl: (env("CALENDAR_CRM_URL") || "https://unimetrocamp.vercel.app").replace(/\/+$/, ""),
-});
+function requiredConfig() {
+  // Preserve existing OAuth setups; new installations default to independent SMTP.
+  const provider = env("CALENDAR_EMAIL_PROVIDER") || (
+    env("CALENDAR_OAUTH_CLIENT_ID") && !env("CALENDAR_SMTP_PASS")
+      ? "microsoft365-smtp-oauth2" : "smtp"
+  );
+  const port = env("CALENDAR_SMTP_PORT") || "587";
+  return {
+    provider,
+    host: env("CALENDAR_SMTP_HOST") || (provider === "microsoft365-smtp-oauth2" ? "smtp.office365.com" : ""),
+    port,
+    secure: port === "465" || env("CALENDAR_SMTP_SECURE") === "true",
+    user: env("CALENDAR_SMTP_USER"),
+    pass: env("CALENDAR_SMTP_PASS"),
+    from: env("CALENDAR_FROM_EMAIL"),
+    organizer: env("CALENDAR_ORGANIZER_EMAIL") || env("CALENDAR_FROM_EMAIL"),
+    tenantId: env("CALENDAR_OAUTH_TENANT_ID"),
+    clientId: env("CALENDAR_OAUTH_CLIENT_ID"),
+    clientSecret: env("CALENDAR_OAUTH_CLIENT_SECRET"),
+    crmUrl: (env("CALENDAR_CRM_URL") || "https://unimetrocamp.vercel.app").replace(/\/+$/, ""),
+  };
+}
 
 function configurationStatus() {
   const cfg = requiredConfig();
-  const missing = [
+  const required = [
+    ["CALENDAR_SMTP_HOST", cfg.host],
     ["CALENDAR_SMTP_USER", cfg.user],
     ["CALENDAR_FROM_EMAIL", cfg.from],
-    ["CALENDAR_ORGANIZER_EMAIL", cfg.organizer],
-    ["CALENDAR_OAUTH_TENANT_ID", cfg.tenantId],
-    ["CALENDAR_OAUTH_CLIENT_ID", cfg.clientId],
-    ["CALENDAR_OAUTH_CLIENT_SECRET", cfg.clientSecret],
-  ].filter(([, value]) => !value).map(([name]) => name);
-  return { configured: missing.length === 0, missing };
+  ];
+  if (cfg.provider === "microsoft365-smtp-oauth2") {
+    required.push(
+      ["CALENDAR_OAUTH_TENANT_ID", cfg.tenantId],
+      ["CALENDAR_OAUTH_CLIENT_ID", cfg.clientId],
+      ["CALENDAR_OAUTH_CLIENT_SECRET", cfg.clientSecret],
+    );
+  } else if (cfg.provider === "smtp") {
+    required.push(["CALENDAR_SMTP_PASS", cfg.pass]);
+  }
+  const missing = required.filter(([, value]) => !value).map(([name]) => name);
+  const invalid: string[] = [];
+  if (!["smtp", "microsoft365-smtp-oauth2"].includes(cfg.provider)) invalid.push("CALENDAR_EMAIL_PROVIDER");
+  if (!/^\d+$/.test(cfg.port) || Number(cfg.port) < 1 || Number(cfg.port) > 65535) invalid.push("CALENDAR_SMTP_PORT");
+  const validEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  if (cfg.from && !validEmail(cfg.from)) invalid.push("CALENDAR_FROM_EMAIL");
+  if (cfg.organizer && !validEmail(cfg.organizer)) invalid.push("CALENDAR_ORGANIZER_EMAIL");
+  return { configured: missing.length === 0 && invalid.length === 0, missing, invalid };
+}
+
+async function createMailTransport(cfg: ReturnType<typeof requiredConfig>) {
+  const auth = cfg.provider === "microsoft365-smtp-oauth2"
+    ? { type: "OAuth2" as const, user: cfg.user, accessToken: await microsoftAccessToken(cfg) }
+    : { user: cfg.user, pass: cfg.pass };
+  return nodemailer.createTransport({
+    host: cfg.host,
+    port: Number(cfg.port),
+    secure: cfg.secure,
+    requireTLS: true,
+    connectionTimeout: 15_000,
+    greetingTimeout: 15_000,
+    socketTimeout: 30_000,
+    auth,
+  });
 }
 
 async function microsoftAccessToken(cfg: ReturnType<typeof requiredConfig>) {
@@ -120,7 +160,7 @@ function buildIcs(event: any, recipient: any, operation: "REQUEST" | "CANCEL", o
     `DESCRIPTION:${esc(description)}`,
     event.location ? `LOCATION:${esc(event.location)}` : null,
     `ORGANIZER;CN=UniConecta:mailto:${organizer}`,
-    `ATTENDEE;CN=${esc(recipientName)};RSVP=TRUE:mailto:${recipient.email}`,
+    `ATTENDEE;CN=${esc(recipientName)};ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE:mailto:${recipient.email}`,
     `URL:${link}`,
     operation === "CANCEL" ? "STATUS:CANCELLED" : "STATUS:CONFIRMED",
     "TRANSP:OPAQUE",
@@ -149,13 +189,14 @@ Deno.serve(async (req: Request) => {
     const body = await req.json().catch(() => ({}));
     const action = body?.action || "process";
     const config = configurationStatus();
+    const cfg = requiredConfig();
 
     if (action === "status") {
       return Response.json({
         ok: true,
         ...config,
-        provider: "microsoft365-smtp-oauth2",
-        authMode: "client_credentials",
+        provider: cfg.provider,
+        authMode: cfg.provider === "smtp" ? "smtp_credentials" : "client_credentials",
         deliveryTracking: false,
       });
     }
@@ -165,20 +206,13 @@ Deno.serve(async (req: Request) => {
         ok: false,
         configured: false,
         missing: config.missing,
-        provider: "microsoft365-smtp-oauth2",
-        message: "Microsoft 365 OAuth pendente de configuração.",
+        invalid: config.invalid,
+        provider: cfg.provider,
+        message: "Serviço de envio de convites pendente de configuração.",
       }, { status: 503 });
     }
 
-    const cfg = requiredConfig();
-    const accessToken = await microsoftAccessToken(cfg);
-    const transport = nodemailer.createTransport({
-      host: cfg.host,
-      port: Number(cfg.port),
-      secure: false,
-      requireTLS: true,
-      auth: { type: "OAuth2", user: cfg.user, accessToken },
-    });
+    const transport = await createMailTransport(cfg);
     await transport.verify();
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
@@ -243,8 +277,11 @@ Deno.serve(async (req: Request) => {
           icalEvent: { filename: "uniconecta.ics", method: operation, content: ics },
         });
 
+        if (!Array.isArray(info.accepted) || info.accepted.length === 0) {
+          throw new Error("O servidor de e-mail não aceitou o destinatário do convite.");
+        }
         await admin.from("calendar_invite_jobs").update({
-          status: "sent_provider", provider: "microsoft365-smtp-oauth2",
+          status: "sent_provider", provider: cfg.provider,
           provider_message_id: String(info.messageId || ""), last_error: null, next_attempt_at: null,
           sent_at: new Date().toISOString(), updated_at: new Date().toISOString(),
         }).eq("id", job.id);
@@ -264,7 +301,7 @@ Deno.serve(async (req: Request) => {
 
     return Response.json({
       ok: true, configured: true, selected: (jobs || []).length, processed: claimedCount,
-      sent, failed, superseded, results, provider: "microsoft365-smtp-oauth2", deliveryTracking: false,
+      sent, failed, superseded, results, provider: cfg.provider, deliveryTracking: false,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
