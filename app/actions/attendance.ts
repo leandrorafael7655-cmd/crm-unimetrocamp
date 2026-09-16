@@ -594,7 +594,18 @@ export async function publishCycle(cycleId: string): Promise<AttendanceActionRes
     const dispatch = await processCalendarQueue()
     revalidatePath("/atendimento")
     revalidatePath("/atendimento/minha-agenda")
-    return { ok: true, message: dispatch.configured ? "Escala publicada e convites enviados ao provedor." : "Escala publicada. Os convites ficaram pendentes porque o provedor de e-mail ainda não está configurado.", issues, dispatch }
+    // Publicar a escala e entregar os convites são resultados independentes.
+    // Os contadores são da fila global, não apenas do ciclo publicado.
+    const message = dispatch.error
+      ? "Escala publicada. Houve uma falha no processamento dos convites; consulte o status de cada compromisso."
+      : !dispatch.configured
+        ? "Escala publicada. Os convites ficaram pendentes porque o provedor de e-mail ainda não está configurado."
+        : Number(dispatch.failed || 0) > 0
+          ? `Escala publicada. Processamento da fila: ${Number(dispatch.sent || 0)} enviado(s) ao provedor e ${Number(dispatch.failed)} com falha. Consulte o status de cada compromisso.`
+          : Number(dispatch.sent || 0) > 0
+            ? `Escala publicada. Processamento da fila: ${Number(dispatch.sent)} convite(s) enviado(s) ao provedor. Confira o status de cada compromisso e o recebimento no Outlook.`
+            : "Escala publicada. Nenhum novo envio foi confirmado nesta execução; consulte o status de cada compromisso."
+    return { ok: true, message, issues, dispatch }
   } catch (e) { return { ok: false, message: e instanceof Error ? e.message : "Falha ao publicar escala." } }
 }
 
@@ -619,10 +630,10 @@ export async function getCalendarProviderStatus(requirePermission = true): Promi
     if (requirePermission) await requireCan("attendance.read")
     const supabase = await createClient()
     const { data, error } = await supabase.functions.invoke("send-calendar-invites", { body: { action: "status" } })
-    if (error) return { configured: false, message: "Não foi possível consultar o provedor de e-mail." }
+    if (error || !data?.ok) return { configured: false, error: "Não foi possível consultar o provedor de e-mail.", message: "Não foi possível consultar o provedor de e-mail." }
     return data
   } catch {
-    return { configured: false, message: "Provedor de e-mail pendente de configuração." }
+    return { configured: false, error: "Não foi possível consultar o provedor de e-mail.", message: "Não foi possível consultar o provedor de e-mail." }
   }
 }
 
@@ -631,11 +642,13 @@ export async function processCalendarQueue(): Promise<any> {
     await requireCan("attendance.manage")
     const supabase = await createClient()
     const status = await getCalendarProviderStatus(false)
+    if (status?.error) return { configured: false, error: status.error, status }
     if (!status?.configured) return { configured: false, status }
     let totalSent = 0, totalFailed = 0, totalProcessed = 0
     for (let i = 0; i < 4; i++) {
       const { data, error } = await supabase.functions.invoke("send-calendar-invites", { body: { action: "process", limit: 50 } })
       if (error) return { configured: true, error: error.message, sent: totalSent, failed: totalFailed }
+      if (!data?.ok) return { configured: true, error: "O provedor não confirmou o processamento dos convites.", sent: totalSent, failed: totalFailed }
       totalSent += Number(data?.sent || 0); totalFailed += Number(data?.failed || 0); totalProcessed += Number(data?.processed || 0)
       if (Number(data?.processed || 0) < 50) break
     }
