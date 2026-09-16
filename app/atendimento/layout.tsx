@@ -14,7 +14,7 @@ export default async function AtendimentoLayout({ children }: { children: ReactN
 
   return (
     <div className="min-h-screen bg-[#faf7f9] font-sans text-slate-900 md:flex">
-      <SystemSidebar role={actor.role} userName={actor.full_name} />
+      <SystemSidebar role={actor.role} userName={actor.display_name} />
       <main className="min-w-0 flex-1 p-3 sm:p-5 lg:p-6">{children}</main>
     </div>
   )
