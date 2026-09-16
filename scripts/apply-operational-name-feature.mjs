@@ -88,8 +88,8 @@ apply("app/actions/user-admin.ts", [
 apply("components/team/gerenciar-usuarios.tsx", [
   {
     label: "delete confirmation operational name",
-    from: '`Excluir ${u.full_name} (${u.email})?',
-    to: '`Excluir ${u.display_name} (${u.email})?',
+    from: '`Excluir definitivamente o acesso de ${u.full_name} (${u.email})?',
+    to: '`Excluir definitivamente o acesso de ${u.display_name} (${u.email})?',
   },
   {
     label: "tag field label",
