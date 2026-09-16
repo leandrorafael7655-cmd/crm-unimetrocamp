@@ -66,6 +66,11 @@ export function makeSupabaseStorage(supabase: SupabaseClient, perfil: Usuario): 
     return profiles
   }
 
+  function operationalNameFor(userId?: string | null, fallback = "") {
+    if (!userId) return fallback
+    return profiles.find((p) => p.id === userId)?.nome || fallback
+  }
+
   function resolveOwner(e: Empresa): string | null {
     if (e.ownerId) return e.ownerId
     const porNome = profiles.find((p) => p.nome === e.consultor)
@@ -74,6 +79,7 @@ export function makeSupabaseStorage(supabase: SupabaseClient, perfil: Usuario): 
   }
 
   async function carregarEmpresas(): Promise<Empresa[]> {
+    if (!profiles.length) await carregarProfiles()
     const [{ data: comp, error: e1 }, { data: cont, error: e2 }, { data: agr, error: e3 }] = await Promise.all([
       supabase.from("companies").select("*").order("created_at", { ascending: true }),
       supabase.from("company_contacts").select("*").order("position", { ascending: true }),
@@ -86,9 +92,11 @@ export function makeSupabaseStorage(supabase: SupabaseClient, perfil: Usuario): 
     for (const c of cont || []) (contatosPor[c.company_id] ||= []).push(rowToContato(c))
     const convPor: Record<string, Convenio> = {}
     for (const a of agr || []) convPor[a.company_id] = rowToConvenio(a)
-    const empresas = (comp || []).map((row: any) =>
-      rowToEmpresa(row, contatosPor[row.id] || [], convPor[row.id] || null),
-    )
+    const empresas = (comp || []).map((row: any) => {
+      const empresa = rowToEmpresa(row, contatosPor[row.id] || [], convPor[row.id] || null)
+      if (empresa.ownerId) empresa.consultor = operationalNameFor(empresa.ownerId, empresa.consultor)
+      return empresa
+    })
     snapEmpresas = empresas
     return empresas
   }
@@ -100,7 +108,6 @@ export function makeSupabaseStorage(supabase: SupabaseClient, perfil: Usuario): 
     const nextById = new Map(novo.map((e) => [e.id, e]))
     let changed = false
 
-    // remoções (cascade remove contatos + convênio)
     for (const e of prev) {
       if (!nextById.has(e.id)) {
         const { error } = await supabase.from("companies").delete().eq("id", e.id)
@@ -112,7 +119,6 @@ export function makeSupabaseStorage(supabase: SupabaseClient, perfil: Usuario): 
     for (const e of novo) {
       const antes = prevById.get(e.id)
       if (!antes) {
-        // inserção
         const { error } = await supabase.from("companies").insert(empresaToRow(e, resolveOwner))
         log("insert company", error)
         if (!error) {
@@ -131,7 +137,6 @@ export function makeSupabaseStorage(supabase: SupabaseClient, perfil: Usuario): 
         }
         continue
       }
-      // atualização de campos escalares
       if (!empresaScalarIgual(antes, e)) {
         const row = empresaToRow(e, resolveOwner)
         delete (row as any).id
@@ -139,7 +144,6 @@ export function makeSupabaseStorage(supabase: SupabaseClient, perfil: Usuario): 
         log("update company", error)
         if (!error) changed = true
       }
-      // contatos: substitui em bloco quando muda (contatos não têm id estável)
       if (!contatosIguais(antes.contatos, e.contatos)) {
         log("delete contatos", (await supabase.from("company_contacts").delete().eq("company_id", e.id)).error)
         if (e.contatos?.length) {
@@ -147,7 +151,6 @@ export function makeSupabaseStorage(supabase: SupabaseClient, perfil: Usuario): 
           log("reinsert contatos", (await supabase.from("company_contacts").insert(rows)).error)
         }
       }
-      // convênio
       if (projConvenio(antes.convenio) !== projConvenio(e.convenio)) {
         if (!e.convenio) {
           log("delete convenio", (await supabase.from("agreements").delete().eq("company_id", e.id)).error)
@@ -161,9 +164,6 @@ export function makeSupabaseStorage(supabase: SupabaseClient, perfil: Usuario): 
       }
     }
     snapEmpresas = novo
-
-    // O trigger do banco cria/atualiza/cancela o evento. O cliente apenas tenta
-    // esvaziar a fila imediatamente; ausência de SMTP não desfaz o salvamento.
     if (changed) await dispatchCalendarBestEffort()
   }
 
@@ -185,16 +185,14 @@ export function makeSupabaseStorage(supabase: SupabaseClient, perfil: Usuario): 
     if (!profiles.length) await carregarProfiles()
     const atualById = new Map(profiles.map((p) => [p.id, p]))
     for (const p of nova) {
-      if (!p.id) continue // não é possível criar conta de auth a partir daqui
+      if (!p.id) continue
       const antes = atualById.get(p.id)
       if (!antes) continue
-      const mudou =
-        antes.nome !== p.nome || antes.tag !== p.tag || antes.papel !== p.papel || antes.ativo !== p.ativo
+      const mudou = antes.tag !== p.tag || antes.papel !== p.papel || antes.ativo !== p.ativo
       if (mudou) {
         const { error } = await supabase
           .from("profiles")
           .update({
-            full_name: p.nome,
             consultant_tag: p.tag || null,
             role: roleDePapel(p.papel),
             active: p.ativo !== false,
@@ -255,9 +253,14 @@ export function makeSupabaseStorage(supabase: SupabaseClient, perfil: Usuario): 
       try {
         if (chave === CHAVES.empresas) return { value: JSON.stringify(await carregarEmpresas()) }
         if (chave === CHAVES.atividades) {
+          if (!profiles.length) await carregarProfiles()
           const { data, error } = await supabase.from("activities").select("*").order("data", { ascending: false })
           log("select activities", error)
-          snapAtividades = (data || []).map(rowToAtividade)
+          snapAtividades = (data || []).map((row: any) => {
+            const atividade = rowToAtividade(row)
+            if (atividade.primaryOwnerId) atividade.consultor = operationalNameFor(atividade.primaryOwnerId, atividade.consultor)
+            return atividade
+          })
           return { value: JSON.stringify(snapAtividades) }
         }
         if (chave === CHAVES.equipe) return { value: JSON.stringify(await carregarProfiles()) }
@@ -279,7 +282,6 @@ export function makeSupabaseStorage(supabase: SupabaseClient, perfil: Usuario): 
         else if (chave === CHAVES.atividades) await salvarAtividades(valor as Atividade[])
         else if (chave === CHAVES.equipe) await salvarEquipe(valor as Pessoa[])
         else if (chave === CHAVES.config) await salvarConfig(valor as Config)
-        // usuario: logout é tratado por aoSair; ignoramos aqui
         return true
       } catch (e) {
         log("set " + chave, e)

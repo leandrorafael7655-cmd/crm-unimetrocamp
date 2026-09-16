@@ -14,7 +14,7 @@ export default async function MapaLayout({ children }: { children: ReactNode }) 
 
   return (
     <div className="min-h-screen bg-[#faf7f9] font-sans text-slate-900 md:flex">
-      <SystemSidebar role={actor.role} userName={actor.full_name} />
+      <SystemSidebar role={actor.role} userName={actor.display_name} />
       <main className="min-w-0 flex-1 md:h-screen md:overflow-auto">{children}</main>
     </div>
   )

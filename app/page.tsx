@@ -2,6 +2,7 @@ import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import CrmSupabase from "@/components/crm-supabase"
 import { papelDeRole } from "@/lib/data/mapping"
+import { profileDisplayName } from "@/lib/domain/user-display"
 import type { Usuario } from "@/lib/domain/types"
 
 export const dynamic = "force-dynamic"
@@ -12,9 +13,7 @@ export default async function Page() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (!user) {
-    redirect("/auth/login")
-  }
+  if (!user) redirect("/auth/login")
 
   const { data: perfilRow } = await supabase
     .from("profiles")
@@ -22,13 +21,11 @@ export default async function Page() {
     .eq("id", user.id)
     .maybeSingle()
 
-  // Conta sem perfil vinculado — não deve acessar o CRM.
   if (!perfilRow) {
     await supabase.auth.signOut()
     redirect("/auth/login?erro=sem-perfil")
   }
 
-  // Acesso desativado pela gerência.
   if (perfilRow.active === false) {
     await supabase.auth.signOut()
     redirect("/auth/login?erro=inativo")
@@ -36,7 +33,7 @@ export default async function Page() {
 
   const perfil: Usuario = {
     id: perfilRow.id,
-    nome: perfilRow.full_name || user.email || "Usuário",
+    nome: profileDisplayName(perfilRow, user.email || "Usuário"),
     papel: papelDeRole(perfilRow.role),
     tag: perfilRow.consultant_tag || "",
     email: perfilRow.email || user.email || "",

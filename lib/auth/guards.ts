@@ -1,6 +1,7 @@
 import "server-only"
 import { createClient } from "@/lib/supabase/server"
 import { type Role, type Permission, can, normalizeRole } from "@/lib/domain/roles"
+import { profileDisplayName } from "@/lib/domain/user-display"
 
 export type { Role, Permission }
 
@@ -8,6 +9,8 @@ export interface ActorProfile {
   id: string
   email: string | null
   full_name: string
+  legal_full_name: string
+  display_name: string
   role: Role
   active: boolean
   consultant_tag: string | null
@@ -28,9 +31,14 @@ export async function getActor(): Promise<ActorProfile | null> {
     .maybeSingle()
 
   if (!profile) return null
-  // O papel do banco pode estar em valor legado ("consultor"); normaliza para
-  // o canônico sem NUNCA conceder privilégio a um valor desconhecido.
-  return { ...profile, role: normalizeRole(profile.role) } as ActorProfile
+  const displayName = profileDisplayName(profile)
+  return {
+    ...profile,
+    legal_full_name: profile.full_name,
+    full_name: displayName,
+    display_name: displayName,
+    role: normalizeRole(profile.role),
+  } as ActorProfile
 }
 
 /** Exige um ator autenticado e ativo (qualquer papel). */

@@ -31,6 +31,21 @@ function configurationStatus() {
   return { configured: missing.length === 0, missing };
 }
 
+function operationalName(recipient: any) {
+  const tag = String(recipient?.consultant_tag || "").trim();
+  if (tag) {
+    if (/^[a-z0-9_-]+$/.test(tag)) {
+      return tag
+        .split(/[-_]+/)
+        .filter(Boolean)
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(" ");
+    }
+    return tag;
+  }
+  return recipient?.full_name || recipient?.email || "Usuário";
+}
+
 function esc(value: string | null | undefined) {
   return (value || "")
     .replace(/\\/g, "\\\\")
@@ -56,9 +71,10 @@ function utcStamp(date = new Date()) {
 function buildIcs(event: any, recipient: any, operation: "REQUEST" | "CANCEL", organizer: string, crmUrl: string) {
   const tz = event.timezone || "America/Sao_Paulo";
   const link = event.crm_path ? `${crmUrl}${event.crm_path}` : crmUrl;
+  const recipientName = operationalName(recipient);
   const description = [
     event.description,
-    `Responsável: ${recipient.full_name || recipient.email}`,
+    `Responsável: ${recipientName}`,
     `Consultar no UniConecta: ${link}`,
   ].filter(Boolean).join("\n\n");
   const lines = [
@@ -87,7 +103,7 @@ function buildIcs(event: any, recipient: any, operation: "REQUEST" | "CANCEL", o
     `DESCRIPTION:${esc(description)}`,
     event.location ? `LOCATION:${esc(event.location)}` : null,
     `ORGANIZER:mailto:${organizer}`,
-    `ATTENDEE;CN=${esc(recipient.full_name || recipient.email)};RSVP=TRUE:mailto:${recipient.email}`,
+    `ATTENDEE;CN=${esc(recipientName)};RSVP=TRUE:mailto:${recipient.email}`,
     `URL:${link}`,
     operation === "CANCEL" ? "STATUS:CANCELLED" : "STATUS:CONFIRMED",
     "TRANSP:OPAQUE",
@@ -200,7 +216,7 @@ Deno.serve(async (req: Request) => {
         }
 
         const { data: recipient, error: recipientError } = await admin
-          .from("profiles").select("id,full_name,email,active").eq("id", event.recipient_user_id).single();
+          .from("profiles").select("id,full_name,consultant_tag,email,active").eq("id", event.recipient_user_id).single();
         if (recipientError || !recipient) throw new Error(recipientError?.message || "Destinatário não encontrado");
         if (!recipient.active) throw new Error("Destinatário inativo no UniConecta");
         if (!recipient.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient.email)) {

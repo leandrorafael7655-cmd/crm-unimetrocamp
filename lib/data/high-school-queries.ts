@@ -7,6 +7,7 @@ import "server-only"
 
 import { createClient } from "@/lib/supabase/server"
 import { requireCan } from "@/lib/auth/guards"
+import { profileDisplayName } from "@/lib/domain/user-display"
 import {
   type Escola,
   type ContatoEscola,
@@ -46,14 +47,15 @@ export async function listOwners(): Promise<OwnerOption[]> {
   const supabase = await createClient()
   const { data } = await supabase
     .from("profiles")
-    .select("id,full_name,role,active")
+    .select("id,full_name,consultant_tag,role,active")
     .eq("active", true)
-    .order("full_name", { ascending: true })
-  return (data ?? []).map((r) => ({
-    id: String(r.id),
-    nome: String(r.full_name ?? ""),
-    role: String(r.role ?? ""),
-  }))
+  return (data ?? [])
+    .map((r) => ({
+      id: String(r.id),
+      nome: profileDisplayName(r),
+      role: String(r.role ?? ""),
+    }))
+    .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"))
 }
 
 export interface SchoolFilters {
@@ -102,17 +104,17 @@ async function carregarParticipantesEResultados(
   const [{ data: pData }, { data: rData }] = await Promise.all([
     supabase
       .from("school_action_participants")
-      .select("school_action_id,user_id,role_in_action,profiles(full_name)")
+      .select("school_action_id,user_id,role_in_action,profiles(full_name,consultant_tag)")
       .in("school_action_id", acaoIds),
     supabase.from("school_action_grade_results").select("*").in("school_action_id", acaoIds),
   ])
 
   for (const p of pData ?? []) {
     const k = String(p.school_action_id)
-    const nome = (p.profiles as { full_name?: string } | null)?.full_name
+    const profile = p.profiles as { full_name?: string; consultant_tag?: string | null } | null
     ;(parts.get(k) ?? parts.set(k, []).get(k)!).push({
       userId: String(p.user_id),
-      nome: nome ?? undefined,
+      nome: profile ? profileDisplayName(profile) : undefined,
       papelNaAcao: (p.role_in_action as string) ?? undefined,
     })
   }
@@ -153,14 +155,13 @@ export async function listActions(filtros: ActionFilters = {}): Promise<AcaoEsco
   const ids = rows.map((r) => String(r.id))
   const { parts, res } = await carregarParticipantesEResultados(supabase, ids)
 
-  return rows.map((r) => {
-    const acao = mapAcaoRow(
+  return rows.map((r) =>
+    mapAcaoRow(
       { ...r, school_name: (r.schools as { name?: string } | null)?.name },
       parts.get(String(r.id)) ?? [],
       res.get(String(r.id)) ?? [],
-    )
-    return acao
-  })
+    ),
+  )
 }
 
 export interface HistoricoEtapa {
@@ -205,12 +206,12 @@ export async function getSchool360(id: string): Promise<Escola360 | null> {
       supabase.from("school_actions").select("*, schools(name)").eq("school_id", id).order("action_date", { ascending: false }),
       supabase
         .from("school_stage_history")
-        .select("id,previous_stage,new_stage,changed_at,profiles(full_name)")
+        .select("id,previous_stage,new_stage,changed_at,profiles(full_name,consultant_tag)")
         .eq("school_id", id)
         .order("changed_at", { ascending: false }),
       supabase
         .from("school_owner_history")
-        .select("id,previous_owner_id,new_owner_id,changed_at,prev:previous_owner_id(full_name),nov:new_owner_id(full_name)")
+        .select("id,previous_owner_id,new_owner_id,changed_at,prev:previous_owner_id(full_name,consultant_tag),nov:new_owner_id(full_name,consultant_tag)")
         .eq("school_id", id)
         .order("changed_at", { ascending: false }),
     ])
@@ -234,12 +235,12 @@ export async function getSchool360(id: string): Promise<Escola360 | null> {
       anterior: (r.previous_stage as string) ?? null,
       nova: String(r.new_stage),
       quando: String(r.changed_at),
-      quem: (r.profiles as { full_name?: string } | null)?.full_name,
+      quem: r.profiles ? profileDisplayName(r.profiles as { full_name?: string; consultant_tag?: string | null }) : undefined,
     })),
     historicoDono: (hDono ?? []).map((r) => ({
       id: String(r.id),
-      anterior: (r.prev as { full_name?: string } | null)?.full_name ?? null,
-      novo: (r.nov as { full_name?: string } | null)?.full_name ?? null,
+      anterior: r.prev ? profileDisplayName(r.prev as { full_name?: string; consultant_tag?: string | null }) : null,
+      novo: r.nov ? profileDisplayName(r.nov as { full_name?: string; consultant_tag?: string | null }) : null,
       quando: String(r.changed_at),
     })),
   }

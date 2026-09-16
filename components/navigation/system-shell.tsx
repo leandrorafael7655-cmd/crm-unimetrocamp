@@ -16,7 +16,7 @@ export async function SystemShell({
 
   return (
     <div className="min-h-screen bg-[#faf7f9] font-sans text-slate-900 md:flex">
-      <SystemSidebar role={actor.role} userName={actor.full_name} />
+      <SystemSidebar role={actor.role} userName={actor.display_name} />
       <main className={mainClassName}>{children}</main>
     </div>
   )
