@@ -88,7 +88,12 @@ export function GerenciarUsuarios({ perfil }: { perfil: Usuario }) {
 
   const excluir = async (u: ManagedUser) => {
     const confirmou = window.confirm(
-      `Excluir ${u.full_name} (${u.email})?\n\nO usuário perderá o acesso imediatamente. O histórico comercial será preservado.`,
+      `Excluir definitivamente o acesso de ${u.full_name} (${u.email})?\n\n` +
+      "• O usuário perderá o login no UniConecta.\n" +
+      "• Ele será retirado do Atendimento e das atribuições futuras.\n" +
+      "• Convites futuros vinculados a ele serão cancelados.\n" +
+      "• O histórico de empresas, escolas, metas, rotas e ações será preservado.\n\n" +
+      "Para a pessoa voltar depois, será necessário cadastrá-la novamente.",
     )
     if (!confirmou) return
     await acao(u.id, () => deleteUser(u.id))
