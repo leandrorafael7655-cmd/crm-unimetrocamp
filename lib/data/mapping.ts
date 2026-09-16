@@ -1,5 +1,6 @@
 import type { Atividade, Contato, Convenio, Empresa, Pessoa } from "@/lib/domain/types"
 import { CONVENIO_VAZIO } from "@/lib/domain/constants"
+import { profileDisplayName } from "@/lib/domain/user-display"
 
 /* ─────────────  banco (snake_case)  →  domínio (camelCase)  ───────────── */
 
@@ -118,7 +119,7 @@ export function rowToAtividade(row: any): Atividade {
 export function rowToPessoa(row: any): Pessoa {
   return {
     id: row.id,
-    nome: s(row.full_name),
+    nome: profileDisplayName(row),
     papel: papelDeRole(row.role),
     tag: s(row.consultant_tag),
     role: row.role,
