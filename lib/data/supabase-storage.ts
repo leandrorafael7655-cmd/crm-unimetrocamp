@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import type { StorageBackend } from "./storage-context"
 import { CHAVES, CONFIG_PADRAO } from "@/lib/domain/constants"
 import type { Atividade, Config, Contato, Convenio, Empresa, Pessoa, Usuario } from "@/lib/domain/types"
+import { flushCalendarQueue } from "@/lib/calendar/calendar-dispatch"
 import {
   atividadeToRow,
   CAMPOS_EMPRESA,
@@ -53,6 +54,11 @@ export function makeSupabaseStorage(supabase: SupabaseClient, perfil: Usuario): 
     if (error) console.error(`[v0] supabase-storage ${ctx}:`, error)
   }
 
+  async function dispatchCalendarBestEffort() {
+    const result = await flushCalendarQueue(supabase, { batches: 2, limit: 25 })
+    if (result.error) log("calendar dispatch", result.error)
+  }
+
   async function carregarProfiles(): Promise<Pessoa[]> {
     const { data, error } = await supabase.from("profiles").select("*").order("created_at", { ascending: true })
     log("profiles", error)
@@ -92,12 +98,14 @@ export function makeSupabaseStorage(supabase: SupabaseClient, perfil: Usuario): 
     const prev = snapEmpresas
     const prevById = new Map(prev.map((e) => [e.id, e]))
     const nextById = new Map(novo.map((e) => [e.id, e]))
+    let changed = false
 
     // remoções (cascade remove contatos + convênio)
     for (const e of prev) {
       if (!nextById.has(e.id)) {
         const { error } = await supabase.from("companies").delete().eq("id", e.id)
         log("delete company", error)
+        if (!error) changed = true
       }
     }
 
@@ -108,6 +116,7 @@ export function makeSupabaseStorage(supabase: SupabaseClient, perfil: Usuario): 
         const { error } = await supabase.from("companies").insert(empresaToRow(e, resolveOwner))
         log("insert company", error)
         if (!error) {
+          changed = true
           if (e.contatos?.length) {
             const rows = e.contatos.map((c, i) => contatoToRow(c, e.id, i))
             log("insert contatos", (await supabase.from("company_contacts").insert(rows)).error)
@@ -128,6 +137,7 @@ export function makeSupabaseStorage(supabase: SupabaseClient, perfil: Usuario): 
         delete (row as any).id
         const { error } = await supabase.from("companies").update(row).eq("id", e.id)
         log("update company", error)
+        if (!error) changed = true
       }
       // contatos: substitui em bloco quando muda (contatos não têm id estável)
       if (!contatosIguais(antes.contatos, e.contatos)) {
@@ -151,6 +161,10 @@ export function makeSupabaseStorage(supabase: SupabaseClient, perfil: Usuario): 
       }
     }
     snapEmpresas = novo
+
+    // O trigger do banco cria/atualiza/cancela o evento. O cliente apenas tenta
+    // esvaziar a fila imediatamente; ausência de SMTP não desfaz o salvamento.
+    if (changed) await dispatchCalendarBestEffort()
   }
 
   async function salvarAtividades(novo: Atividade[]): Promise<void> {
