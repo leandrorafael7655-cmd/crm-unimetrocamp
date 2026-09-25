@@ -151,7 +151,7 @@ function LoginInner() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className={inputCls}
-              placeholder="seu.email@unimetrocamp.edu.br"
+              placeholder="seu.email@empresa.com.br"
             />
           </div>
 
@@ -240,7 +240,7 @@ function LoginInner() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className={inputCls}
-              placeholder="seu.email@unimetrocamp.edu.br"
+              placeholder="seu.email@empresa.com.br"
             />
           </div>
           {erro && <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm text-rose-700" role="alert">{erro}</p>}
@@ -262,15 +262,8 @@ function LoginInner() {
         </form>
       )}
 
-      <div className="mt-7 flex items-center justify-between gap-4 border-t border-[#f0e6ec] pt-5">
-        <p className="text-[11px] leading-relaxed text-slate-400">Acesso exclusivo da equipe UniMetrocamp</p>
-        <img
-          src="/brand/unimetrocamp-color.svg"
-          alt="UniMetrocamp Wyden"
-          width={150}
-          height={33}
-          className="h-auto w-[112px] shrink-0 opacity-90"
-        />
+      <div className="mt-7 border-t border-[#f0e6ec] pt-5">
+        <p className="text-[11px] leading-relaxed text-slate-400">UniConecta · Acesso exclusivo de usuários autorizados.</p>
       </div>
     </AuthShell>
   )

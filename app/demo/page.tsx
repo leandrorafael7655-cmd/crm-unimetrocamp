@@ -1,7 +1,7 @@
 import CrmDemo from "@/components/crm-demo"
 
 export const metadata = {
-  title: "Demonstração · CRM UniMetrocamp",
+  title: "Demonstração",
   description: "Explore o CRM com dados de exemplo salvos apenas neste navegador.",
 }
 
