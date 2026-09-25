@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { UniConectaBrand } from "@/components/brand/uniconecta-brand";
 import {
   LayoutDashboard, Briefcase, Building2, CalendarClock, GitBranch, Users, Handshake,
   Plus, Search, Download, X, ArrowRight, AlertTriangle, Phone, Trash2, Pencil, RefreshCw,
@@ -287,22 +288,9 @@ function CampoCor({ rotulo, valor, padrao, dica, aoMudar }) {
   );
 }
 
-/* marca no topo: logo oficial quando informado, tipografia quando não */
-function Marca({ config, escuro }) {
-  const [falhou, setFalhou] = useState(false);
-  useEffect(() => setFalhou(false), [config.logoUrl]);
-  if (config.logoUrl && !falhou) {
-    return <img src={config.logoUrl} alt={config.nomeUnidade} onError={() => setFalhou(true)}
-      className="h-8 w-auto max-w-[170px] object-contain object-left" />;
-  }
-  return (
-    <div>
-      <p className={`font-mono text-[10px] uppercase tracking-widest ${escuro ? "text-teal-400" : "text-teal-700"}`}>
-        {config.nomeUnidade || MARCA_PADRAO.nomeUnidade}
-      </p>
-      <p className={`text-sm font-semibold ${escuro ? "text-white" : "text-slate-900"}`}>Comercial B2B</p>
-    </div>
-  );
+/* A marca do produto independe dos dados cadastrais da unidade. */
+function Marca({ escuro }) {
+  return <UniConectaBrand inverse={Boolean(escuro)} />;
 }
 
 /* ─────────────────────────  peças de interface  ───────────────────────── */
@@ -1649,19 +1637,18 @@ function Equipe({ equipe, empresas, config, aoSalvarEquipe, aoSalvarConfig, pain
     <div className="max-w-3xl space-y-4">
       {painelEquipe}
       <section className="rounded-lg border border-slate-200 bg-white p-4">
-        <h3 className="text-sm font-semibold text-slate-900">Identidade visual</h3>
+        <h3 className="text-sm font-semibold text-slate-900">Dados da unidade e cores</h3>
         <p className="mt-1 text-xs text-slate-600">
-          Cada cor tem um papel fixo. Os tons intermediários — bordas, fundos leves, estados de hover —
-          são derivados delas, então a interface nunca usa uma cor que não seja da marca.
+          UniConecta é a identificação do sistema. Mantenha os dados da unidade e personalize as cores abaixo.
         </p>
 
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <Campo rotulo="Nome da unidade">
             <input className={inputBase} value={cfg.nomeUnidade || ""} onChange={(e) => setCfg({ ...cfg, nomeUnidade: e.target.value })} />
           </Campo>
-          <Campo rotulo="URL do logo" dica="Versão clara, fundo transparente — o topo é escuro.">
+          <Campo rotulo="URL do logo da unidade" dica="Dado cadastral; não altera a marca do UniConecta.">
             <input className={`${inputBase} font-mono text-xs`} value={cfg.logoUrl || ""} onChange={(e) => setCfg({ ...cfg, logoUrl: e.target.value })}
-              placeholder="https://…/logo-unimetrocamp-branco.svg" />
+              placeholder="https://…/logo-da-unidade.svg" />
           </Campo>
         </div>
 
@@ -2036,7 +2023,7 @@ export default function CrmApp({ modo = "demo", aoSair, usuarioInicial = null, p
     const blob = new Blob(["\uFEFF" + linhas.join("\n")], { type: "text/csv;charset=utf-8" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `${conv ? "convenios" : "empresas"}-unimetrocamp-${hoje}.csv`;
+    a.download = `${conv ? "convenios" : "empresas"}-uniconecta-${hoje}.csv`;
     a.click();
     URL.revokeObjectURL(a.href);
   };
@@ -2064,7 +2051,7 @@ export default function CrmApp({ modo = "demo", aoSair, usuarioInicial = null, p
       <div className="flex min-h-screen items-center justify-center bg-slate-900 p-6">
         <Tema config={config} />
         <div className="w-full max-w-sm rounded-lg bg-white p-6">
-          <Marca config={config} />
+          <Marca />
           <h1 className="mt-3 text-xl font-semibold text-slate-900">Quem está usando?</h1>
           <p className="mt-1 text-xs text-slate-500">
             A escolha fica salva neste navegador e define qual carteira aparece. Não é login com senha — é identificação de uso.
@@ -2098,7 +2085,7 @@ export default function CrmApp({ modo = "demo", aoSair, usuarioInicial = null, p
       <div className="mx-auto flex min-h-screen max-w-[1400px] flex-col md:flex-row">
         <nav className="shrink-0 bg-slate-900 md:w-56">
           <div className="hidden px-4 py-4 md:block">
-            <Marca config={config} escuro />
+            <Marca escuro />
           </div>
           <ul className="flex overflow-x-auto md:block md:px-2">
             {NAV.filter((n) => n.todos || ehGestor).map(({ id, rotulo, Icone }) => (

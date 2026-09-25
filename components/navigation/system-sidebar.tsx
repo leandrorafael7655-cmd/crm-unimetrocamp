@@ -26,6 +26,7 @@ import {
 } from "lucide-react"
 import { can, normalizeRole, rotuloRole } from "@/lib/domain/roles"
 import { createClient } from "@/lib/supabase/client"
+import { UniConectaBrand } from "@/components/brand/uniconecta-brand"
 
 type GroupKey = "b2b" | "high-school" | "routes" | "attendance" | "settings"
 type LegacyView = "painel" | "carteira" | "consulta" | "empresas" | "agenda" | "funil" | "equipe"
@@ -242,8 +243,7 @@ export function SystemSidebar({ role, userName }: { role?: RoleInput; userName?:
   return (
     <nav className="flex w-full shrink-0 flex-col bg-[linear-gradient(180deg,#00302b_0%,#00251f_100%)] text-white md:min-h-screen md:w-64 md:shadow-[8px_0_30px_rgba(0,48,43,0.10)]">
       <Link href="/dashboard" className="border-b border-white/10 px-4 py-5 transition hover:bg-white/[0.04] md:px-5 md:py-6">
-        <p className="text-2xl font-bold tracking-[-0.035em] text-white">UniConecta</p>
-        <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#b4fcf1]/62">Gestão comercial integrada</p>
+        <UniConectaBrand inverse />
         <div className="mt-3 h-1 w-8 rounded-full bg-[#b4fcf1]/75" aria-hidden />
       </Link>
       <div className="min-h-0 flex-1 overflow-y-auto py-2.5"><SystemSidebarMenu role={role} /></div>

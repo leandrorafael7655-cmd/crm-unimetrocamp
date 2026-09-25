@@ -60,7 +60,7 @@ export function SetupForm({ exigeEmail }: { exigeEmail: boolean }) {
         <label htmlFor="email" className="text-xs font-medium text-slate-700">E-mail</label>
         <input id="email" type="email" required autoComplete="email" value={email}
           onChange={(e) => setEmail(e.target.value)} className={inputCls}
-          placeholder="gerencia@unimetrocamp.com.br" />
+          placeholder="gerencia@empresa.com.br" />
       </div>
       <div className="flex flex-col gap-1.5">
         <label htmlFor="senha" className="text-xs font-medium text-slate-700">Senha</label>

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react"
 import { Building2, GraduationCap, Route } from "lucide-react"
+import { UniConectaBrand } from "@/components/brand/uniconecta-brand"
 
 const pilares = [
   { label: "Empresas", Icone: Building2 },
@@ -29,15 +30,7 @@ export function AuthShell({
         </div>
 
         <div className="relative z-10 flex w-full max-w-3xl flex-col">
-          <div className="-mx-1 w-fit rounded-sm bg-[#880058] px-1 py-0.5">
-            <img
-              src="/brand/unimetrocamp-on-purple.svg"
-              alt="UniMetrocamp Wyden"
-              width={300}
-              height={75}
-              className="h-auto w-[205px] sm:w-[225px] lg:w-[250px]"
-            />
-          </div>
+          <UniConectaBrand inverse />
 
           <div className="mt-7 md:mt-auto md:mb-auto">
             <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-white/65 sm:text-[11px]">

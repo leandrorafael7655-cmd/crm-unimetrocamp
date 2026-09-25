@@ -8,11 +8,16 @@ const geistMono = Geist_Mono({ subsets: ['latin'], variable: '--font-geist-mono'
 
 export const metadata: Metadata = {
   title: {
-    default: 'UniConecta · UniMetrocamp | Wyden',
-    template: '%s · UniConecta | UniMetrocamp Wyden',
+    default: 'UniConecta | CRM Comercial',
+    template: '%s · UniConecta',
   },
   description:
-    'UniConecta é a plataforma de gestão comercial integrada da UniMetrocamp | Wyden para B2B, High School, metas, SuperVestibular, mapas e rotas.',
+    'UniConecta: gestão comercial integrada para B2B, High School, metas, SuperVestibular, mapas e rotas.',
+  applicationName: 'UniConecta',
+  icons: {
+    icon: [{ url: '/icon.svg', type: 'image/svg+xml' }],
+    apple: '/apple-icon.png',
+  },
 }
 
 export const viewport: Viewport = {
