@@ -13,7 +13,11 @@ function runtime(settings = {}, accepted = true) {
   const event = { id: 'event-1', event_uid: 'stable-event@example.com', sequence: 0, status: 'active', recipient_user_id: 'user-1', title: 'Teste de agenda', start_at: '2026-10-26T12:00:00Z', end_at: '2026-10-26T13:00:00Z' };
   const recipient = { id: 'user-1', email: 'recipient@example.com', full_name: 'Consultor Teste', active: true };
   const job = { id: 'job-1', calendar_event_id: event.id, operation: 'REQUEST', event_sequence: 0, attempts: 0 };
-  const client = { from(table) {
+  const auth = {
+    admin: { listUsers: async () => (settings.__adminProbeOk ? { data: { users: [] }, error: null } : { data: null, error: { message: 'not admin' } }) },
+    getUser: async () => ({ data: { user: null }, error: { message: 'invalid' } }),
+  };
+  const client = { auth, from(table) {
     let patch;
     const chain = {
       select() { return chain; }, in() { return chain; }, eq() { return chain; }, or() { return chain; }, order() { return chain; }, limit() { return chain; }, single() { return chain; },
@@ -26,11 +30,11 @@ function runtime(settings = {}, accepted = true) {
     Deno: { env: { get: key => values[key] }, serve: fn => { handler = fn; } },
     createClient: () => client,
     nodemailer: { createTransport(options) { transportOptions = options; return { verify: async () => true, sendMail: async message => { messages.push(message); return { accepted: accepted ? [recipient.email] : [], messageId: 'test-message' }; } }; } },
-    Response, Request, URLSearchParams, Intl, Date,
+    Response, Request, URLSearchParams, Intl, Date, atob,
     fetch: () => { throw new Error('Unexpected Microsoft OAuth/network request'); },
   });
   vm.runInContext(code, context);
-  return { context, event, recipient, messages, updates, options: () => transportOptions, invoke: body => handler(new Request('https://example.invalid', { method: 'POST', headers: { Authorization: 'Bearer test-key', 'Content-Type': 'application/json' }, body: JSON.stringify(body) })) };
+  return { context, event, recipient, messages, updates, options: () => transportOptions, invoke: (body, token = 'test-key') => handler(new Request('https://example.invalid', { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) })) };
 }
 test('new installation asks for SMTP credentials, not Microsoft administration', () => {
   const r = runtime();
@@ -100,4 +104,23 @@ test('updates and cancellations retain event identity', () => {
   assert.match(cancel, /UID:stable-event@example.com/);
   assert.match(cancel, /METHOD:CANCEL/);
   assert.match(cancel, /SEQUENCE:1/);
+});
+
+const fakeJwt = (payload) => ['eyJhbGciOiJIUzI1NiJ9', Buffer.from(JSON.stringify(payload)).toString('base64url'), 'sig'].join('.');
+test('system caller with a service_role JWT different from the injected key is accepted after admin probe', async () => {
+  const r = runtime({ ...smtp, __adminProbeOk: true });
+  const response = await r.invoke({ action: 'status' }, fakeJwt({ role: 'service_role' }));
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).configured, true);
+});
+test('forged service_role claim without admin privilege is rejected', async () => {
+  const r = runtime({ ...smtp, __adminProbeOk: false });
+  const response = await r.invoke({ action: 'process' }, fakeJwt({ role: 'service_role' }));
+  assert.equal(response.status, 401);
+  assert.equal(r.messages.length, 0);
+});
+test('new-format secret key is accepted as system caller', async () => {
+  const r = runtime({ ...smtp, SUPABASE_SECRET_KEYS: JSON.stringify({ default: 'sb_secret_test' }) });
+  const response = await r.invoke({ action: 'status' }, 'sb_secret_test');
+  assert.equal(response.status, 200);
 });

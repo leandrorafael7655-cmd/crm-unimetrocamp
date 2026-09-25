@@ -170,10 +170,49 @@ function buildIcs(event: any, recipient: any, operation: "REQUEST" | "CANCEL", o
   return lines.join("\r\n") + "\r\n";
 }
 
+function secretKeys(): string[] {
+  try {
+    const parsed = JSON.parse(Deno.env.get("SUPABASE_SECRET_KEYS") || "{}");
+    return Object.values(parsed || {}).map((v) => String(v || "").trim()).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+function jwtRole(token: string): string | null {
+  const parts = token.split(".");
+  if (parts.length !== 3) return null;
+  try {
+    const b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const padded = b64 + "=".repeat((4 - (b64.length % 4)) % 4);
+    return JSON.parse(atob(padded))?.role ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Chamadas de sistema (cron da Vercel, Server Actions com cliente admin) chegam com a
+ * chave service_role do projeto. A comparação literal com SUPABASE_SERVICE_ROLE_KEY
+ * falha quando o valor injetado na função difere do usado pela Vercel (ex.: projetos
+ * com chaves novas). Por isso: aceita as chaves conhecidas e, para um JWT que declara
+ * role=service_role, confirma o privilégio com uma chamada que só service_role consegue
+ * fazer — sem depender de o gateway estar com verify_jwt ligado.
+ */
+async function isSystemCaller(req: Request, token: string) {
+  const apikey = (req.headers.get("apikey") || "").trim();
+  const known = [SERVICE_KEY, ...secretKeys()].filter(Boolean);
+  if ((token && known.includes(token)) || (apikey && known.includes(apikey))) return true;
+  if (!token || jwtRole(token) !== "service_role") return false;
+  const probe = createClient(SUPABASE_URL, token, { auth: { persistSession: false, autoRefreshToken: false } });
+  const { error } = await probe.auth.admin.listUsers({ page: 1, perPage: 1 });
+  return !error;
+}
+
 async function authorize(req: Request) {
   const authorization = req.headers.get("Authorization") || "";
   const token = authorization.replace(/^Bearer\s+/i, "").trim();
-  if (token && token === SERVICE_KEY) return { system: true, userId: null };
+  if (await isSystemCaller(req, token)) return { system: true, userId: null };
 
   const client = createClient(SUPABASE_URL, ANON_KEY, { global: { headers: { Authorization: authorization } } });
   const { data: { user }, error } = await client.auth.getUser();
