@@ -2,6 +2,7 @@ export interface Participant {
   name: string
   email: string
 }
+export type CalendarProvider = "email" | "graph"
 export interface CompanyContact {
   id: string
   company_id: string
@@ -31,7 +32,9 @@ export interface MeetingInput {
   endTime: string
   title: string
   description: string
-  meetingType: "presencial" | "teams"
+  meetingType: "presencial" | "teams" | "online"
+  calendarProvider?: CalendarProvider
+  meetingUrl?: string
   location: string
   participants: Participant[]
 }
@@ -47,7 +50,9 @@ export interface MeetingPayload {
   date: string
   title: string
   description: string
-  meeting_type: "presencial" | "teams"
+  meeting_type: "presencial" | "teams" | "online"
+  calendar_provider?: CalendarProvider
+  meeting_url?: string
   start_at: string
   end_at: string
   location: string
@@ -64,7 +69,12 @@ export interface MeetingRow {
   organizer_email: string
   title: string
   description: string
-  meeting_type: "presencial" | "teams"
+  meeting_type: "presencial" | "teams" | "online"
+  calendar_provider: CalendarProvider
+  calendar_uid: string
+  calendar_organizer_email: string | null
+  email_queued_revision: number
+  meeting_url: string | null
   location: string
   start_at: string
   end_at: string

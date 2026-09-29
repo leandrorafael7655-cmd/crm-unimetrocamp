@@ -42,7 +42,18 @@ export function validateMeetingInput(input: MeetingInput) {
     throw new Error("Informe um assunto de até 180 caracteres.")
   if (typeof input.description !== "string" || input.description.length > 10000)
     throw new Error("A pauta deve ter até 10.000 caracteres.")
-  if (!["presencial", "teams"].includes(input.meetingType)) throw new Error("Selecione a modalidade.")
+  if (!["presencial", "teams", "online"].includes(input.meetingType)) throw new Error("Selecione a modalidade.")
+  if (input.calendarProvider && !["email", "graph"].includes(input.calendarProvider))
+    throw new Error("Selecione como enviar o convite.")
+  if (input.meetingType === "online") {
+    try {
+      const link = new URL(input.meetingUrl || "")
+      if (link.protocol !== "https:" || link.username || link.password || link.href.length > 2000)
+        throw new Error()
+    } catch {
+      throw new Error("Informe um link HTTPS válido para a reunião online.")
+    }
+  }
   if (
     typeof input.location !== "string" ||
     input.location.length > 300 ||
