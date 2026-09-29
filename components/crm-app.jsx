@@ -8,6 +8,7 @@ import {
   Copy, Check, Link2, GraduationCap
 } from "lucide-react";
 import { getStorage } from "@/lib/data/storage-context";
+import { CompanyMeetings } from "@/components/b2b/company-meetings";
 import { can, normalizeRole } from "@/lib/domain/roles";
 import {
   CHAVES, ETAPAS, ETAPAS_ENCERRADAS, TODAS_ETAPAS, ETAPAS_CONVENIO, CLASSES,
@@ -709,7 +710,7 @@ function Painel({ empresas, atividades, equipe, fila, aoAbrir, escopo, aoIrPara 
   const semMatricula = conveniadas.filter((e) => saudeConvenio(e, hoje).nivel === "vazio").length;
   const negociacao = empresas.filter((e) => ["Reunião agendada", "Diagnóstico realizado", "Proposta enviada", "Formalização"].includes(e.etapa)).length;
   const paradas = empresas.filter((e) => { const d = diffDias(e.ultimoContato, hoje); return d === null || d > 30; }).length;
-  const atividadesMes = atividades.filter((a) => a.data >= inicioMes).length;
+  const atividadesMes = atividades.filter((a) => a.data >= inicioMes && (!a.status || a.status === "realizada")).length;
   const leadsMes = atividades.filter((a) => a.data >= inicioMes).reduce((s, a) => s + num(a.leads), 0);
   const matriculas = conveniadas.reduce((s, e) => s + num(e.convenio.matriculasAcademicas), 0);
 
@@ -1317,11 +1318,11 @@ function FormAtividade({ empresa, aoSalvar, aoFechar }) {
 
 /* ─────────────────────────  ficha da empresa  ───────────────────────── */
 
-function FichaEmpresa({ empresa, atividades, equipe, config, podeGerir, usuario, modo, aoFechar, aoEditar, aoRegistrar, aoTransferir, aoAdicionarContato, aoRemoverContato, aoAbrirConvenio, aoExcluirAtividade, aoSalvarLink }) {
+function FichaEmpresa({ empresa, atividades, equipe, config, podeGerir, usuario, modo, aoFechar, aoEditar, aoRegistrar, aoTransferir, aoAdicionarContato, aoRemoverContato, aoAbrirConvenio, aoExcluirAtividade, aoSalvarLink, aoAtualizar }) {
   const [novoContato, setNovoContato] = useState(null);
   const hoje = hojeISO();
   const sem = diffDias(empresa.ultimoContato, hoje);
-  const hist = atividades.filter((a) => a.empresaId === empresa.id).sort((a, b) => b.data.localeCompare(a.data));
+  const hist = atividades.filter((a) => a.empresaId === empresa.id && !a.meetingType).sort((a, b) => b.data.localeCompare(a.data));
   const cv = empresa.convenio;
   const s = saudeConvenio(empresa, hoje);
   const dono = equipe.find((p) => p.nome === empresa.consultor);
@@ -1339,6 +1340,8 @@ function FichaEmpresa({ empresa, atividades, equipe, config, podeGerir, usuario,
           <Botao tamanho="sm" onClick={aoRegistrar}><Phone className="h-3 w-3" />Registrar contato</Botao>
         </span>
       </div>
+
+      {modo === "supabase" && <CompanyMeetings companyId={empresa.id} companyName={empresa.nomeFantasia || empresa.razaoSocial} onChanged={aoAtualizar} />}
 
       <div className="grid gap-4 py-3 lg:grid-cols-5">
         <div className="space-y-3 lg:col-span-2">
@@ -1424,6 +1427,7 @@ function FichaEmpresa({ empresa, atividades, equipe, config, podeGerir, usuario,
             </div>
           )}
 
+          {modo !== "supabase" && (
           <div>
             <div className="mb-1.5 flex items-center justify-between">
               <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Contatos</p>
@@ -1464,6 +1468,7 @@ function FichaEmpresa({ empresa, atividades, equipe, config, podeGerir, usuario,
               </div>
             )}
           </div>
+          )}
         </div>
 
         <div className="lg:col-span-3">
@@ -1893,7 +1898,7 @@ export default function CrmApp({ modo = "demo", aoSair, usuarioInicial = null, p
       setConfig({ ...CONFIG_PADRAO, ...(cfg || {}) });
       if (modo === "supabase" && usuarioInicial) {
         const eu = equipeFinal.find((p) => p.id === usuarioInicial.id) || usuarioInicial;
-        setUsuario(eu);
+        setUsuario({ ...usuarioInicial, ...eu });
       } else if (usr && equipeFinal.some((p) => p.nome === usr.nome)) {
         setUsuario(usr);
       }
@@ -2199,7 +2204,7 @@ export default function CrmApp({ modo = "demo", aoSair, usuarioInicial = null, p
 
       {empresaAberta && !editando && !registrando && !convenioDe && (
         <FichaEmpresa
-              empresa={empresaAberta} atividades={atividades} equipe={equipe} config={config} podeGerir={ehGestor} usuario={usuario} modo={modo}
+              empresa={empresaAberta} atividades={atividades} equipe={equipe} config={config} podeGerir={ehGestor} usuario={usuario} modo={modo} aoAtualizar={recarregar}
           aoFechar={() => setAberta(null)}
           aoEditar={() => setEditando(empresaAberta)}
           aoRegistrar={() => setRegistrando(true)}
