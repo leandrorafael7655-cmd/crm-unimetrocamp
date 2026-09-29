@@ -18,7 +18,7 @@ import {
 } from "./mapping"
 
 const projContato = (c: Contato) =>
-  JSON.stringify([c.nome || "", c.papel || "", c.cargo || "", c.telefone || "", c.email || ""])
+  JSON.stringify([c.id || "", c.nome || "", c.papel || "", c.cargo || "", c.telefone || "", c.email || "", c.observacoes || "", !!c.isPrimary])
 const contatosIguais = (a: Contato[] = [], b: Contato[] = []) =>
   a.length === b.length && a.every((c, i) => projContato(c) === projContato(b[i]))
 
@@ -145,10 +145,19 @@ export function makeSupabaseStorage(supabase: SupabaseClient, perfil: Usuario): 
         if (!error) changed = true
       }
       if (!contatosIguais(antes.contatos, e.contatos)) {
-        log("delete contatos", (await supabase.from("company_contacts").delete().eq("company_id", e.id)).error)
-        if (e.contatos?.length) {
-          const rows = e.contatos.map((c, i) => contatoToRow(c, e.id, i))
-          log("reinsert contatos", (await supabase.from("company_contacts").insert(rows)).error)
+        // Keep stable IDs: a scheduled meeting references the original contact.
+        const retained = new Set((e.contatos || []).map((c) => c.id).filter(Boolean))
+        for (const removed of (antes.contatos || []).filter((c) => c.id && !retained.has(c.id))) {
+          const { error } = await supabase.from("company_contacts").delete().eq("id", removed.id).eq("company_id",e.id)
+          if (error) throw error
+        }
+        for (const [i,c] of (e.contatos || []).entries()) {
+          const row=contatoToRow(c,e.id,i)
+          const existed=!!c.id&&(antes.contatos || []).some((old)=>old.id===c.id)
+          const {error}=existed
+            ?await supabase.from("company_contacts").update(row).eq("id",c.id).eq("company_id",e.id)
+            :await supabase.from("company_contacts").insert(row)
+          if(error)throw error
         }
       }
       if (projConvenio(antes.convenio) !== projConvenio(e.convenio)) {
@@ -171,7 +180,7 @@ export function makeSupabaseStorage(supabase: SupabaseClient, perfil: Usuario): 
     const prevIds = new Set(snapAtividades.map((a) => a.id))
     const nextIds = new Set(novo.map((a) => a.id))
     const inserir = novo.filter((a) => !prevIds.has(a.id))
-    const remover = snapAtividades.filter((a) => !nextIds.has(a.id)).map((a) => a.id)
+    const remover = snapAtividades.filter((a) => !a.meetingType && !nextIds.has(a.id)).map((a) => a.id)
     if (inserir.length) {
       log("insert atividades", (await supabase.from("activities").insert(inserir.map(atividadeToRow))).error)
     }

@@ -27,6 +27,8 @@ export function rowToContato(row: any): Contato {
     cargo: s(row.cargo),
     telefone: s(row.telefone),
     email: s(row.email),
+    observacoes: s(row.observacoes),
+    isPrimary: !!row.is_primary,
   }
 }
 
@@ -113,6 +115,7 @@ export function rowToAtividade(row: any): Atividade {
     status: s(row.status) || "realizada",
     primaryOwnerId: row.primary_owner_id ?? null,
     contaMetaSemanal: row.conta_meta_semanal ?? true,
+    meetingType: row.meeting_type ?? null,
   }
 }
 
@@ -183,12 +186,15 @@ export function empresaToRow(e: Empresa, resolveOwner: (e: Empresa) => string | 
 
 export function contatoToRow(c: Contato, companyId: string, position: number): Record<string, unknown> {
   return {
+    ...(c.id ? { id: c.id } : {}),
     company_id: companyId,
     nome: c.nome || "",
     papel: c.papel || null,
     cargo: c.cargo || null,
     telefone: c.telefone || null,
     email: c.email || null,
+    observacoes: c.observacoes || null,
+    is_primary: !!c.isPrimary,
     position,
   }
 }

@@ -10,6 +10,8 @@ export interface Contato {
   cargo?: string
   telefone?: string
   email?: string
+  observacoes?: string
+  isPrimary?: boolean
 }
 
 export interface Convenio {
@@ -92,6 +94,7 @@ export interface Atividade {
   status?: string
   primaryOwnerId?: string | null
   contaMetaSemanal?: boolean
+  meetingType?: string | null
 }
 
 export interface Pessoa {
