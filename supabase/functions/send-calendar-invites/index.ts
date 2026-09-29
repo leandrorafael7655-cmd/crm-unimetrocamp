@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import nodemailer from "npm:nodemailer@6.9.16";
+import { meetingEmail } from "./email-meetings.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -224,7 +225,7 @@ async function authorize(req: Request) {
 
 Deno.serve(async (req: Request) => {
   try {
-    await authorize(req);
+    const caller = await authorize(req);
     const body = await req.json().catch(() => ({}));
     const action = body?.action || "process";
     const config = configurationStatus();
@@ -237,9 +238,12 @@ Deno.serve(async (req: Request) => {
         provider: cfg.provider,
         authMode: cfg.provider === "smtp" ? "smtp_credentials" : "client_credentials",
         deliveryTracking: false,
+        organizerEmail: cfg.organizer || null,
       });
     }
     if (action !== "process") return Response.json({ ok: false, message: "Ação inválida." }, { status: 400 });
+    if (body.meetingId && (!caller.system || !/^[0-9a-f-]{36}$/i.test(body.meetingId)))
+      return Response.json({ ok: false, message: "Operação não autorizada." }, { status: 403 });
     if (!config.configured) {
       return Response.json({
         ok: false,
@@ -257,11 +261,23 @@ Deno.serve(async (req: Request) => {
     const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
     const limit = Math.max(1, Math.min(50, Number(body?.limit || 20)));
     const now = new Date().toISOString();
-    const { data: jobs, error: jobsError } = await admin
+    if (caller.system) {
+      let recovery = admin.from("calendar_invite_jobs")
+        .update({ status: "failed", next_attempt_at: now, last_error: "Envio interrompido; nova tentativa pendente." })
+        .eq("status", "processing").not("meeting_activity_id", "is", null)
+        .lt("updated_at", new Date(Date.now() - 300000).toISOString());
+      if (body.meetingId) recovery = recovery.eq("meeting_activity_id", body.meetingId);
+      const { error: recoveryError } = await recovery;
+      if (recoveryError) throw recoveryError;
+    }
+    let jobsQuery = admin
       .from("calendar_invite_jobs")
       .select("*")
-      .in("status", ["pending", "failed"])
-      .or(`next_attempt_at.is.null,next_attempt_at.lte.${now}`)
+      .in("status", ["pending", "failed"]);
+    if (body.meetingId) jobsQuery = jobsQuery.eq("meeting_activity_id", body.meetingId);
+    else jobsQuery = jobsQuery.or(`next_attempt_at.is.null,next_attempt_at.lte.${now}`);
+    if (!caller.system) jobsQuery = jobsQuery.is("meeting_activity_id", null);
+    const { data: jobs, error: jobsError } = await jobsQuery
       .order("created_at", { ascending: true })
       .limit(limit);
     if (jobsError) throw jobsError;
@@ -285,6 +301,19 @@ Deno.serve(async (req: Request) => {
       claimedCount++;
 
       try {
+        if (job.meeting_activity_id) {
+          const info = await transport.sendMail(meetingEmail(job, cfg));
+          if (!Array.isArray(info.accepted) || info.accepted.length === 0)
+            throw new Error("O servidor de e-mail não aceitou o destinatário do convite.");
+          const { error: sentError } = await admin.from("calendar_invite_jobs").update({
+            status: "sent_provider", provider: cfg.provider, provider_message_id: String(info.messageId || ""),
+            last_error: null, next_attempt_at: null, sent_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+          }).eq("id", job.id);
+          if (sentError) throw new Error("Envio iniciado; não foi possível registrar o resultado.");
+          sent++;
+          results.push({ id: job.id, status: "sent_provider" });
+          continue;
+        }
         const { data: event, error: eventError } = await admin.from("calendar_events").select("*").eq("id", job.calendar_event_id).single();
         if (eventError || !event) throw new Error(eventError?.message || "Evento não encontrado");
 
@@ -335,6 +364,11 @@ Deno.serve(async (req: Request) => {
         }).eq("id", job.id);
         failed++;
         results.push({ id: job.id, status: "failed", error: message });
+      } finally {
+        if (job.meeting_activity_id) {
+          const { error: settleError } = await admin.rpc("b2b_settle_email_meeting", { p_id: job.meeting_activity_id });
+          if (settleError) results.push({ id: job.id, status: "history_pending" });
+        }
       }
     }
 

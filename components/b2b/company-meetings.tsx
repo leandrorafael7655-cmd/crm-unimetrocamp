@@ -150,7 +150,9 @@ export function CompanyMeetings({
       endTime: "10:00",
       title: "",
       description: "",
-      meetingType: "teams",
+      meetingType: "presencial",
+      calendarProvider: "email",
+      meetingUrl: "",
       location: "",
       participants: [],
     })
@@ -169,6 +171,8 @@ export function CompanyMeetings({
       title: row.title,
       description: row.description || "",
       meetingType: row.meeting_type,
+      calendarProvider: row.calendar_provider,
+      meetingUrl: row.meeting_url || "",
       location: row.location || "",
       participants: row.activity_participants.map((p) => ({ name: p.name, email: p.email })),
     })
@@ -184,14 +188,14 @@ export function CompanyMeetings({
         <div>
           <h3 className="text-base font-semibold text-slate-900">Responsáveis e reuniões</h3>
           <p className="mt-1 text-xs text-slate-500">
-            Converse com a empresa e acompanhe os compromissos pelo Outlook.
+            Envie convites e deixe cada participante aceitar na própria agenda.
           </p>
         </div>
         <button
           type="button"
           className={primary}
           onClick={newMeeting}
-          disabled={busy || !data?.canEdit || !data?.microsoft.connected || !data.contacts.length}
+          disabled={busy || !data?.canEdit || !data.contacts.length || !data.organizer.email}
         >
           <CalendarPlus size={16} />
           Agendar reunião
@@ -220,16 +224,14 @@ export function CompanyMeetings({
         <>
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
             <div className="text-xs">
-              <p className="font-semibold text-slate-800">Organizador: {data.organizer.name}</p>
+              <p className="font-semibold text-slate-800">Consultor: {data.organizer.name}</p>
               <p className="mt-1 break-all text-slate-600">
                 {data.organizer.email || "E-mail corporativo não cadastrado"}
               </p>
               <p className="mt-1 text-slate-500">
-                {data.microsoft.connected
-                  ? `Microsoft 365 vinculada: ${data.microsoft.email}`
-                  : data.microsoft.configured
-                    ? "Vincule sua conta Microsoft uma vez para usar seu calendário."
-                    : "O agendamento aguarda a configuração Microsoft 365 pela gerência."}
+                {data.emailInvitations.configured
+                  ? "Convites por e-mail disponíveis. Você também recebe o convite para aceitar."
+                  : "Você pode salvar o agendamento. O envio aguarda a configuração do remetente de e-mail pela gerência."}
               </p>
             </div>
             {data.microsoft.configured && data.canEdit && (
@@ -393,6 +395,15 @@ export function CompanyMeetings({
                 <CalendarPlus size={18} />
                 {meeting.revision ? "Editar reunião" : "Agendar reunião"}
               </h4>
+              <label className="space-y-1 text-xs sm:col-span-2">
+                Envio do convite
+                <select className={field} value={meeting.calendarProvider || "email"}
+                  disabled={meeting.revision > 0}
+                  onChange={(e) => setMeeting({ ...meeting, calendarProvider: e.target.value as "email" | "graph", meetingType: "presencial" })}>
+                  <option value="email">Por e-mail — sem vincular conta</option>
+                  <option value="graph" disabled={!data.microsoft.connected}>Outlook e Teams automático — conta vinculada</option>
+                </select>
+              </label>
               <label className="space-y-1 text-xs">
                 Empresa
                 <input readOnly className={field} value={companyName} />
@@ -424,12 +435,12 @@ export function CompanyMeetings({
               </label>
               <div className="grid gap-2 sm:grid-cols-2">
                 <label className="space-y-1 text-xs">
-                  Organizador
+                  {meeting.calendarProvider === "email" ? "Consultor convidado" : "Organizador"}
                   <input readOnly className={field} value={data.organizer.name} />
                 </label>
                 <label className="space-y-1 text-xs">
-                  E-mail do organizador
-                  <input readOnly className={field} value={data.microsoft.email || data.organizer.email} />
+                  E-mail do consultor
+                  <input readOnly className={field} value={data.organizer.email} />
                 </label>
               </div>
               <label className="space-y-1 text-xs">
@@ -485,9 +496,19 @@ export function CompanyMeetings({
                   }
                 >
                   <option value="presencial">Presencial</option>
-                  <option value="teams">Online via Microsoft Teams</option>
+                  {meeting.calendarProvider === "email"
+                    ? <option value="online">Online — informar link</option>
+                    : <option value="teams">Online via Microsoft Teams</option>}
                 </select>
               </label>
+              {meeting.meetingType === "online" && (
+                <label className="space-y-1 text-xs sm:col-span-2">
+                  Link da reunião (Teams, Meet ou outro)
+                  <input type="url" required maxLength={2000} className={field}
+                    placeholder="https://…" value={meeting.meetingUrl || ""}
+                    onChange={(e) => setMeeting({ ...meeting, meetingUrl: e.target.value })} />
+                </label>
+              )}
               {meeting.meetingType === "presencial" && (
                 <label className="space-y-1 text-xs sm:col-span-2">
                   Local / endereço
@@ -587,8 +608,9 @@ export function CompanyMeetings({
                 </button>
               </fieldset>
               <p className="text-xs text-slate-500 sm:col-span-2">
-                O Outlook enviará o convite ao responsável e aos participantes adicionais. Seu calendário será
-                o do organizador.
+                {meeting.calendarProvider === "email"
+                  ? "O UniConecta enviará o convite para você, o responsável e os participantes adicionais. Cada pessoa aceita na própria agenda. O aceite não é registrado automaticamente no CRM."
+                  : "O Outlook enviará os convites pelo calendário do organizador."}
               </p>
               <div className="flex justify-end gap-2 sm:col-span-2">
                 <button type="button" className={secondary} disabled={busy} onClick={() => setMeeting(null)}>
@@ -619,6 +641,8 @@ export function CompanyMeetings({
               {data.meetings.map((row) => {
                 const mine = row.organizer_user_id === data.organizer.id,
                   ended = ["cancelada", "realizada", "nao_compareceu"].includes(row.status)
+                const participants = row.calendar_provider === "email" && row.email_queued_revision === 0
+                  ? row.sync_payload?.participants || row.activity_participants : row.activity_participants
                 return (
                   <li key={row.id} className="space-y-2 rounded-xl border border-slate-200 p-3 text-xs">
                     <div className="flex flex-wrap items-center justify-between gap-2">
@@ -629,20 +653,20 @@ export function CompanyMeetings({
                     </div>
                     <p className="font-medium text-slate-700">
                       {showDate(row.start_at)} até {localParts(row.end_at).slice(11, 16)} ·{" "}
-                      {row.meeting_type === "teams" ? "Online via Microsoft Teams" : "Presencial"}
+                      {row.meeting_type === "teams" ? "Online via Microsoft Teams" : row.meeting_type === "online" ? "Online" : "Presencial"}
                     </p>
                     {row.location && <p>Local: {row.location}</p>}
                     <p>
                       Responsável: {row.contato} · <span className="break-all">{row.contact_email}</span>
                     </p>
                     <p>
-                      Organizador: {row.organizer_name} ·{" "}
+                      {row.calendar_provider === "email" ? "Consultor" : "Organizador"}: {row.organizer_name} ·{" "}
                       <span className="break-all">{row.organizer_email}</span>
                     </p>
-                    {row.activity_participants.length > 0 && (
+                    {participants.length > 0 && (
                       <p>
                         Adicionais:{" "}
-                        {row.activity_participants
+                        {participants
                           .map((p) => (p.name ? `${p.name} (${p.email})` : p.email))
                           .join("; ")}
                       </p>
@@ -654,9 +678,9 @@ export function CompanyMeetings({
                       <div role="status" className="rounded-lg bg-amber-50 p-2 text-amber-900">
                         <p>
                           {row.sync_operation === "cancel"
-                            ? "Cancelamento pendente no Outlook."
+                            ? "Envio do cancelamento pendente."
                             : row.sync_operation === "update"
-                              ? "Alterações aguardando sincronização com o Outlook."
+                              ? "Envio das alterações pendente."
                               : "Envio do convite pendente."}
                         </p>
                         {row.sync_error && <p className="mt-1">{row.sync_error}</p>}
@@ -673,16 +697,16 @@ export function CompanyMeetings({
                             onClick={() => void run(() => retryCompanyMeeting(row.id))}
                           >
                             <RefreshCw size={13} />
-                            Tentar sincronizar
+                            {row.calendar_provider === "email" ? "Tentar enviar novamente" : "Tentar sincronizar"}
                           </button>
                         )}
                       </div>
                     )}
                     {row.sync_status === "synced" && (
                       <p className="text-emerald-700">
-                        {row.status === "cancelada"
-                          ? "Cancelamento registrado no Outlook."
-                          : "Sincronizada com o Outlook."}
+                        {row.calendar_provider === "email"
+                          ? row.status === "cancelada" ? "Cancelamento enviado por e-mail." : "Convites enviados por e-mail. Aceite acompanhado manualmente."
+                          : row.status === "cancelada" ? "Cancelamento registrado no Outlook." : "Sincronizada com o Outlook."}
                       </p>
                     )}
                     {!!row.meeting_rsvp?.length && (
@@ -694,6 +718,11 @@ export function CompanyMeetings({
                       </p>
                     )}
                     <div className="flex flex-wrap gap-2">
+                      {mine && !ended && row.calendar_provider === "email" && row.email_queued_revision === 0 && row.sync_status !== "synced" && (
+                        <button type="button" className={secondary} disabled={busy} onClick={() => setCancelId(row.id)}>
+                          Cancelar antes do envio
+                        </button>
+                      )}
                       {safeLink(row.teams_meeting_url) && row.status !== "cancelada" && (
                         <a
                           href={safeLink(row.teams_meeting_url)}
@@ -703,6 +732,11 @@ export function CompanyMeetings({
                         >
                           <Video size={13} />
                           {row.meeting_type === "teams" ? "Entrar no Teams" : "Link Teams original"}
+                        </a>
+                      )}
+                      {safeLink(row.meeting_url) && row.status !== "cancelada" && (
+                        <a href={safeLink(row.meeting_url)} target="_blank" rel="noreferrer" className={secondary}>
+                          <Video size={13} />Entrar na reunião
                         </a>
                       )}
                       {safeLink(row.outlook_web_url) && (
@@ -726,7 +760,7 @@ export function CompanyMeetings({
                             <Pencil size={13} />
                             Editar
                           </button>
-                          <button
+                          {row.calendar_provider === "graph" && <button
                             type="button"
                             disabled={busy}
                             className={secondary}
@@ -734,7 +768,7 @@ export function CompanyMeetings({
                           >
                             <RefreshCw size={13} />
                             Consultar respostas
-                          </button>
+                          </button>}
                           <button
                             type="button"
                             disabled={busy}
@@ -765,6 +799,7 @@ export function CompanyMeetings({
                               <option value="">Selecionar…</option>
                               <option value="reagendamento_solicitado">Reagendamento solicitado</option>
                               <option value="agendada">Agendada</option>
+                              {row.calendar_provider === "email" && <option value="confirmada">Confirmada (registro manual)</option>}
                               <option value="realizada">Realizada</option>
                               <option value="nao_compareceu">Não compareceu</option>
                             </select>
@@ -775,8 +810,7 @@ export function CompanyMeetings({
                     {cancelId === row.id && (
                       <div className="rounded-lg bg-rose-50 p-3 text-rose-900">
                         <p>
-                          Cancelar “{row.title}”? O Outlook enviará o cancelamento aos participantes e o
-                          histórico será mantido.
+                          Cancelar “{row.title}”? O cancelamento será enviado aos participantes e o histórico será mantido.
                         </p>
                         <div className="mt-2 flex gap-2">
                           <button className={secondary} disabled={busy} onClick={() => setCancelId(null)}>
@@ -801,7 +835,7 @@ export function CompanyMeetings({
                       <summary>Detalhes do registro</summary>
                       <p className="mt-1">Criada em {showDate(row.created_at)}</p>
                       <p className="mt-1 break-all">
-                        Outlook Event ID: {row.outlook_event_id || "Aguardando criação"}
+                        {row.calendar_provider === "email" ? `Identificador do convite: ${row.calendar_uid}` : `Outlook Event ID: ${row.outlook_event_id || "Aguardando criação"}`}
                       </p>
                     </details>
                   </li>
@@ -809,8 +843,8 @@ export function CompanyMeetings({
               })}
             </ol>
             <p className="mt-3 text-xs text-slate-500">
-              A confirmação considera o aceite do responsável principal. Consulte propostas de novo horário no
-              Outlook e registre “Reagendamento solicitado” aqui.
+              Nos convites por e-mail, acompanhe as respostas com os participantes e registre o status aqui.
+              No modo Outlook conectado, use “Consultar respostas” para buscar o aceite do responsável.
             </p>
           </div>
         </>

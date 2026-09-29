@@ -1,12 +1,34 @@
-# Reuniões B2B no Outlook e Microsoft Teams
+# Reuniões B2B: convites por e-mail e Outlook/Teams
 
-## Fluxo disponível
+## Sem vincular Microsoft 365 (padrão)
+
+A ficha da empresa oferece **Por e-mail — sem vincular conta**. O remetente central do UniConecta envia um convite iCalendar/iMIP ao consultor logado, ao responsável e aos convidados adicionais. Cada pessoa aceita ou recusa no próprio aplicativo de calendário; os botões e a inclusão automática dependem do aplicativo e das configurações do destinatário. O CRM não acessa nem grava diretamente na agenda pessoal.
+
+O consultor é identificado pelo perfil, mas o **organizador do convite de calendário é o remetente central**. Use uma caixa autorizada diferente dos participantes, por exemplo uma conta dedicada à agenda. Não basta escolher qualquer endereço corporativo como remetente. As respostas de calendário seguem para essa caixa; a leitura automática dessas respostas não está incluída. A confirmação no CRM é um registro manual nesse modo.
+
+Reuniões presenciais pedem local. **Online — informar link** permite colar um link já existente de Teams, Meet ou outro serviço. Nenhum link Teams é gerado sem integração Microsoft. O modo Outlook/Teams conectado continua disponível para quem precisa da geração automática e consulta de respostas.
+
+### Ativação do remetente único
+
+Reutilize a configuração de envio de ações/Atendimento em **Supabase → Edge Functions → Secrets**, conforme [calendar-email.md](calendar-email.md). SMTP independente usa `CALENDAR_EMAIL_PROVIDER=smtp`, `CALENDAR_SMTP_HOST`, `CALENDAR_SMTP_PORT`, `CALENDAR_SMTP_USER`, `CALENDAR_SMTP_PASS` e `CALENDAR_FROM_EMAIL`. Configure o domínio/remetente autorizado (SPF/DKIM conforme o provedor). Não é necessário cadastrar aplicativo ou vincular contas Microsoft para esse modo. A configuração existente de SMTP OAuth Microsoft também continua compatível, se já estiver habilitada.
+
+Aplicar a migração `20260929183658_b2b_email_calendar_invites.sql` e publicar a função `send-calendar-invites` com **index.ts e email-meetings.ts**, mantendo `verify_jwt=true`, antes do frontend. Os secrets ficam no servidor e não devem ser enviados no chat.
+
+Sem configuração, a atividade fica salva como envio pendente. Após configurar, use **Tentar enviar novamente**. Os convites já enfileirados também são recuperados pelo cron existente. É possível cancelar um agendamento que ainda não entrou na fila sem disparar convites.
+
+### Atualizações, cancelamentos e falhas
+
+As atividades e `calendar_invite_jobs` existentes são reaproveitadas. Cada destinatário possui seu registro de envio, mas todos recebem o mesmo UID do compromisso. Alterações aumentam a sequência; um participante removido recebe cancelamento e os demais recebem atualização. O remetente original é preservado. Eventos Outlook existentes mantêm seu mecanismo de envio; não se troca a forma de envio de um compromisso existente.
+
+A fila registra o aceite pelo servidor SMTP, que não comprova entrega na caixa, nem aceite do participante. Repetições mantêm UID, sequência e Message-ID. Se o provedor aceitar e a conexão cair antes do registro, uma mensagem pode ser reenviada; o identificador do compromisso permanece o mesmo para atualização no calendário. A apresentação final depende do aplicativo de calendário.
+
+## Fluxo Outlook/Teams conectado (opcional)
 
 Na ficha da empresa, **Responsáveis e reuniões** permite cadastrar e editar vários contatos, escolher o principal e agendar reuniões com participantes adicionais. O organizador vem da sessão autenticada e da conta Microsoft vinculada. Nome e e-mail do organizador não são enviados pelo navegador como fonte de autorização.
 
 O responsável selecionado é obrigatório no convite; os convidados adicionais são opcionais. E-mails repetidos são normalizados e deduplicados. O horário exibido é o de São Paulo; o banco guarda instantes UTC. Reuniões presenciais exigem local. As agendas online geram o link Teams pelo calendário Outlook do organizador.
 
-O botão **Agendar e enviar convites** dispara o envio real pelo Microsoft Graph. Alterações usam o ID existente; cancelamentos usam `/cancel` e mantêm o histórico. Não há uso de SMTP nem da fila iCalendar antiga para estas reuniões.
+Neste modo, o botão **Agendar e enviar convites** dispara o envio real pelo Microsoft Graph. Alterações usam o ID existente; cancelamentos usam `/cancel` e mantêm o histórico. Não há uso de SMTP nem da fila iCalendar antiga para estas reuniões.
 
 ## Configuração necessária para ativar
 

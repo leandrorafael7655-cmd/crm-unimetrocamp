@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin"
 import { graphPayload, normalizeEmail } from "./domain"
 import { graphRequest, GraphError } from "./microsoft"
 import type { MeetingRow } from "./types"
+import { syncEmailMeeting } from "./email"
 
 export interface OutlookEvent {
   id: string
@@ -17,6 +18,10 @@ export interface OutlookEvent {
   attendees?: { emailAddress: { address: string }; status?: { response: string } }[]
 }
 export async function syncMeeting(id: string) {
+  const { data: provider, error: providerError } = await createAdminClient()
+    .from("activities").select("calendar_provider").eq("id", id).maybeSingle()
+  if (providerError) throw new Error("Não foi possível consultar o agendamento.")
+  if (provider?.calendar_provider === "email") return syncEmailMeeting(id)
   const admin = createAdminClient(),
     lock = randomUUID()
   const stale = new Date(Date.now() - 5 * 60000).toISOString()

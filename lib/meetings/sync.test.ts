@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: () => ({
     from: () => ({
+      select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { calendar_provider: "graph" }, error: null }) }) }),
       update: (values: Record<string, unknown>) => {
         mocks.writes.push(values)
         const builder = {
