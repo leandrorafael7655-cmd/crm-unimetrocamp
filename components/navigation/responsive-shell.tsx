@@ -53,7 +53,7 @@ export function ResponsiveShell({
           </button>
         </div>
         <div id={menuId} className="uni-sidebar-content" onClick={(event) => {
-          if ((event.target as HTMLElement).closest("a, button[aria-current]")) setMobileOpen(false)
+          if ((event.target as HTMLElement).closest("a, button:not([aria-expanded])")) setMobileOpen(false)
         }}>
           {sidebar}
         </div>

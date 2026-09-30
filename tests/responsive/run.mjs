@@ -24,14 +24,14 @@ const mocks = {
   setup(builder) {
     builder.onResolve({ filter: /^next\/(link|navigation)$/ }, args => ({ path: args.path, namespace: "next-mock" }))
     builder.onLoad({ filter: /.*/, namespace: "next-mock" }, args => ({
-      loader: "jsx",
+      loader: "jsx", resolveDir: root,
       contents: args.path === "next/link"
         ? 'import React from "react"; export default function Link({href, children, ...rest}) { return <a href={typeof href==="string"?href:href.pathname} {...rest}>{children}</a> }'
         : 'const params = new URLSearchParams(); export const usePathname=()=>window.fixturePath || "/"; export const useSearchParams=()=>params; export const useRouter=()=>({push(){},refresh(){},replace(){}}); export function redirect(to){throw new Error("Unexpected redirect: "+to)}; export function notFound(){throw new Error("Unexpected notFound")}',
     }))
     builder.onResolve({ filter: /^react-map-gl\/mapbox$/ }, () => ({ path: "mapbox", namespace: "map-mock" }))
     builder.onLoad({ filter: /.*/, namespace: "map-mock" }, () => ({
-      loader: "jsx",
+      loader: "jsx", resolveDir: root,
       contents: 'import React from "react"; export default React.forwardRef(function Map({children},ref){ React.useImperativeHandle(ref,()=>({resize(){}})); return <div style={{width:"100%",height:"100%",background:"#e7f5f2"}}>{children}</div> }); export const Marker=({children})=><div>{children}</div>; export const Popup=Marker; export const NavigationControl=()=>null; export const GeolocateControl=()=>null;',
     }))
     builder.onResolve({ filter: /^@\// }, args => {

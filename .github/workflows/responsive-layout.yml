@@ -1,7 +1,7 @@
 name: Responsive layout
 on:
   push:
-    branches: [codex/responsive-layout, main]
+    branches: [main]
   pull_request:
 permissions:
   contents: read
