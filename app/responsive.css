@@ -100,7 +100,7 @@
   overflow-x: auto;
   overscroll-behavior-x: contain;
 }
-.uni-table { overflow-wrap: break-word; }
+.uni-table { overflow-wrap: anywhere; }
 .uni-table :is(th, td) { max-width: 24rem; }
 .uni-table-actions {
   position: sticky;
@@ -117,6 +117,10 @@ thead .uni-table-actions { background: #f8fafc; z-index: 2; }
   background: #fff;
 }
 thead .uni-table-key { background: #f8fafc; z-index: 2; }
+@media (max-width: 47.999rem) {
+  /* Em celulares, uma coluna de identificação fixa não deve cobrir as demais. */
+  .uni-table-key { position: static; }
+}
 
 .uni-modal-overlay {
   --modal-padding: clamp(.75rem, 2vw, 1.5rem);

@@ -97,6 +97,26 @@ async function check(label) {
       if(!r.width || !r.height || el.closest(".uni-scroll-region")) continue
       if(r.left < -1 || r.right > viewport+1) issues.push("Control outside window: "+(el.textContent || el.name || el.tagName).slice(0,80))
     }
+    for(const region of document.querySelectorAll(".uni-scroll-region")) {
+      const r=region.getBoundingClientRect()
+      if(!r.width || !r.height) continue
+      if(r.left < -1 || r.right > viewport+1) issues.push("Scroll region outside window")
+      if(!region.querySelector("table") || region.scrollWidth <= region.clientWidth+1) continue
+      const previous=region.scrollLeft
+      for(const position of [0,region.scrollWidth]) {
+        region.scrollLeft=position
+        const expected=position===0?0:region.scrollWidth-region.clientWidth
+        if(Math.abs(region.scrollLeft-expected)>1) issues.push("Table cannot scroll to its edge")
+        for(const action of region.querySelectorAll(".uni-table-actions")) {
+          const a=action.getBoundingClientRect()
+          if(a.width && (a.left < r.left-1 || a.right > r.right+1)) issues.push("Table action inaccessible")
+        }
+      }
+      region.scrollLeft=previous
+      if(viewport<768 && [...region.querySelectorAll(".uni-table-key")].some(el=>getComputedStyle(el).position==="sticky")) {
+        issues.push("Sticky identifying column covers mobile table")
+      }
+    }
     for(const el of document.querySelectorAll(".uni-dialog")) {
       const r=el.getBoundingClientRect()
       if(r.left < 0 || r.right > viewport+1 || r.top < 0 || r.bottom > innerHeight+1) issues.push("Dialog outside viewport")
