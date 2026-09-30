@@ -103,11 +103,19 @@
 .uni-table { overflow-wrap: anywhere; }
 .uni-table :is(th, td) { max-width: 24rem; }
 .uni-table-actions {
+  width: 1%;
+  max-width: 12rem;
   position: sticky;
   right: 0;
   z-index: 1;
   background: #fff;
   box-shadow: -4px 0 8px rgb(0 48 43 / .06);
+}
+/* O grupo de ações tem largura própria para que a coluna fixa caiba no celular. */
+.uni-table-actions > .flex {
+  width: 10rem;
+  max-width: 100%;
+  margin-inline-start: auto;
 }
 thead .uni-table-actions { background: #f8fafc; z-index: 2; }
 .uni-table-key {
