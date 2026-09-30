@@ -241,7 +241,7 @@ export function SystemSidebar({ role, userName }: { role?: RoleInput; userName?:
   }
 
   return (
-    <nav className="flex w-full shrink-0 flex-col bg-[linear-gradient(180deg,#00302b_0%,#00251f_100%)] text-white md:min-h-screen md:w-64 md:shadow-[8px_0_30px_rgba(0,48,43,0.10)]">
+    <nav className="flex w-full shrink-0 flex-col bg-[linear-gradient(180deg,#00302b_0%,#00251f_100%)] text-white min-w-0">
       <Link href="/dashboard" className="border-b border-white/10 px-4 py-5 transition hover:bg-white/[0.04] md:px-5 md:py-6">
         <UniConectaBrand inverse />
         <div className="mt-3 h-1 w-8 rounded-full bg-[#b4fcf1]/75" aria-hidden />

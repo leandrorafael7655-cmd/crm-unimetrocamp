@@ -129,7 +129,7 @@ export function GerenciarUsuarios({ perfil }: { perfil: Usuario }) {
       )}
 
       {ehAdministrador ? (
-        <form onSubmit={adicionar} className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-6 lg:items-end">
+        <form onSubmit={adicionar} className="mt-4 uni-form-grid gap-2 items-end">
           <label className="flex flex-col gap-1">
             <span className="text-[11px] font-medium text-slate-600">Nome completo</span>
             <input className={input} value={nome} onChange={(e) => setNome(e.target.value)} required />
@@ -167,15 +167,15 @@ export function GerenciarUsuarios({ perfil }: { perfil: Usuario }) {
         O e-mail cadastrado no usuário é o e-mail usado para convites de Atendimento, ações de empresas e ações de escolas. Marcar “Incluir no Atendimento” apenas o habilita para a escala — não cria compromissos automaticamente.
       </p>
 
-      <div className="mt-4 overflow-x-auto rounded-md border border-slate-200">
-        <table className="w-full min-w-[860px] text-sm">
+      <div className="mt-4 uni-scroll-region overflow-x-auto rounded-md border border-slate-200" tabIndex={0} role="region" aria-label="Conteúdo com rolagem horizontal">
+        <table className="uni-table w-full min-w-[860px] text-sm">
           <thead>
             <tr className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase tracking-wide text-slate-500">
               <th className="px-3 py-2 text-left font-semibold">Nome</th>
               <th className="px-3 py-2 text-left font-semibold">Papel</th>
               <th className="px-3 py-2 text-left font-semibold">Atendimento</th>
               <th className="px-3 py-2 text-left font-semibold">Status</th>
-              <th className="px-3 py-2 text-right font-semibold">Ações</th>
+              <th className="uni-table-actions px-3 py-2 text-right font-semibold">Ações</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -212,7 +212,7 @@ export function GerenciarUsuarios({ perfil }: { perfil: Usuario }) {
                   <td className="px-3 py-2">
                     <span className={`rounded-full px-2 py-0.5 text-[11px] ${status === "Ativo" ? "bg-[#b4fcf1]/50 text-[#00302b]" : status === "Pendente" ? "bg-amber-50 text-amber-700" : "bg-slate-100 text-slate-500"}`}>{status}</span>
                   </td>
-                  <td className="px-3 py-2">
+                  <td className="uni-table-actions px-3 py-2">
                     <div className="flex flex-wrap justify-end gap-1.5">
                       <button type="button" className={btnNeutro} disabled={busy || u.id === perfil.id} onClick={() => acao(u.id, () => setActive(u.id, !u.active))}>{u.active ? "Desativar" : "Ativar"}</button>
                       <button type="button" className={btnNeutro} disabled={busy || !u.email} onClick={() => acao(u.id, () => sendPasswordRecovery(u.email), false)}>Enviar recuperação</button>
@@ -229,7 +229,7 @@ export function GerenciarUsuarios({ perfil }: { perfil: Usuario }) {
 
       {ehAdministrador && (
         <div className="mt-4 rounded-md border border-dashed border-slate-300 p-3">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h4 className="text-xs font-semibold text-slate-800">Diagnóstico de contas</h4>
               <p className="text-[11px] text-slate-500">Identifica contas inconsistentes ou de teste.</p>
@@ -240,7 +240,7 @@ export function GerenciarUsuarios({ perfil }: { perfil: Usuario }) {
             <ul className="mt-3 space-y-1.5">
               {diag.length === 0 && <li className="text-[11px] text-[#00302b]">Nenhuma inconsistência encontrada.</li>}
               {diag.map((d, i) => (
-                <li key={`${d.kind}-${d.userId ?? i}`} className="flex items-center justify-between gap-2 rounded border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[11px]">
+                <li key={`${d.kind}-${d.userId ?? i}`} className="flex flex-wrap items-center justify-between gap-2 rounded border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[11px]">
                   <span className="text-slate-700"><span className="font-mono text-slate-400">[{d.kind}]</span> {d.detail}{d.email && <span className="text-slate-500"> · {d.email}</span>}</span>
                   {d.fixable && d.userId && (
                     <button type="button" className={btnNeutro} disabled={ocupado === d.userId} onClick={() => acao(d.userId as string, async () => {

@@ -74,9 +74,9 @@ export function EscolaForm({
       )}
 
       {aberto && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4">
-          <div className="my-8 w-full max-w-2xl rounded-xl bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
+        <div className="uni-modal-overlay bg-black/40">
+          <div role="dialog" aria-modal="true" className="uni-dialog w-full max-w-2xl rounded-xl bg-white shadow-xl">
+            <div className="uni-dialog-header flex items-center justify-between gap-2 border-b border-slate-200 px-4 py-3 sm:px-5">
               <h2 className="text-sm font-semibold text-slate-800">
                 {edicao ? "Editar escola" : "Nova escola"}
               </h2>
@@ -85,7 +85,7 @@ export function EscolaForm({
               </button>
             </div>
 
-            <form action={enviar} className="max-h-[70vh] overflow-y-auto px-5 py-4">
+            <form action={enviar} className="uni-dialog-body px-4 py-4 sm:px-5">
               {escola?.id && <input type="hidden" name="id" value={escola.id} />}
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

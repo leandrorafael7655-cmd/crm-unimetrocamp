@@ -472,7 +472,7 @@ export function RoutePlanner({
   const excedeu = selecionadas.length > LIMITE_PARADAS
 
   return (
-    <div className="mx-auto grid max-w-6xl gap-4 p-4 lg:grid-cols-[1fr_1.2fr]">
+    <div className="w-full min-w-0 uni-module-grid gap-4 p-4">
       {/* ─── coluna esquerda: parâmetros + seleção ─── */}
       <section className="flex flex-col gap-4">
         <div className="rounded-lg border border-border bg-card p-4">

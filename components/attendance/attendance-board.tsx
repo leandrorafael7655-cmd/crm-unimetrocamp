@@ -56,13 +56,13 @@ const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
 
 function Modal({ title, children, onClose, wide = false }: { title: string; children: React.ReactNode; onClose: () => void; wide?: boolean }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/45 p-0 backdrop-blur-[1px] sm:items-center sm:p-4" role="dialog" aria-modal="true">
-      <div className={`max-h-[92vh] w-full overflow-y-auto rounded-t-2xl bg-white shadow-2xl sm:rounded-2xl ${wide ? "sm:max-w-5xl" : "sm:max-w-2xl"}`}>
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 sm:px-5">
+    <div className="uni-modal-overlay bg-slate-950/45 backdrop-blur-[1px]" role="dialog" aria-modal="true">
+      <div className={`uni-dialog w-full rounded-2xl bg-white shadow-2xl sm:rounded-2xl ${wide ? "sm:max-w-5xl" : "sm:max-w-2xl"}`}>
+        <div className="uni-dialog-header flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-white px-4 py-3 sm:px-5">
           <h2 className="text-base font-semibold text-slate-900">{title}</h2>
           <button onClick={onClose} className="grid h-9 w-9 place-items-center rounded-lg text-slate-500 hover:bg-slate-100" aria-label="Fechar"><X className="h-4 w-4" /></button>
         </div>
-        <div className="p-4 sm:p-5">{children}</div>
+        <div className="uni-dialog-body p-4 sm:p-5">{children}</div>
       </div>
     </div>
   )
@@ -115,7 +115,7 @@ function ListView({ occurrences, canManage, onEdit }: { occurrences: any[]; canM
     <div className="space-y-4">
       {groups.map(([date, items]) => (
         <section key={date} className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
-          <div className="mb-3 flex items-center justify-between">
+          <div className="mb-3 flex flex-wrap items-center justify-between">
             <h3 className="text-sm font-semibold text-slate-900">{dayNames[weekdayOf(date)]}, {formatDateBr(date)}</h3>
             <span className="text-xs text-slate-400">{items.length} compromisso(s)</span>
           </div>
@@ -129,7 +129,7 @@ function ListView({ occurrences, canManage, onEdit }: { occurrences: any[]; canM
 function WeekView({ start, occurrences, canManage, onEdit }: { start: string; occurrences: any[]; canManage: boolean; onEdit: (o: any) => void }) {
   const days = Array.from({ length: 7 }, (_, i) => addDays(start, i))
   return (
-    <div className="hidden overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm md:block">
+    <div className="hidden uni-scroll-region overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm md:block" tabIndex={0} role="region" aria-label="Conteúdo com rolagem horizontal">
       <div className="grid min-w-[1000px] grid-cols-7 border-b border-slate-200 bg-slate-50">
         {days.map((date) => <div key={date} className="border-r border-slate-200 px-3 py-2.5 last:border-r-0"><p className="text-xs font-semibold text-slate-700">{dayNames[weekdayOf(date)]}</p><p className="text-[11px] text-slate-400">{formatDateBr(date)}</p></div>)}
       </div>
@@ -150,7 +150,7 @@ function MonthView({ anchor, occurrences, canManage, onEdit }: { anchor: string;
   const days: string[] = []
   for (let d = gridStart; d <= gridEnd; d = addDays(d, 1)) days.push(d)
   return (
-    <div className="hidden overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm md:block">
+    <div className="hidden uni-scroll-region overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm md:block" tabIndex={0} role="region" aria-label="Conteúdo com rolagem horizontal">
       <div className="grid min-w-[980px] grid-cols-7 border-b border-slate-200 bg-slate-50">{["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"].map((d) => <div key={d} className="px-3 py-2 text-xs font-semibold text-slate-500">{d}</div>)}</div>
       <div className="grid min-w-[980px] grid-cols-7">
         {days.map((date) => {
@@ -223,7 +223,7 @@ export function AttendanceBoard({ initial, personalOnly = false }: { initial: an
   const draftCycles = (data.cycles ?? []).filter((c: any) => c.status === "draft")
 
   return (
-    <div className="mx-auto max-w-[1600px]">
+    <div className="w-full min-w-0">
       <header className="mb-5 rounded-2xl border border-[#e6d7e1] bg-white p-4 shadow-sm sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -284,9 +284,9 @@ export function AttendanceBoard({ initial, personalOnly = false }: { initial: an
             {(["week", "month", "list"] as const).map((v) => <button key={v} onClick={() => setView(v)} className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${view === v ? "bg-white text-[#88005b] shadow-sm" : "text-slate-500"}`}>{v === "week" ? "Semana" : v === "month" ? "Mês" : "Lista"}</button>)}
           </div>
           {view !== "list" && <div className="flex items-center gap-1"><button className={btnSecondary} onClick={() => navigate(-1)} aria-label="Anterior"><ChevronLeft className="h-4 w-4" /></button><button className={btnSecondary} onClick={() => navigate(1)} aria-label="Próximo"><ChevronRight className="h-4 w-4" /></button></div>}
-          <div className="min-w-[180px] flex-1 sm:max-w-[240px]"><label className={labelCls}>Consultor</label><select className={inputCls} value={userFilter} disabled={personalOnly} onChange={(e) => setUserFilter(e.target.value)}><option value="">Todos</option>{(data.members ?? []).filter((m: any) => m.attendanceEnabled || m.id === data.actor.id).map((m: any) => <option key={m.id} value={m.id}>{m.full_name}</option>)}</select></div>
-          <div className="min-w-[170px]"><label className={labelCls}>Atividade</label><select className={inputCls} value={activityFilter} onChange={(e) => setActivityFilter(e.target.value)}><option value="">Todas</option><option value="room">Sala de matrícula</option><option value="conversion">Conversão</option><option value="external">Atividade externa</option></select></div>
-          <div className="min-w-[150px]"><label className={labelCls}>Situação</label><select className={inputCls} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}><option value="">Todas</option><option value="draft">Rascunho</option><option value="published">Publicado</option><option value="cancelled">Cancelado</option></select></div>
+          <div className="uni-filter-field"><label className={labelCls}>Consultor</label><select className={inputCls} value={userFilter} disabled={personalOnly} onChange={(e) => setUserFilter(e.target.value)}><option value="">Todos</option>{(data.members ?? []).filter((m: any) => m.attendanceEnabled || m.id === data.actor.id).map((m: any) => <option key={m.id} value={m.id}>{m.full_name}</option>)}</select></div>
+          <div className="uni-filter-field"><label className={labelCls}>Atividade</label><select className={inputCls} value={activityFilter} onChange={(e) => setActivityFilter(e.target.value)}><option value="">Todas</option><option value="room">Sala de matrícula</option><option value="conversion">Conversão</option><option value="external">Atividade externa</option></select></div>
+          <div className="uni-filter-field"><label className={labelCls}>Situação</label><select className={inputCls} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}><option value="">Todas</option><option value="draft">Rascunho</option><option value="published">Publicado</option><option value="cancelled">Cancelado</option></select></div>
           <button className={btnSecondary} disabled={pending} onClick={() => startTransition(() => { void reload() })}><RefreshCw className={`h-4 w-4 ${pending ? "animate-spin" : ""}`} />Atualizar</button>
         </div>
         <div className="mt-3 flex flex-wrap gap-3 text-[11px] text-slate-500"><span className="inline-flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-full bg-violet-400" />Sala de matrícula</span><span className="inline-flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-full bg-amber-400" />Conversão</span><span className="inline-flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-full bg-sky-400" />Atividade externa</span><span>Fuso: São Paulo/Brasília</span></div>
@@ -396,7 +396,7 @@ function ModelModal({ data, pending, onClose, action }: any) {
     <Modal title="Equipe e modelo de rodízio" onClose={onClose} wide>
       <p className="text-xs text-slate-500">Vincule as oito posições de referência a usuários reais. Consultor 7 e Consultor 8 não recebem convites enquanto estiverem sem vínculo.</p>
       <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">{data.slots.map((slot: any) => <label key={slot.slotKey} className="rounded-xl border border-slate-200 p-3"><span className="mb-1 block text-xs font-semibold text-slate-700">{slot.label}</span><select className={inputCls} defaultValue={slot.userId || ""} onChange={(e) => action(() => updateTeamSlot(slot.slotKey, e.target.value || null))}><option value="">Sem vínculo</option>{data.members.filter((m: any) => m.attendanceEnabled).map((m: any) => <option key={m.id} value={m.id}>{m.full_name}</option>)}</select></label>)}</div>
-      <div className="mt-5 overflow-x-auto rounded-xl border border-slate-200"><table className="w-full min-w-[1000px] text-xs"><thead className="bg-slate-50"><tr><th className="px-3 py-2 text-left">Semana</th>{lanes.map((lane) => <th key={lane} className="px-3 py-2 text-left">{LANE_LABEL[lane]}</th>)}</tr></thead><tbody>{[1,2,3,4].map((week) => <tr key={week} className="border-t border-slate-100 align-top"><td className="px-3 py-3 font-semibold">Semana {week}</td>{lanes.map((lane) => <td key={lane} className="px-2 py-2"><div className="space-y-1.5">{([1,2] as const).map((pos) => <select key={pos} className={`${inputCls} h-9`} defaultValue={entry(week,lane,pos)?.slotKey || ""} disabled={pending} onChange={(e) => action(() => updateRotationEntry({ weekIndex: week, lane, position: pos, slotKey: e.target.value }))}>{data.slots.map((s: any) => <option key={s.slotKey} value={s.slotKey}>{pos}. {s.label}</option>)}</select>)}</div></td>)}</tr>)}</tbody></table></div>
+      <div className="mt-5 uni-scroll-region overflow-x-auto rounded-xl border border-slate-200" tabIndex={0} role="region" aria-label="Conteúdo com rolagem horizontal"><table className="w-full min-w-[1000px] text-xs"><thead className="bg-slate-50"><tr><th className="px-3 py-2 text-left">Semana</th>{lanes.map((lane) => <th key={lane} className="px-3 py-2 text-left">{LANE_LABEL[lane]}</th>)}</tr></thead><tbody>{[1,2,3,4].map((week) => <tr key={week} className="border-t border-slate-100 align-top"><td className="px-3 py-3 font-semibold">Semana {week}</td>{lanes.map((lane) => <td key={lane} className="px-2 py-2"><div className="space-y-1.5">{([1,2] as const).map((pos) => <select key={pos} className={`${inputCls} h-9`} defaultValue={entry(week,lane,pos)?.slotKey || ""} disabled={pending} onChange={(e) => action(() => updateRotationEntry({ weekIndex: week, lane, position: pos, slotKey: e.target.value }))}>{data.slots.map((s: any) => <option key={s.slotKey} value={s.slotKey}>{pos}. {s.label}</option>)}</select>)}</div></td>)}</tr>)}</tbody></table></div>
       <div className="mt-4 flex justify-end"><button className={btnSecondary} onClick={onClose}>Voltar</button></div>
     </Modal>
   )

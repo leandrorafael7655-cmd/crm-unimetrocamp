@@ -84,6 +84,14 @@ function useDebounced<T>(value: T, ms: number): T {
 
 export function MapView({ token, opcoes, centroInicial }: Props) {
   const mapRef = useRef<MapRef>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!containerRef.current) return
+    const observer = new ResizeObserver(() => mapRef.current?.resize())
+    observer.observe(containerRef.current)
+    return () => observer.disconnect()
+  }, [])
   const [filtros, setFiltros] = useState<Filtros>(FILTROS_INICIAIS)
   const [bbox, setBbox] = useState<[number, number, number, number] | null>(null)
   const [zoom, setZoom] = useState(centroInicial.zoom)
@@ -163,7 +171,7 @@ export function MapView({ token, opcoes, centroInicial }: Props) {
   const totalSemCoord = (data?.semCoordenada.empresas ?? 0) + (data?.semCoordenada.escolas ?? 0)
 
   return (
-    <div className="relative h-full w-full">
+    <div ref={containerRef} className="relative h-full min-w-0 w-full">
       <Map
         ref={mapRef}
         mapboxAccessToken={token}
@@ -260,7 +268,7 @@ export function MapView({ token, opcoes, centroInicial }: Props) {
 
       {/* Painel de filtros */}
       <div className="pointer-events-none absolute inset-y-0 left-0 z-10 flex max-w-full p-3">
-        <div className="pointer-events-auto flex w-72 max-w-[85vw] flex-col overflow-hidden rounded-xl border border-border bg-card text-card-foreground shadow-xl">
+        <div className="pointer-events-auto flex w-72 max-w-full flex-col overflow-hidden rounded-xl border border-border bg-card text-card-foreground shadow-xl">
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
             <h2 className="text-sm font-semibold">Mapa comercial</h2>
             <button
@@ -402,7 +410,7 @@ export function MapView({ token, opcoes, centroInicial }: Props) {
       </div>
 
       {/* Status bar */}
-      <div className="pointer-events-none absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2">
+      <div className="pointer-events-none absolute bottom-3 left-1/2 z-10 flex max-w-[calc(100%-1.5rem)] -translate-x-1/2 flex-wrap items-center justify-center gap-2">
         {isLoading && (
           <span className="pointer-events-auto flex items-center gap-1.5 rounded-full bg-card px-3 py-1.5 text-xs text-muted-foreground shadow-md">
             <Loader2 className="h-3 w-3 animate-spin" /> Carregando…

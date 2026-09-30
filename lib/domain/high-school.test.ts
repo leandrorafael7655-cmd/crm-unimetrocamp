@@ -43,7 +43,7 @@ describe("construirFilaHS — filtros de exclusão", () => {
     const fila = construirFilaHS(
       entrada({
         escolas: [
-          escola({ id: "a", classificacao: "Sem potencial" }),
+          escola({ id: "a", etapa: "Sem potencial" }),
           escola({ id: "b", etapa: "Sem retorno" }),
           escola({ id: "c", etapa: "Relacionamento pausado" }),
         ],
@@ -57,7 +57,7 @@ describe("construirFilaHS — elegibilidade de série", () => {
   it("série elegível sem divulgação SuperVest gera item", () => {
     const [item] = construirFilaHS(
       entrada({
-        escolas: [escola({ id: "e1", classificacao: "Regular", ultimaAcaoEm: HOJE })],
+        escolas: [escola({ id: "e1", classificacao: "Bronze", ultimaAcaoEm: HOJE })],
         seriesElegiveis: ["EM3"],
         seriesPorEscola: { e1: ["EM1", "EM3"] },
       }),
@@ -68,7 +68,7 @@ describe("construirFilaHS — elegibilidade de série", () => {
   it("série elegível COM divulgação agendada não gera o alerta de divulgação", () => {
     const fila = construirFilaHS(
       entrada({
-        escolas: [escola({ id: "e1", classificacao: "Regular", ultimaAcaoEm: HOJE })],
+        escolas: [escola({ id: "e1", classificacao: "Bronze", ultimaAcaoEm: HOJE })],
         acoes: [acao({ escolaId: "e1", tipo: "Divulgação SuperVestibular", status: "agendada" })],
         seriesElegiveis: ["EM3"],
         seriesPorEscola: { e1: ["EM3"] },
@@ -81,7 +81,7 @@ describe("construirFilaHS — elegibilidade de série", () => {
   it("escola SEM série elegível não recebe o alerta de divulgação", () => {
     const fila = construirFilaHS(
       entrada({
-        escolas: [escola({ id: "e1", classificacao: "Regular", ultimaAcaoEm: HOJE })],
+        escolas: [escola({ id: "e1", classificacao: "Bronze", ultimaAcaoEm: HOJE })],
         seriesElegiveis: ["EM3"],
         seriesPorEscola: { e1: ["EM1", "EM2"] },
       }),
@@ -92,18 +92,18 @@ describe("construirFilaHS — elegibilidade de série", () => {
 })
 
 describe("construirFilaHS — prioridade e ordenação", () => {
-  it("escola estratégica sem ação registrada é crítica", () => {
+  it("escola Ouro sem ação registrada é crítica", () => {
     const [item] = construirFilaHS(
-      entrada({ escolas: [escola({ id: "e1", classificacao: "Estratégica" })] }),
+      entrada({ escolas: [escola({ id: "e1", classificacao: "Ouro" })] }),
     )
     expect(item.nivel).toBe("critico")
-    expect(item.motivos.some((m) => m.includes("estratégica"))).toBe(true)
+    expect(item.motivos.some((m) => m.includes("Ouro"))).toBe(true)
   })
 
   it("follow-up atrasado gera item crítico", () => {
     const [item] = construirFilaHS(
       entrada({
-        escolas: [escola({ id: "e1", classificacao: "Regular", proximaAcaoEm: somarDias(HOJE, -3), ultimaAcaoEm: HOJE })],
+        escolas: [escola({ id: "e1", classificacao: "Bronze", proximaAcaoEm: somarDias(HOJE, -3), ultimaAcaoEm: HOJE })],
       }),
     )
     expect(item.nivel).toBe("critico")
@@ -113,7 +113,7 @@ describe("construirFilaHS — prioridade e ordenação", () => {
   it("ação de amanhã ainda não confirmada é crítica", () => {
     const [item] = construirFilaHS(
       entrada({
-        escolas: [escola({ id: "e1", classificacao: "Regular", ultimaAcaoEm: HOJE })],
+        escolas: [escola({ id: "e1", classificacao: "Bronze", ultimaAcaoEm: HOJE })],
         acoes: [acao({ escolaId: "e1", data: somarDias(HOJE, 1), status: "agendada" })],
         seriesPorEscola: {},
       }),
@@ -126,8 +126,8 @@ describe("construirFilaHS — prioridade e ordenação", () => {
     const fila = construirFilaHS(
       entrada({
         escolas: [
-          escola({ id: "leve", classificacao: "Regular", potencial: "Alto" }),
-          escola({ id: "critico", classificacao: "Estratégica" }),
+          escola({ id: "leve", classificacao: "Bronze", potencial: "Alto" }),
+          escola({ id: "critico", classificacao: "Ouro" }),
         ],
       }),
     )

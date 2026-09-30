@@ -28,7 +28,7 @@ export default async function PipelinePage() {
     <>
       <PageHeader titulo="Pipeline High School" descricao="Relacionamento com escolas por etapa · Ouro primeiro" />
 
-      <div className="flex gap-3 overflow-x-auto pb-4">
+      <div className="flex gap-3 uni-scroll-region overflow-x-auto pb-4" tabIndex={0} role="region" aria-label="Conteúdo com rolagem horizontal">
         {colunas.map(({ etapa, itens }) => (
           <div key={etapa} className="flex w-64 shrink-0 flex-col">
             <div className="mb-2 flex items-center justify-between">

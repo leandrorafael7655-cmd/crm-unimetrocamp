@@ -192,8 +192,8 @@ function MetasTabela({
   }
   return (
     <Card className="overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[820px] text-sm">
+      <div className="uni-scroll-region overflow-x-auto" tabIndex={0} role="region" aria-label="Conteúdo com rolagem horizontal">
+        <table className="uni-table w-full min-w-[820px] text-sm">
           <thead>
             <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
               <th className="px-4 py-2.5 font-medium">Meta</th>
@@ -203,7 +203,7 @@ function MetasTabela({
               <th className="px-4 py-2.5 text-right font-medium">Realizado</th>
               <th className="px-4 py-2.5 font-medium">Progresso</th>
               <th className="px-4 py-2.5 font-medium">Status</th>
-              {podeEscrever && <th className="px-4 py-2.5" />}
+              {podeEscrever && <th className="uni-table-actions px-4 py-2.5">Ações</th>}
             </tr>
           </thead>
           <tbody>
@@ -239,7 +239,7 @@ function MetasTabela({
                 </td>
                 <td className="px-4 py-3">{statusChip(m.status)}</td>
                 {podeEscrever && (
-                  <td className="px-4 py-3 text-right">
+                  <td className="uni-table-actions px-4 py-3 text-right">
                     <button
                       onClick={() => onEditar(m)}
                       className="rounded-md border border-slate-300 px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-50"
@@ -293,9 +293,9 @@ function MetaModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4">
-      <div className="my-8 w-full max-w-lg rounded-xl bg-white shadow-xl">
-        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
+    <div className="uni-modal-overlay bg-black/40">
+      <div role="dialog" aria-modal="true" className="uni-dialog w-full max-w-lg rounded-xl bg-white shadow-xl">
+        <div className="uni-dialog-header flex items-center justify-between gap-2 border-b border-slate-200 px-4 py-3 sm:px-5">
           <h2 className="text-sm font-semibold text-slate-800">
             {modo === "criar" ? "Nova meta" : "Editar meta"}
           </h2>
@@ -304,7 +304,7 @@ function MetaModal({
           </button>
         </div>
 
-        <form action={enviar} className="max-h-[70vh] overflow-y-auto px-5 py-4">
+        <form action={enviar} className="uni-dialog-body px-4 py-4 sm:px-5">
           {meta && <input type="hidden" name="id" value={meta.id} />}
 
           {modo === "criar" ? (
@@ -548,7 +548,7 @@ function SemanaisTab({
         {consultores.length === 0 ? (
           <EmptyState titulo="Nenhum consultor B2B ativo" />
         ) : (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="uni-goal-grid gap-3">
             {consultores.map((c) => (
               <AderenciaCard
                 key={c.userId}

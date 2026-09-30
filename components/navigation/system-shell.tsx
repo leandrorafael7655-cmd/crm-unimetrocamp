@@ -1,6 +1,7 @@
 import type { ReactNode } from "react"
 import { redirect } from "next/navigation"
 import { getActor } from "@/lib/auth/guards"
+import { ResponsiveShell } from "@/components/navigation/responsive-shell"
 import { SystemSidebar } from "@/components/navigation/system-sidebar"
 
 export async function SystemShell({
@@ -15,9 +16,8 @@ export async function SystemShell({
   if (!actor.active) redirect("/auth/login?erro=inativo")
 
   return (
-    <div className="min-h-screen bg-[#faf7f9] font-sans text-slate-900 md:flex">
-      <SystemSidebar role={actor.role} userName={actor.display_name} />
-      <main className={mainClassName}>{children}</main>
-    </div>
+    <ResponsiveShell sidebar={<SystemSidebar role={actor.role} userName={actor.display_name} />} mainClassName={mainClassName}>
+      {children}
+    </ResponsiveShell>
   )
 }
