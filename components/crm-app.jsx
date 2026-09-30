@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { ResponsiveShell } from "@/components/navigation/responsive-shell";
 import { UniConectaBrand } from "@/components/brand/uniconecta-brand";
 import {
   LayoutDashboard, Briefcase, Building2, CalendarClock, GitBranch, Users, Handshake,
@@ -304,7 +305,7 @@ function ChipClasse({ valor }) {
 }
 function Campo({ rotulo, children, dica, largura = "" }) {
   return (
-    <label className={`block ${largura}`}>
+    <label className={`block min-w-0 ${largura}`}>
       <span className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-slate-500">{rotulo}</span>
       {children}
       {dica && <span className="mt-1 block text-[11px] text-slate-500">{dica}</span>}
@@ -312,7 +313,7 @@ function Campo({ rotulo, children, dica, largura = "" }) {
   );
 }
 const inputBase =
-  "w-full rounded border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-900 outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20 disabled:bg-slate-100";
+  "w-full min-w-0 max-w-full rounded border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-900 outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20 disabled:bg-slate-100";
 
 function Modal({ titulo, subtitulo, aoFechar, children, largo = false }) {
   useEffect(() => {
@@ -321,9 +322,9 @@ function Modal({ titulo, subtitulo, aoFechar, children, largo = false }) {
     return () => window.removeEventListener("keydown", esc);
   }, [aoFechar]);
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/60 p-3 sm:p-6">
-      <div className={`w-full ${largo ? "max-w-5xl" : "max-w-2xl"} rounded-lg bg-white shadow-2xl`}>
-        <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-3.5">
+    <div className="uni-modal-overlay bg-slate-950/60">
+      <div role="dialog" aria-modal="true" aria-label={titulo} className={`uni-dialog w-full ${largo ? "max-w-5xl" : "max-w-2xl"} rounded-lg bg-white shadow-2xl`}>
+        <div className="uni-dialog-header flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-3.5">
           <div>
             <h2 className="text-base font-semibold text-slate-900">{titulo}</h2>
             {subtitulo && <p className="mt-0.5 text-xs text-slate-500">{subtitulo}</p>}
@@ -332,7 +333,7 @@ function Modal({ titulo, subtitulo, aoFechar, children, largo = false }) {
             <X className="h-4 w-4" />
           </button>
         </div>
-        <div className="px-5 py-4">{children}</div>
+        <div className="uni-dialog-body px-4 py-4 sm:px-5">{children}</div>
       </div>
     </div>
   );
@@ -408,7 +409,7 @@ function MensagemRH({ empresa, consultorNome, link, semConvenio }) {
   if (!aberto) {
     return (
       <button onClick={() => setAberto(true)}
-        className="w-full rounded border border-slate-300 bg-white px-2.5 py-1.5 text-left text-xs font-medium text-teal-700 transition hover:border-teal-500 hover:bg-teal-50">
+        className="w-full min-w-0 max-w-full rounded border border-slate-300 bg-white px-2.5 py-1.5 text-left text-xs font-medium text-teal-700 transition hover:border-teal-500 hover:bg-teal-50">
         Gerar mensagem para o RH →
       </button>
     );
@@ -602,7 +603,7 @@ function Consulta({ empresas, equipe, config, usuario, aoAbrir, aoCadastrar }) {
   const buscou = q.length >= 2 || qd.length >= 3;
 
   return (
-    <div className="max-w-3xl space-y-4">
+    <div className="w-full min-w-0 space-y-4">
       <section className="rounded-lg border border-slate-200 bg-white p-4">
         <h2 className="text-sm font-semibold text-slate-900">De quem é esta empresa?</h2>
         <p className="mt-1 text-xs text-slate-600">
@@ -734,7 +735,7 @@ function Painel({ empresas, atividades, equipe, fila, aoAbrir, escopo, aoIrPara 
   return (
     <div className="space-y-4">
       <FilaDoDia fila={fila} aoAbrir={aoAbrir} escopo={escopo} />
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
+      <div className="uni-kpi-grid gap-3">
         <Indicador rotulo="Empresas" valor={empresas.length} detalhe="na carteira" />
         <Indicador rotulo="Conveniadas" valor={conveniadas.length} detalhe="convênio vigente" />
         <Indicador rotulo="Sem matrícula" valor={semMatricula} detalhe="conveniadas há +90 dias" alerta={semMatricula > 0} />
@@ -750,8 +751,8 @@ function Painel({ empresas, atividades, equipe, fila, aoAbrir, escopo, aoIrPara 
             {porEtapa.map((p) => (
               <li key={p.etapa}>
                 <button onClick={() => aoIrPara("empresas", { etapa: p.etapa })} className="group flex w-full items-center gap-3 text-left">
-                  <span className="w-40 shrink-0 truncate text-xs text-slate-600 group-hover:text-teal-700">{p.etapa}</span>
-                  <span className="h-4 flex-1 overflow-hidden rounded-sm bg-slate-100">
+                  <span className="w-28 shrink-0 text-xs sm:w-40 text-slate-600 group-hover:text-teal-700">{p.etapa}</span>
+                  <span className="h-4 min-w-0 flex-1 overflow-hidden rounded-sm bg-slate-100">
                     <span className="block h-full rounded-sm bg-teal-700 transition-all group-hover:bg-teal-600" style={{ width: `${(p.total / maxEtapa) * 100}%` }} />
                   </span>
                   <span className="w-7 shrink-0 text-right font-mono text-xs font-semibold tabular-nums text-slate-700">{p.total}</span>
@@ -766,7 +767,8 @@ function Painel({ empresas, atividades, equipe, fila, aoAbrir, escopo, aoIrPara 
           {ranking.length === 0 ? (
             <p className="text-xs text-slate-500">Cadastre consultores em Equipe.</p>
           ) : (
-            <table className="w-full text-xs">
+            <div className="uni-scroll-region" tabIndex={0} role="region" aria-label="Ranking de consultores">
+            <table className="uni-table w-full min-w-[360px] text-xs">
               <thead>
                 <tr className="border-b border-slate-200 text-[11px] uppercase tracking-wide text-slate-500">
                   <th className="pb-1.5 text-left font-semibold">Consultor</th>
@@ -788,6 +790,7 @@ function Painel({ empresas, atividades, equipe, fila, aoAbrir, escopo, aoIrPara 
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </section>
       </div>
@@ -823,7 +826,7 @@ function Convenios({ empresas, equipe, config, aoAbrir, aoCadastrar }) {
         e continua entrando na fila de contato como qualquer outra conta.
       </p>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
+      <div className="uni-kpi-grid gap-3">
         <Indicador rotulo="Convênios vigentes" valor={vigentes.length} detalhe="ativos ou suspensos" />
         <Indicador rotulo="Sem link" valor={semLink.length} detalhe="matrículas não atribuídas" alerta={semLink.length > 0} />
         <Indicador rotulo="Sem matrícula" valor={noPapel.length} detalhe="assinados há +90 dias" alerta={noPapel.length > 0} />
@@ -911,11 +914,11 @@ function Convenios({ empresas, equipe, config, aoAbrir, aoCadastrar }) {
           </p>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
-          <table className="w-full min-w-[980px] text-sm">
+        <div className="uni-scroll-region overflow-x-auto rounded-lg border border-slate-200 bg-white" tabIndex={0} role="region" aria-label="Conteúdo com rolagem horizontal">
+          <table className="uni-table w-full min-w-[980px] text-sm">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase tracking-wide text-slate-500">
-                <th className="px-3 py-2 text-left font-semibold">Empresa</th>
+                <th className="uni-table-key px-3 py-2 text-left font-semibold">Empresa</th>
                 <th className="px-3 py-2 text-left font-semibold">Saúde</th>
                 <th className="px-3 py-2 text-left font-semibold">Desde</th>
                 <th className="px-3 py-2 text-right font-semibold">Desc.</th>
@@ -937,7 +940,7 @@ function Convenios({ empresas, equipe, config, aoAbrir, aoCadastrar }) {
                 const dono = equipe.find((p) => p.nome === e.consultor);
                 return (
                   <tr key={e.id} onClick={() => aoAbrir(e.id)} className="cursor-pointer hover:bg-slate-50">
-                    <td className="px-3 py-2">
+                    <td className="uni-table-key px-3 py-2">
                       <span className="block font-medium text-slate-900">{e.nomeFantasia || e.razaoSocial}</span>
                       <span className="block font-mono text-[11px] text-slate-400">{e.cidade} · {colab || "?"} colab.</span>
                     </td>
@@ -1090,11 +1093,11 @@ function TabelaEmpresas({ empresas, aoAbrir, hoje }) {
     );
   }
   return (
-    <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
-      <table className="w-full min-w-[860px] text-sm">
+    <div className="uni-scroll-region overflow-x-auto rounded-lg border border-slate-200 bg-white" tabIndex={0} role="region" aria-label="Conteúdo com rolagem horizontal">
+      <table className="uni-table w-full min-w-[860px] text-sm">
         <thead>
           <tr className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase tracking-wide text-slate-500">
-            <th className="px-3 py-2 text-left font-semibold">Empresa</th>
+            <th className="uni-table-key px-3 py-2 text-left font-semibold">Empresa</th>
             <th className="px-3 py-2 text-left font-semibold">Classificação</th>
             <th className="px-3 py-2 text-left font-semibold">Etapa</th>
             <th className="px-3 py-2 text-left font-semibold">Últ. contato</th>
@@ -1110,7 +1113,7 @@ function TabelaEmpresas({ empresas, aoAbrir, hoje }) {
             const conv = e.convenio && e.convenio.ativo && e.convenio.status !== "Encerrado";
             return (
               <tr key={e.id} onClick={() => aoAbrir(e.id)} className="cursor-pointer hover:bg-slate-50">
-                <td className="px-3 py-2">
+                <td className="uni-table-key px-3 py-2">
                   <span className="flex items-center gap-1.5">
                     <span className="font-medium text-slate-900">{e.nomeFantasia || e.razaoSocial}</span>
                     {conv && <Handshake className="h-3.5 w-3.5 text-teal-700" />}
@@ -1335,7 +1338,7 @@ function FichaEmpresa({ empresa, atividades, equipe, config, podeGerir, usuario,
         <Chip texto={empresa.etapa} classe="bg-teal-50 text-teal-800 border-teal-200" />
         <Chip texto={`Potencial ${empresa.potencial}`} classe="bg-slate-100 text-slate-700 border-slate-200" />
         {cv && cv.ativo && <Chip texto={`Convênio · ${s.rotulo}`} classe={CORES_SAUDE[s.nivel]} />}
-        <span className="ml-auto flex gap-2">
+        <span className="ml-auto flex flex-wrap gap-2">
           <Botao tamanho="sm" tipo="neutro" onClick={aoEditar}><Pencil className="h-3 w-3" />Editar</Botao>
           <Botao tamanho="sm" onClick={aoRegistrar}><Phone className="h-3 w-3" />Registrar contato</Botao>
         </span>
@@ -1594,7 +1597,7 @@ function Agenda({ empresas, aoAbrir }) {
 
 function Funil({ empresas, aoAbrir }) {
   return (
-    <div className="flex gap-3 overflow-x-auto pb-2">
+    <div className="flex gap-3 uni-scroll-region overflow-x-auto pb-2" tabIndex={0} role="region" aria-label="Conteúdo com rolagem horizontal">
       {ETAPAS.map((etapa) => {
         const itens = empresas.filter((e) => e.etapa === etapa);
         return (
@@ -1639,7 +1642,7 @@ function Equipe({ equipe, empresas, config, aoSalvarEquipe, aoSalvarConfig, pain
     aoSalvarEquipe(equipe.map((p) => (p.nome === pessoa.nome ? { ...p, tag: slug(tag) } : p)));
 
   return (
-    <div className="max-w-3xl space-y-4">
+    <div className="w-full min-w-0 space-y-4">
       {painelEquipe}
       <section className="rounded-lg border border-slate-200 bg-white p-4">
         <h3 className="text-sm font-semibold text-slate-900">Dados da unidade e cores</h3>
@@ -1769,8 +1772,8 @@ function Equipe({ equipe, empresas, config, aoSalvarEquipe, aoSalvarConfig, pain
           não confundir a gestão. */}
       {!painelEquipe && (
         <>
-          <section className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
-            <table className="w-full min-w-[560px] text-sm">
+          <section className="uni-scroll-region overflow-x-auto rounded-lg border border-slate-200 bg-white" tabIndex={0} role="region" aria-label="Conteúdo com rolagem horizontal">
+            <table className="uni-table w-full min-w-[560px] text-sm">
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase tracking-wide text-slate-500">
                   <th className="px-3 py-2 text-left font-semibold">Nome</th>
@@ -1816,7 +1819,7 @@ function Equipe({ equipe, empresas, config, aoSalvarEquipe, aoSalvarConfig, pain
           <section className="rounded-lg border border-slate-200 bg-white p-4">
             <h3 className="mb-3 text-sm font-semibold text-slate-900">Adicionar pessoa</h3>
             <div className="flex flex-wrap items-end gap-2">
-              <Campo rotulo="Nome" largura="min-w-[200px] flex-1"><input className={inputBase} value={nome} onChange={(e) => setNome(e.target.value)} /></Campo>
+              <Campo rotulo="Nome" largura="uni-filter-field"><input className={inputBase} value={nome} onChange={(e) => setNome(e.target.value)} /></Campo>
               <Campo rotulo="Papel">
                 <select className={inputBase} value={papel} onChange={(e) => setPapel(e.target.value)}>
                   <option>Consultor</option><option>Supervisor</option><option>Gerente</option>
@@ -2087,12 +2090,12 @@ export default function CrmApp({ modo = "demo", aoSair, usuarioInicial = null, p
   return (
     <div className="min-h-screen bg-slate-100 font-sans text-slate-900">
       <Tema config={config} />
-      <div className="mx-auto flex min-h-screen max-w-[1400px] flex-col md:flex-row">
-        <nav className="shrink-0 bg-slate-900 md:w-56">
+      <ResponsiveShell mainClassName="p-4 sm:p-6" sidebar={
+        <nav className="min-w-0 w-full bg-slate-900">
           <div className="hidden px-4 py-4 md:block">
             <Marca escuro />
           </div>
-          <ul className="flex overflow-x-auto md:block md:px-2">
+          <ul className="flex uni-scroll-region overflow-x-auto md:block md:px-2">
             {NAV.filter((n) => n.todos || ehGestor).map(({ id, rotulo, Icone }) => (
               <li key={id} className="shrink-0">
                 <button
@@ -2125,14 +2128,13 @@ export default function CrmApp({ modo = "demo", aoSair, usuarioInicial = null, p
             </div>
           </div>
         </nav>
-
-        <main className="min-w-0 flex-1 p-4 sm:p-6">
+      }>
           <header className="mb-4 flex flex-wrap items-end justify-between gap-3">
             <div>
               <h1 className="text-lg font-semibold tracking-tight text-slate-900">{titulos[tela]}</h1>
               <p className="font-mono text-xs text-slate-500">{brDataLonga(hoje)} · {usuario.nome}</p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Botao tipo="neutro" tamanho="sm" onClick={recarregar} title="Buscar lançamentos da equipe">
                 <RefreshCw className={`h-3.5 w-3.5 ${sincronizando ? "animate-spin" : ""}`} />Atualizar
               </Botao>
@@ -2153,7 +2155,7 @@ export default function CrmApp({ modo = "demo", aoSair, usuarioInicial = null, p
                   ? "Cadastre a primeira empresa da carteira, ou carregue 10 empresas fictícias da região de Campinas — três já conveniadas — para ver o sistema com dados."
                   : "Cadastre a primeira empresa da carteira para começar."}
               </p>
-              <div className="mt-3 flex justify-center gap-2">
+              <div className="mt-3 flex flex-wrap justify-center gap-2">
                 {/* dados fictícios só no modo demonstração: nunca poluir a base real */}
                 {modo === "demo" && (
                   <Botao tipo="neutro" tamanho="sm" onClick={() => mutarEmpresas(() => dadosExemplo(equipe))}>Carregar exemplos</Botao>
@@ -2165,7 +2167,7 @@ export default function CrmApp({ modo = "demo", aoSair, usuarioInicial = null, p
 
           {mostrarFiltros && (
             <div className="mb-3 flex flex-wrap items-center gap-2">
-              <span className="relative min-w-[180px] flex-1">
+              <span className="relative uni-filter-field">
                 <Search className="pointer-events-none absolute left-2.5 top-2 h-4 w-4 text-slate-400" />
                 <input className={`${inputBase} pl-8`} placeholder="Buscar por nome, CNPJ ou cidade" value={filtros.busca} onChange={(e) => setFiltros({ ...filtros, busca: e.target.value })} />
               </span>
@@ -2199,8 +2201,7 @@ export default function CrmApp({ modo = "demo", aoSair, usuarioInicial = null, p
           {tela === "funil" && <Funil empresas={escopoBase} aoAbrir={setAberta} />}
           {tela === "convenios" && <Convenios empresas={escopoBase} equipe={equipe} config={config} aoAbrir={setAberta} aoCadastrar={setConvenioDe} />}
           {tela === "equipe" && <Equipe equipe={equipe} empresas={empresas} config={config} aoSalvarEquipe={salvarEquipe} aoSalvarConfig={salvarConfig} painelEquipe={painelEquipe} />}
-        </main>
-      </div>
+        </ResponsiveShell>
 
       {empresaAberta && !editando && !registrando && !convenioDe && (
         <FichaEmpresa

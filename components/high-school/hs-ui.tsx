@@ -15,7 +15,7 @@ export function Card({
 }) {
   return (
     <Tag
-      className={`rounded-2xl border border-[#eadfe6] bg-white shadow-[0_1px_2px_rgba(54,16,39,0.025),0_10px_28px_rgba(54,16,39,0.035)] ${className}`}
+      className={`min-w-0 max-w-full rounded-2xl border border-[#eadfe6] bg-white shadow-[0_1px_2px_rgba(54,16,39,0.025),0_10px_28px_rgba(54,16,39,0.035)] ${className}`}
     >
       {children}
     </Tag>
@@ -24,7 +24,7 @@ export function Card({
 
 export function SectionTitle({ children, acao }: { children: ReactNode; acao?: ReactNode }) {
   return (
-    <div className="mb-3 flex items-end justify-between gap-3">
+    <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
       <h2 className="text-sm font-semibold text-slate-800">{children}</h2>
       {acao}
     </div>

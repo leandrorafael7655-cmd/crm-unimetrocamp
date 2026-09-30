@@ -2,6 +2,7 @@ import type { ReactNode } from "react"
 import { redirect } from "next/navigation"
 import { getActor } from "@/lib/auth/guards"
 import { can } from "@/lib/domain/roles"
+import { ResponsiveShell } from "@/components/navigation/responsive-shell"
 import { SystemSidebar } from "@/components/navigation/system-sidebar"
 
 export const dynamic = "force-dynamic"
@@ -13,9 +14,6 @@ export default async function MapaLayout({ children }: { children: ReactNode }) 
   if (!can(actor.role, "map.read") && !can(actor.role, "routes.plan")) redirect("/")
 
   return (
-    <div className="min-h-screen bg-[#faf7f9] font-sans text-slate-900 md:flex">
-      <SystemSidebar role={actor.role} userName={actor.display_name} />
-      <main className="min-w-0 flex-1 md:h-screen md:overflow-auto">{children}</main>
-    </div>
+    <ResponsiveShell sidebar={<SystemSidebar role={actor.role} userName={actor.display_name} />} mainClassName="min-w-0 flex-1 ">{children}</ResponsiveShell>
   )
 }

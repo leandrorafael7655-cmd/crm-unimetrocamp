@@ -10,7 +10,7 @@ export default function DashboardLoading() {
           </div>
           <div className="h-8 w-24 rounded-full bg-white/10" />
         </div>
-        <div className="mx-auto max-w-[1200px] px-4 pb-3 sm:px-6">
+        <div className="w-full min-w-0 px-4 pb-3 sm:px-6">
           <div className="flex gap-2">
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="h-7 w-28 rounded-full bg-white/10" />
@@ -18,7 +18,7 @@ export default function DashboardLoading() {
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-[1200px] px-4 py-6 sm:px-6">
+      <main className="w-full min-w-0 px-4 py-6 sm:px-6">
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="rounded-xl border border-slate-200 bg-white p-5">

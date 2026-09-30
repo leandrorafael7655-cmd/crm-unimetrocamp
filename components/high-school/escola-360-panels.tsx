@@ -31,15 +31,15 @@ const btnGhost = "rounded-md border border-slate-300 px-3.5 py-2 text-sm text-sl
 
 function Modal({ titulo, children, onClose }: { titulo: string; children: React.ReactNode; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4">
-      <div className="my-8 w-full max-w-2xl rounded-xl bg-white shadow-xl">
-        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
+    <div className="uni-modal-overlay bg-black/40">
+      <div role="dialog" aria-modal="true" className="uni-dialog w-full max-w-2xl rounded-xl bg-white shadow-xl">
+        <div className="uni-dialog-header flex items-center justify-between gap-2 border-b border-slate-200 px-4 py-3 sm:px-5">
           <h2 className="text-sm font-semibold text-slate-800">{titulo}</h2>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-700" aria-label="Fechar">
             <X className="h-5 w-5" />
           </button>
         </div>
-        <div className="max-h-[72vh] overflow-y-auto px-5 py-4">{children}</div>
+        <div className="uni-dialog-body px-4 py-4 sm:px-5">{children}</div>
       </div>
     </div>
   )
@@ -203,7 +203,8 @@ export function EstimativasPanel({
       {estimativas.length === 0 ? (
         <p className="py-4 text-center text-xs text-slate-400">Sem estimativas cadastradas.</p>
       ) : (
-        <table className="w-full text-sm">
+        <div className="uni-scroll-region" tabIndex={0} role="region" aria-label="Estimativa de alunos por série">
+        <table className="uni-table w-full min-w-[320px] text-sm">
           <thead>
             <tr className="text-left text-xs uppercase tracking-wide text-slate-400">
               <th className="pb-1 font-medium">Série</th>
@@ -223,6 +224,7 @@ export function EstimativasPanel({
             ))}
           </tbody>
         </table>
+        </div>
       )}
 
       {aberto && (
@@ -516,7 +518,7 @@ export function AcoesPanel({
                     const elig = elegivel(l.serie)
                     return (
                       <div key={i} className="flex flex-wrap items-end gap-2 rounded-md border border-slate-100 p-2">
-                        <div className="min-w-[120px] flex-1">
+                        <div className="uni-filter-field">
                           <label className="mb-0.5 block text-[10px] text-slate-400">Série</label>
                           <select value={l.serie} onChange={(e) => setLinha(i, { serie: e.target.value })} className={`${inputCls} py-1.5`}>
                             {grades.map((g) => (

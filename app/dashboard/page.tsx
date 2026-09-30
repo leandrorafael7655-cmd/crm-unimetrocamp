@@ -83,7 +83,7 @@ export default async function DashboardGeral() {
 
   return (
     <div className="px-4 py-6 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-[1240px]">
+      <div className="w-full min-w-0">
         <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
           <div>
             <p className="text-xs font-medium uppercase tracking-[0.14em] text-brand">Visão geral</p>
@@ -95,7 +95,7 @@ export default async function DashboardGeral() {
           <p className="text-xs text-slate-400">Dados consolidados dos módulos ativos</p>
         </div>
 
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <div className="uni-module-grid gap-5">
           {verB2B && (
             <BlocoModulo
               titulo="Comercial B2B"

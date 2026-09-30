@@ -18,7 +18,7 @@ export function AuthShell({
   children: ReactNode
 }) {
   return (
-    <main className="min-h-svh overflow-x-hidden bg-[#faf7f9] md:grid md:grid-cols-[minmax(0,1.08fr)_minmax(410px,0.92fr)]">
+    <main className="uni-main min-h-svh bg-[#faf7f9] md:grid md:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)]">
       <section className="relative flex min-h-[220px] overflow-hidden bg-[linear-gradient(145deg,#880058_0%,#73004f_52%,#54003a_100%)] px-6 py-7 text-white sm:px-8 md:min-h-svh md:px-10 md:py-10 lg:px-14 lg:py-12">
         <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
           <div className="absolute -right-20 top-[18%] h-72 w-72 rounded-full border border-white/10" />

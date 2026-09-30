@@ -30,7 +30,7 @@ export function HsNav({ extraItens = [] }: { extraItens?: HsNavExtra[] }) {
         <p className="text-sm font-semibold text-brand-suave">High School</p>
         <p className="text-[11px] text-brand-suave/60">Relacionamento com escolas</p>
       </div>
-      <ul className="flex overflow-x-auto md:block md:px-2">
+      <ul className="flex uni-scroll-region overflow-x-auto md:block md:px-2">
         {ITENS.map(({ href, rotulo, Icone, exato }) => (
           <li key={href} className="shrink-0">
             <Link
@@ -48,7 +48,7 @@ export function HsNav({ extraItens = [] }: { extraItens?: HsNavExtra[] }) {
         ))}
       </ul>
       {extraItens.length > 0 && (
-        <ul className="mt-1 flex overflow-x-auto border-t border-white/10 md:block md:px-2 md:pt-1">
+        <ul className="mt-1 flex uni-scroll-region overflow-x-auto border-t border-white/10 md:block md:px-2 md:pt-1">
           {extraItens.map(({ href, rotulo, icone }) => {
             const Icone = ICONES_EXTRA[icone]
             return (

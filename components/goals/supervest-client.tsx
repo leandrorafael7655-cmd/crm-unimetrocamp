@@ -148,7 +148,7 @@ export function SupervestClient({
 
           {/* Apuração anti-dupla-contagem */}
           {apuracao && (
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <div className="uni-kpi-grid gap-3">
               <Stat rotulo="Inscrição oficial" valor={apuracao.oficial} destaque />
               <Stat rotulo="Atribuídas a HS" valor={apuracao.hsAtribuidas} />
               <Stat rotulo="Atribuídas a B2B" valor={apuracao.b2bAtribuidas} />
@@ -190,7 +190,7 @@ export function SupervestClient({
             <Campo label="Nome do ciclo *">
               <input name="name" required className={inputCls} placeholder="Ex.: SuperVestibular 2026.1" />
             </Campo>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Campo label="Edição">
                 <input name="edition" className={inputCls} placeholder="2026.1" />
               </Campo>
@@ -204,7 +204,7 @@ export function SupervestClient({
                 </select>
               </Campo>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Campo label="Meta de inscrições">
                 <input name="registrations_target" type="number" min={0} defaultValue={0} className={inputCls} />
               </Campo>
@@ -212,7 +212,7 @@ export function SupervestClient({
                 <input name="high_school_actions_target" type="number" min={0} defaultValue={0} className={inputCls} />
               </Campo>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Campo label="Início da captação">
                 <input name="campaign_start_at" type="date" className={inputCls} />
               </Campo>
@@ -240,7 +240,7 @@ export function SupervestClient({
             <p className="rounded-md bg-slate-50 px-3 py-2 text-xs text-slate-500">
               A leitura oficial é o total lido no sistema do SuperVest naquele dia — não é a soma das atribuições de HS/B2B.
             </p>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Campo label="Data da leitura *">
                 <input name="snapshot_date" type="date" required defaultValue={new Date().toISOString().slice(0, 10)} className={inputCls} />
               </Campo>
@@ -262,8 +262,8 @@ export function SupervestClient({
 
 function Modal({ titulo, children, onClose }: { titulo: string; children: React.ReactNode; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
-      <div className="w-full max-w-lg rounded-xl bg-white p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+    <div className="uni-modal-overlay bg-black/40" onClick={onClose}>
+      <div role="dialog" aria-modal="true" aria-label={titulo} className="uni-dialog uni-dialog-scroll w-full max-w-lg rounded-xl bg-white p-4 shadow-2xl sm:p-5" onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-base font-semibold text-slate-900">{titulo}</h3>
           <button onClick={onClose} className="rounded p-1 text-slate-400 hover:bg-slate-100" aria-label="Fechar">

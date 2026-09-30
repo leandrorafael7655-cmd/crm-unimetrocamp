@@ -22,7 +22,7 @@ export default async function RotasPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-background font-sans text-foreground">
-      <header className="flex items-center gap-3 border-b border-border bg-[#00302b] px-4 py-2.5 text-[#b4fcf1]">
+      <header className="flex flex-wrap items-center gap-3 border-b border-border bg-[#00302b] px-4 py-2.5 text-[#b4fcf1]">
         <Link
           href="/mapa"
           className="flex items-center gap-1.5 rounded-md px-2 py-1 text-sm text-[#b4fcf1]/80 transition hover:bg-white/10 hover:text-white"

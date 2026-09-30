@@ -22,7 +22,7 @@ export function BlocoModulo({
 }) {
   return (
     <Card as="section" className="flex flex-col p-5">
-      <div className="mb-4 flex items-start justify-between gap-3">
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold text-slate-800">{titulo}</h2>
           {subtitulo && <p className="mt-0.5 text-xs text-slate-400">{subtitulo}</p>}
@@ -75,7 +75,7 @@ export function Kpi({
 
 /** Grade responsiva de KPIs. */
 export function KpiGrid({ children }: { children: ReactNode }) {
-  return <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">{children}</div>
+  return <div className="uni-kpi-grid gap-2">{children}</div>
 }
 
 /** Estado de erro por bloco: o dashboard não quebra inteiro se uma fonte falha. */

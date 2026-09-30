@@ -46,7 +46,7 @@ export default async function EscolasPage({
         acao={podeEscrever ? <EscolaForm owners={owners} /> : undefined}
       />
 
-      <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className="mb-4 uni-kpi-grid gap-3">
         <Stat rotulo="Ouro" valor={totaisClassificacao.Ouro} detalhe="escolas prioritárias" destaque />
         <Stat rotulo="Prata" valor={totaisClassificacao.Prata} detalhe="relacionamento relevante" />
         <Stat rotulo="Bronze" valor={totaisClassificacao.Bronze} detalhe="em desenvolvimento" />
@@ -57,12 +57,12 @@ export default async function EscolasPage({
           name="busca"
           defaultValue={sp.busca}
           placeholder="Buscar por nome…"
-          className="min-w-[220px] flex-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
+          className="uni-filter-field rounded-md border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand"
         />
         <select
           name="etapa"
           defaultValue={sp.etapa ?? ""}
-          className="min-w-[210px] rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand"
+          className="uni-filter-field rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand"
         >
           <option value="">Todas as etapas</option>
           {TODAS_ETAPAS_HS.map((etapa) => (
@@ -72,7 +72,7 @@ export default async function EscolasPage({
         <select
           name="classificacao"
           defaultValue={sp.classificacao ?? ""}
-          className="min-w-[170px] rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand"
+          className="uni-filter-field rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand"
         >
           <option value="">Todas as classificações</option>
           {CLASSIFICACOES_HS.map((classificacao) => (
@@ -106,11 +106,11 @@ export default async function EscolasPage({
         />
       ) : (
         <Card className="overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+          <div className="uni-scroll-region overflow-x-auto" tabIndex={0} role="region" aria-label="Conteúdo com rolagem horizontal">
+            <table className="uni-table w-full min-w-[760px] text-sm">
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
-                  <th className="px-4 py-2.5 font-medium">Escola</th>
+                  <th className="uni-table-key px-4 py-2.5 font-medium">Escola</th>
                   <th className="px-4 py-2.5 font-medium">Classificação</th>
                   <th className="px-4 py-2.5 font-medium">Rede</th>
                   <th className="px-4 py-2.5 font-medium">Cidade</th>
@@ -121,7 +121,7 @@ export default async function EscolasPage({
               <tbody>
                 {escolas.map((e) => (
                   <tr key={e.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
-                    <td className="px-4 py-2.5">
+                    <td className="uni-table-key px-4 py-2.5">
                       <Link href={`/high-school/escolas/${e.id}`} className="font-medium text-slate-800 hover:text-brand">
                         {e.nome}
                       </Link>

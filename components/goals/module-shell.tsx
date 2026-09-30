@@ -1,6 +1,7 @@
 "use client"
 
 import type { ReactNode } from "react"
+import { ResponsiveShell } from "@/components/navigation/responsive-shell"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { ArrowLeft, Target, GraduationCap } from "lucide-react"
@@ -25,13 +26,13 @@ export function ModuleShell({
 
   return (
     <div className="min-h-screen bg-[#faf7f9] font-sans text-slate-900">
-      <div className="mx-auto flex min-h-screen max-w-[1400px] flex-col md:flex-row">
-        <nav className="shrink-0 bg-brand-rail md:w-56">
+      <ResponsiveShell mainClassName="p-4 sm:p-6" sidebar={
+        <nav className="min-w-0 w-full bg-brand-rail">
           <div className="hidden px-5 py-5 md:block">
             <p className="text-sm font-semibold text-white">{titulo}</p>
             <p className="text-[11px] text-white/55">{subtitulo}</p>
           </div>
-          <ul className="flex overflow-x-auto md:block md:px-2">
+          <ul className="flex uni-scroll-region overflow-x-auto md:block md:px-2">
             {ITENS.map(({ href, rotulo, Icone }) => (
               <li key={href} className="shrink-0">
                 <Link
@@ -58,8 +59,7 @@ export function ModuleShell({
             </Link>
           </div>
         </nav>
-        <main className="min-w-0 flex-1 p-4 sm:p-6">{children}</main>
-      </div>
+      }>{children}</ResponsiveShell>
     </div>
   )
 }

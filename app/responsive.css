@@ -1,0 +1,153 @@
+/* Estrutura comum. Não contém clipping horizontal, zoom ou escala da página. */
+.uni-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
+  min-width: 0;
+  align-items: start;
+}
+.uni-main {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.uni-sidebar {
+  min-width: 0;
+  background: linear-gradient(180deg, #00302b 0%, #00251f 100%);
+  color: white;
+}
+.uni-sidebar-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .5rem .75rem;
+}
+.uni-desktop-toggle { display: none; }
+.uni-sidebar-content { display: none; min-width: 0; }
+.uni-shell[data-mobile-open="true"] .uni-sidebar-content {
+  display: flex;
+  max-height: 70dvh;
+  overflow-y: auto;
+}
+.uni-sidebar-content > nav {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+@media (min-width: 48rem) {
+  .uni-shell { grid-template-columns: 16rem minmax(0, 1fr); }
+  .uni-shell[data-sidebar-collapsed="true"] { grid-template-columns: 3.5rem minmax(0, 1fr); }
+  .uni-sidebar {
+    position: sticky;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
+    box-shadow: 8px 0 30px rgb(0 48 43 / .10);
+  }
+  .uni-sidebar-toolbar { justify-content: flex-end; padding: .5rem; flex-shrink: 0; }
+  .uni-desktop-toggle { display: inline-flex; }
+  .uni-mobile-toggle, .uni-mobile-brand { display: none; }
+  .uni-shell .uni-sidebar-content {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+    overflow-y: auto;
+  }
+  .uni-shell[data-sidebar-collapsed="true"] .uni-sidebar-content { display: none; }
+}
+
+@layer base {
+  /* Itens flex/grid precisam poder encolher, inclusive campos nativos de data. */
+  :where(.uni-main, .uni-dialog) :where(.flex, .grid) > * { min-inline-size: 0; }
+  :where(.uni-main, .uni-dialog) :where(input, select, textarea, fieldset) {
+    min-inline-size: 0;
+    max-inline-size: 100%;
+  }
+  :where(.uni-main, .uni-dialog) :where(button, a) { max-inline-size: 100%; }
+  :where(.uni-main, .uni-dialog) button { white-space: normal; overflow-wrap: anywhere; }
+}
+
+/* auto-fit usa a largura efetivamente disponível, inclusive ao recolher o menu. */
+.uni-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+}
+.uni-module-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 28rem), 1fr));
+}
+.uni-goal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+}
+.uni-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+}
+.uni-filter-field { flex: 1 1 11rem; min-width: 0; max-width: 100%; }
+
+.uni-scroll-region {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+.uni-table { overflow-wrap: break-word; }
+.uni-table :is(th, td) { max-width: 24rem; }
+.uni-table-actions {
+  position: sticky;
+  right: 0;
+  z-index: 1;
+  background: #fff;
+  box-shadow: -4px 0 8px rgb(0 48 43 / .06);
+}
+thead .uni-table-actions { background: #f8fafc; z-index: 2; }
+.uni-table-key {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: #fff;
+}
+thead .uni-table-key { background: #f8fafc; z-index: 2; }
+
+.uni-modal-overlay {
+  --modal-padding: clamp(.75rem, 2vw, 1.5rem);
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: var(--modal-padding);
+  overflow-y: auto;
+}
+.uni-dialog {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  max-height: calc(100vh - 2 * var(--modal-padding, 1rem));
+  max-height: calc(100dvh - 2 * var(--modal-padding, 1rem));
+  margin-block: 0;
+  overflow-wrap: anywhere;
+}
+.uni-dialog-header { flex-shrink: 0; min-width: 0; }
+.uni-dialog-header > button { flex-shrink: 0; }
+.uni-dialog-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.uni-dialog-scroll { display: block; overflow-y: auto; overscroll-behavior: contain; }
+.uni-map-page { min-height: 32rem; height: calc(100dvh - 3.5rem); }
+@media (min-width: 48rem) { .uni-map-page { height: 100dvh; } }

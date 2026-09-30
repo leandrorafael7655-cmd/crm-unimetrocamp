@@ -20,7 +20,7 @@ import {
 } from "@/lib/meetings/types"
 
 const field =
-  "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-violet-600 focus:outline-none focus:ring-2 focus:ring-violet-100 disabled:bg-slate-50"
+  "w-full min-w-0 max-w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-violet-600 focus:outline-none focus:ring-2 focus:ring-violet-100 disabled:bg-slate-50"
 const primary =
   "inline-flex items-center justify-center gap-2 rounded-lg bg-violet-700 px-3 py-2 text-sm font-medium text-white hover:bg-violet-800 disabled:cursor-not-allowed disabled:opacity-50"
 const secondary =
@@ -241,7 +241,7 @@ export function CompanyMeetings({
             )}
           </div>
           <div>
-            <div className="mb-2 flex items-center justify-between">
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
               <h4 className="text-sm font-semibold text-slate-900">Responsável / Contato da Empresa</h4>
               {data.canEdit && (
                 <button
@@ -363,7 +363,7 @@ export function CompanyMeetings({
                   />
                   Responsável principal
                 </label>
-                <div className="flex justify-end gap-2 sm:col-span-2">
+                <div className="flex flex-wrap justify-end gap-2 sm:col-span-2">
                   <button
                     type="button"
                     disabled={busy}
@@ -453,7 +453,7 @@ export function CompanyMeetings({
                   onChange={(e) => setMeeting({ ...meeting, date: e.target.value })}
                 />
               </label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <label className="space-y-1 text-xs">
                   Horário de início
                   <input
@@ -541,7 +541,7 @@ export function CompanyMeetings({
                 <legend className="mb-2 text-sm font-medium">Participantes adicionais — opcional</legend>
                 {meeting.participants.map((p, index) => (
                   <div key={index} className="flex items-end gap-2">
-                    <div className="grid flex-1 gap-2 sm:grid-cols-2">
+                    <div className="grid min-w-0 flex-1 gap-2 sm:grid-cols-2">
                       <label className="space-y-1 text-xs">
                         Nome
                         <input
@@ -612,7 +612,7 @@ export function CompanyMeetings({
                   ? "O UniConecta enviará o convite para você, o responsável e os participantes adicionais. Cada pessoa aceita na própria agenda. O aceite não é registrado automaticamente no CRM."
                   : "O Outlook enviará os convites pelo calendário do organizador."}
               </p>
-              <div className="flex justify-end gap-2 sm:col-span-2">
+              <div className="flex flex-wrap justify-end gap-2 sm:col-span-2">
                 <button type="button" className={secondary} disabled={busy} onClick={() => setMeeting(null)}>
                   Fechar
                 </button>
@@ -624,7 +624,7 @@ export function CompanyMeetings({
             </form>
           )}
           <div>
-            <div className="mb-2 flex items-center justify-between">
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
               <h4 className="text-sm font-semibold text-slate-900">
                 Histórico de reuniões{" "}
                 <span className="font-normal text-slate-500">({data.meetings.length})</span>

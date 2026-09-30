@@ -69,7 +69,7 @@ export default async function HighSchoolDashboard() {
         descricao="Relacionamento com escolas, ações de campo e captação SuperVestibular"
       />
 
-      <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="mb-6 uni-kpi-grid gap-3">
         <Stat rotulo="Escolas" valor={escolas.length} detalhe={`${estrategicas} estratégica(s)`} />
         <Stat rotulo="Em relacionamento" valor={ativas} detalhe="ativas + estratégicas" />
         <Stat rotulo="Leads (ações realizadas)" valor={totalLeads} />
@@ -86,7 +86,7 @@ export default async function HighSchoolDashboard() {
           <SectionTitle acao={<Link href="/gestao/metas" className="text-xs text-brand hover:underline">Central de Metas</Link>}>
             Metas do ciclo
           </SectionTitle>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="uni-goal-grid gap-3">
             {metasHS.map((m) => (
               <GoalCard
                 key={m.id}

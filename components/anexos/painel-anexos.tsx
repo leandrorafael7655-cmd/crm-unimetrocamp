@@ -77,7 +77,7 @@ export function PainelAnexos({
 
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-4">
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-3 flex flex-wrap items-center justify-between">
         <h3 className="flex items-center gap-1.5 text-sm font-semibold text-slate-900">
           <Paperclip className="h-4 w-4 text-slate-500" aria-hidden />
           Anexos
