@@ -28,7 +28,7 @@ function requiredConfig() {
     tenantId: env("CALENDAR_OAUTH_TENANT_ID"),
     clientId: env("CALENDAR_OAUTH_CLIENT_ID"),
     clientSecret: env("CALENDAR_OAUTH_CLIENT_SECRET"),
-    crmUrl: (env("CALENDAR_CRM_URL") || "https://unimetrocamp.vercel.app").replace(/\/+$/, ""),
+    crmUrl: (env("CALENDAR_CRM_URL") || "https://uniconecta-crm.vercel.app").replace(/\/+$/, ""),
   };
 }
 

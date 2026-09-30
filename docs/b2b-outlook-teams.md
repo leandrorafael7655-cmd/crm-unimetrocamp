@@ -33,7 +33,7 @@ Neste modo, o botão **Agendar e enviar convites** dispara o envio real pelo Mic
 ## Configuração necessária para ativar
 
 1. No Microsoft Entra, registrar um aplicativo Web no tenant da instituição. Pode ser um aplicativo existente se suas políticas permitirem a autorização delegada.
-2. Cadastrar como Redirect URI de plataforma **Web**: `https://unimetrocamp.vercel.app/api/microsoft/callback`. Se o domínio do CRM mudar, cadastrar o endereço real e atualizar a variável correspondente. Para homologação, usar uma URI estável de homologação. Não registrar curingas de previews.
+2. Cadastrar como Redirect URI de plataforma **Web**: `https://uniconecta-crm.vercel.app/api/microsoft/callback`. Se o domínio do CRM mudar, cadastrar o endereço real e atualizar a variável correspondente. Para homologação, usar uma URI estável de homologação. Não registrar curingas de previews.
 3. Adicionar permissões **delegadas** do Microsoft Graph: `User.Read` e `Calendars.ReadWrite`. O fluxo também solicita `openid`, `profile` e `offline_access`. Obter o consentimento administrativo quando a política da instituição exigir. Não é necessário `Mail.Send` ou a permissão de aplicativo SMTP.SendAsApp para este fluxo.
 4. Confirmar que cada organizador possui caixa Exchange Online e Teams habilitado no calendário. Ter apenas um endereço de e-mail no CRM não concede essas permissões.
 5. Configurar na Vercel, no ambiente correspondente:
