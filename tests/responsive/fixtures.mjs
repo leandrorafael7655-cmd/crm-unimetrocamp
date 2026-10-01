@@ -1,4 +1,8 @@
 // Dados sintéticos: a validação visual não usa contas, banco ou credenciais reais.
+import { validateCompanyAction } from "../../lib/company-actions/domain.ts"
+
+let completedCompanyActions = []
+export function resetCompanyActionFixtures() { completedCompanyActions = [] }
 export const actor = { id: "manager", role: "gerente", active: true,
   full_name: "Rafael Xavier", display_name: "Rafael Xavier", email: "rafa@example.test" }
 export const owners = [
@@ -75,6 +79,18 @@ export const mockQueries = {
   garantirFechamentoEmDia: async () => undefined,
   loadAttendanceRange: async () => attendance,
   loadCompanyMeetings: async () => meetingPanel,
+  loadCompanyActions: async () => ({ ok: true, actions: completedCompanyActions,
+    actor: { id: actor.id, name: actor.full_name }, canRegister: true,
+    consultants: [{ id: actor.id, name: actor.full_name }, { id: owners[0].id, name: owners[0].nome }],
+  }),
+  saveCompanyAction: async input => {
+    const row = { ...validateCompanyAction(input), id: input.id, company_id: input.companyId,
+      responsible_user_id: input.responsibleUserId,
+      responsible_name: input.responsibleUserId === actor.id ? actor.full_name : owners[0].nome,
+      created_by: actor.id, creator_name: actor.full_name, created_at: new Date().toISOString() }
+    completedCompanyActions = [...completedCompanyActions.filter(a => a.id !== row.id), row]
+    return { ok: true, action: row, message: "Ação registrada no histórico da empresa." }
+  },
   listManagedUsers: async () => ({ ok: true, users: owners.map(o => ({ id: o.id, full_name: o.nome, email: "consultor@example.test", role: o.role, active: true, attendance_enabled: true, consultant_tag: "Consultor" })) }),
   pontosDisponiveis: async () => schools.map(e => ({ id: e.id, tipo: "escola", nome: e.nome, cidade: "Campinas", lat: -22.9, lng: -47.06 })),
   listarPlanos: async () => [{ id: "plan", route_name: "Rota de escolas Campinas", plan_date: "2026-10-15", status: "rascunho", total_distance_m: 15000, total_duration_s: 3600 }],

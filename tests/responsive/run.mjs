@@ -75,7 +75,7 @@ await fs.mkdir("responsive-results",{recursive:true})
 const results = []
 const errors = []
 const sizes = [[320,640],[375,812],[768,1024],[1024,768],[1280,720],[1366,768],[1440,900],[1920,1080]]
-const names = ["dashboard","b2b","hs","escolas","escola","pipeline","agenda","atendimento","minha-agenda","metas","supervest","rotas","mapa","mapa-interativo","usuarios","reunioes","configuracoes","login","senha","setup"]
+const names = process.env.RESPONSIVE_SCENARIOS?.split(",") || ["dashboard","b2b","hs","escolas","escola","pipeline","agenda","atendimento","minha-agenda","metas","supervest","rotas","mapa","mapa-interativo","usuarios","reunioes","acoes-empresa","configuracoes","login","senha","setup"]
 let browser, page
 async function settle() { await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))) }
 async function check(label) {
@@ -117,7 +117,7 @@ async function check(label) {
         issues.push("Sticky identifying column covers mobile table")
       }
     }
-    for(const el of document.querySelectorAll(".uni-dialog")) {
+    for(const el of document.querySelectorAll(".uni-dialog, dialog[open]")) {
       const r=el.getBoundingClientRect()
       if(r.left < 0 || r.right > viewport+1 || r.top < 0 || r.bottom > innerHeight+1) issues.push("Dialog outside viewport")
     }
@@ -161,7 +161,9 @@ async function shellStates(label,width) {
   }
 }
 try {
-  for (const [engine, type] of [["chromium",chromium],["webkit",webkit]]) {
+  const engines = [["chromium",chromium],["webkit",webkit]].filter(([name]) => !process.env.RESPONSIVE_ENGINES || process.env.RESPONSIVE_ENGINES.split(",").includes(name))
+  assert.ok(engines.length, "No responsive browser engine selected")
+  for (const [engine, type] of engines) {
     process.env.CURRENT_ENGINE=engine
     browser=await type.launch({headless:true})
     page=await browser.newPage({deviceScaleFactor:1})
@@ -177,7 +179,8 @@ try {
         await page.waitForSelector(name==="b2b"?".uni-main h1":name==="login"||name==="senha"||name==="setup"?"main":".uni-shell")
         await settle()
         assert.equal(pageErrors.length,before,"Render error on "+name)
-        await shellStates(name+" "+width+"x"+height,width)
+        if(name==="acoes-empresa") await check(name+" "+width+"x"+height)
+        else await shellStates(name+" "+width+"x"+height,width)
         if(name==="b2b") {
           // O bridge aciona os botões originais sem alterar o fluxo do CRM.
           for(const label of ["Painel","Minha carteira","De quem é?","Todas as empresas","Agenda","Funil","Convênios","Equipe e links"]) {
@@ -216,6 +219,47 @@ try {
           await clickText("Agendar reunião")
           await clickText("Adicionar participante +")
           await check("Company meeting form "+width)
+        }
+        if(name==="acoes-empresa") {
+          await page.getByRole("button",{name:"Registrar ação",exact:true}).click()
+          let form=page.locator("dialog[open]")
+          await form.getByLabel(/^Título da ação/).fill("Ação presencial de teste "+"NomeExtenso".repeat(9))
+          await form.locator('input[type="date"]').fill("2026-09-28")
+          await form.locator('input[type="time"]').fill("14:35")
+          await form.getByLabel(/^Local da ação/).fill("Local muito extenso "+"Endereço".repeat(20))
+          await form.getByLabel(/^Descrição da ação/).fill("Descrição presencial com detalhes e observações. ".repeat(12))
+          await check("Presencial form "+width)
+          await form.getByRole("button",{name:"Salvar ação",exact:true}).click()
+          await page.waitForSelector("dialog[open]",{state:"detached"})
+          assert.equal(await page.getByText("Contato antigo preservado",{exact:true}).count(),1)
+          await check("Presencial history "+width)
+          await page.getByRole("button",{name:"Registrar ação",exact:true}).click()
+          form=page.locator("dialog[open]")
+          await form.getByRole("radio",{name:"Divulgação online",exact:true}).check()
+          assert.equal(await form.getByLabel(/^Local da ação/).count(),0)
+          await form.getByLabel(/^Título da ação/).fill("Divulgação online de teste")
+          await form.getByLabel(/^Canal utilizado/).fill("Redes sociais")
+          await form.getByLabel(/^Link da divulgação/).fill("https://example.test/"+"endereco".repeat(30))
+          await form.getByLabel(/^Descrição da ação/).fill("Divulgação online sem envio real a nenhum destinatário.")
+          await check("Online form "+width)
+          await form.getByRole("button",{name:"Salvar ação",exact:true}).click()
+          await page.waitForSelector("dialog[open]",{state:"detached"})
+          await check("Combined history "+width)
+          await page.getByRole("button",{name:"Online",exact:true}).click()
+          assert.equal(await page.getByRole("heading",{name:"Divulgação online de teste",exact:true}).count(),1)
+          assert.equal(await page.getByRole("heading",{name:/^Ação presencial de teste/}).count(),0)
+          assert.equal(await page.getByText("Contato antigo preservado",{exact:true}).count(),0)
+          await check("Online filter "+width)
+          await page.getByRole("button",{name:"Presenciais",exact:true}).click()
+          assert.equal(await page.getByRole("heading",{name:/^Ação presencial de teste/}).count(),1)
+          assert.equal(await page.getByRole("heading",{name:"Divulgação online de teste",exact:true}).count(),0)
+          await check("Presencial filter "+width)
+          await page.getByRole("button",{name:"Todas",exact:true}).click()
+          await check("All history "+width)
+          await page.getByRole("button",{name:"Registrar ação",exact:true}).click()
+          await page.keyboard.press("Escape")
+          await page.waitForSelector("dialog[open]",{state:"detached"})
+          assert.equal(await page.getByRole("dialog",{name:"Empresa de teste",exact:true}).count(),1)
         }
         if(width===1366 && ["dashboard","b2b","escola","atendimento"].includes(name)) {
           await page.screenshot({path:"responsive-results/"+engine+"-"+name+"-1366.png",fullPage:true})

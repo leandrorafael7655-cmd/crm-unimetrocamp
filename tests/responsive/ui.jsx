@@ -8,7 +8,8 @@ import { setStorage } from "../../lib/data/storage-context"
 import { makeLocalStorage } from "../../lib/data/local-storage"
 import { CHAVES, EQUIPE_PADRAO, CONFIG_PADRAO } from "../../lib/domain/constants"
 import { dadosExemplo } from "../../lib/domain/seed"
-import { actor, owners } from "./fixtures.mjs"
+import { actor, owners, resetCompanyActionFixtures } from "./fixtures.mjs"
+import { CompanyActions } from "../../components/b2b/company-actions"
 import Dashboard from "../../app/dashboard/page"
 import HighSchool from "../../app/high-school/page"
 import Escolas from "../../app/high-school/escolas/page"
@@ -62,6 +63,16 @@ window.renderFixture = async (name) => {
     let child
     if (name === "usuarios") child = <GerenciarUsuarios perfil={perfil}/>
     else if (name === "reunioes") child = <CompanyMeetings companyId="company" companyName="Empresa Campinas"/>
+    else if (name === "acoes-empresa") {
+      resetCompanyActionFixtures()
+      child = <div className="uni-modal-overlay bg-slate-950/60"><div role="dialog" aria-label="Empresa de teste" className="uni-dialog w-full max-w-5xl rounded-lg bg-white shadow-2xl">
+        <div className="uni-dialog-header border-b px-4 py-3"><h2>Empresa de teste</h2></div>
+        <div className="uni-dialog-body grid gap-4 px-4 py-4 lg:grid-cols-5"><div className="lg:col-span-2">Informações da empresa</div><div className="min-w-0 lg:col-span-3">
+          <CompanyActions companyId="company" companyName={"Empresa com nome extenso ".repeat(8)} enabled canManage userName={actor.full_name} onDeleteLegacy={()=>{}}
+            legacyHistory={[{id:"legacy-contact", data:"2026-09-25", tipo:"Ligação", consultor:actor.full_name, observacao:"Contato antigo preservado", resultado:"Contato realizado"}]}/>
+        </div></div>
+      </div></div>
+    }
     else if (name === "mapa-interativo") child = <div className="h-[700px]"><MapView token="fixture" opcoes={{ cidades: ["Campinas"], etapas: ["Mapeada"], responsaveis: owners }} centroInicial={{longitude:-47, latitude:-22, zoom:10}}/></div>
     else child = await pages[name]({ searchParams: Promise.resolve({}), params: Promise.resolve({ id: "school-0" }) })
     content = <ResponsiveShell sidebar={<SystemSidebar role="gerente" userName={actor.full_name}/>} mainClassName={name.startsWith("mapa") ? "" : "p-4 sm:p-6"}>{child}</ResponsiveShell>
