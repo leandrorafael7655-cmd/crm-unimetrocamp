@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { getStorage } from "@/lib/data/storage-context";
 import { CompanyMeetings } from "@/components/b2b/company-meetings";
+import { CompanyActions } from "@/components/b2b/company-actions";
 import { can, normalizeRole } from "@/lib/domain/roles";
 import {
   CHAVES, ETAPAS, ETAPAS_ENCERRADAS, TODAS_ETAPAS, ETAPAS_CONVENIO, CLASSES,
@@ -1475,11 +1476,6 @@ function FichaEmpresa({ empresa, atividades, equipe, config, podeGerir, usuario,
         </div>
 
         <div className="lg:col-span-3">
-          <div className="mb-2 flex items-baseline justify-between">
-            <h3 className="text-sm font-semibold text-slate-900">Histórico</h3>
-            <span className="font-mono text-[11px] text-slate-400">{hist.length} registro{hist.length === 1 ? "" : "s"}</span>
-          </div>
-
           {empresa.proximaAcao && (
             <div className={`mb-3 rounded border px-3 py-2 ${diffDias(empresa.dataProximaAcao, hoje) > 0 ? "border-rose-200 bg-rose-50" : "border-amber-200 bg-amber-50"}`}>
               <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-600">Próximo passo</p>
@@ -1488,49 +1484,16 @@ function FichaEmpresa({ empresa, atividades, equipe, config, podeGerir, usuario,
             </div>
           )}
 
-          {hist.length === 0 ? (
-            <p className="rounded border border-dashed border-slate-300 px-4 py-8 text-center text-xs text-slate-500">
-              Nada registrado ainda. Cada ligação, visita ou reunião anotada aqui vira o histórico da conta.
-            </p>
-          ) : (
-            <ol className="space-y-2">
-              {hist.map((a) => (
-                <li key={a.id} className="group border-l-2 border-slate-200 pl-3">
-                  <div className="flex flex-wrap items-baseline gap-2">
-                    <span className="font-mono text-xs font-semibold tabular-nums text-slate-900">{brDataLonga(a.data)}</span>
-                    <Chip texto={a.tipo} classe="bg-slate-100 text-slate-700 border-slate-200" />
-                    <span className="text-[11px] text-slate-500">{a.resultado}</span>
-                    <span className="ml-auto flex items-center gap-2">
-                      <span className="text-[11px] text-slate-400">{a.consultor}</span>
-                      {(podeGerir || a.consultor === usuario.nome) && (
-                        <button onClick={() => aoExcluirAtividade(a.id)} className="text-slate-200 opacity-0 transition group-hover:opacity-100 hover:text-rose-600" aria-label="Excluir registro">
-                          <Trash2 className="h-3 w-3" />
-                        </button>
-                      )}
-                    </span>
-                  </div>
-                  {a.etapaAnterior && a.etapaNova && a.etapaAnterior !== a.etapaNova && (
-                    <p className="mt-0.5 font-mono text-[11px] text-teal-700">{a.etapaAnterior} → {a.etapaNova}</p>
-                  )}
-                  {a.contato && <p className="text-[11px] text-slate-500">com {a.contato}</p>}
-                  <p className="mt-0.5 text-xs text-slate-700">{a.observacao}</p>
-                  {(num(a.leads) > 0 || num(a.impactados) > 0) && (
-                    <p className="mt-0.5 font-mono text-[11px] text-teal-800">
-                      {num(a.leads) > 0 && `${a.leads} leads`}
-                      {num(a.leads) > 0 && num(a.impactados) > 0 && " · "}
-                      {num(a.impactados) > 0 && `${a.impactados} impactados`}
-                    </p>
-                  )}
-                  {a.proximaAcao && (
-                    <p className="mt-0.5 text-[11px] text-slate-500">
-                      Próximo passo combinado: <span className="text-slate-700">{a.proximaAcao}</span>
-                      {a.dataProximoContato && <span className="font-mono"> · {brDataLonga(a.dataProximoContato)}</span>}
-                    </p>
-                  )}
-                </li>
-              ))}
-            </ol>
-          )}
+          <CompanyActions
+            key={empresa.id}
+            companyId={empresa.id}
+            companyName={empresa.nomeFantasia || empresa.razaoSocial}
+            legacyHistory={hist}
+            enabled={modo === "supabase"}
+            canManage={podeGerir}
+            userName={usuario.nome}
+            onDeleteLegacy={aoExcluirAtividade}
+          />
 
           {/* Anexos só no modo Supabase: dependem de auth real + RLS. No demo
               a empresa não tem UUID persistido nem sessão para assinar URLs. */}
