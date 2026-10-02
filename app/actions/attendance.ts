@@ -26,6 +26,8 @@ import {
   mondayOf,
   sundayOf,
 } from "@/lib/domain/attendance"
+import { mapSchoolAgendaOccurrence, matchesAgendaFilters, saoPauloToday } from "@/lib/domain/school-agenda"
+import { isUuid } from "@/lib/school-capture/domain"
 import { saoPauloIso, syncCalendarEvent } from "@/lib/calendar/calendar-sync"
 
 export type AttendanceActionResult =
@@ -385,10 +387,12 @@ export async function getAttendanceData(input?: { start?: string; end?: string; 
   const actor = await requireCan("attendance.read")
   const manager = can(actor.role, "attendance.manage")
   const admin = createAdminClient()
-  const today = new Date().toISOString().slice(0, 10)
+  const today = saoPauloToday()
   const start = input?.start || mondayOf(today)
   const end = input?.end || addDays(start, 34)
   const base = await loadSchedulingBase()
+  const scopedUserId = manager ? input?.userId : actor.id
+  if (scopedUserId && !isUuid(scopedUserId)) throw new Error("Consultor inválido.")
 
   let query = admin.from("attendance_occurrences").select("*").gte("occurrence_date", start).lte("occurrence_date", end).order("occurrence_date").order("start_time")
   if (!manager) query = query.eq("user_id", actor.id).in("status", ["published", "cancelled"])
@@ -399,6 +403,23 @@ export async function getAttendanceData(input?: { start?: string; end?: string; 
   if (error) throw new Error(error.message)
 
   const profileById = new Map(base.profiles.map((p: any) => [p.id, p]))
+  // Limite a consulta no servidor também para quem participa como apoio.
+  const participation = scopedUserId
+    ? await admin.from("school_action_participants").select("school_action_id").eq("user_id", scopedUserId)
+    : { data: [], error: null }
+  if (participation.error) throw new Error(participation.error.message)
+  let schoolQuery = admin.from("school_actions")
+    .select("*,school:schools(id,name,logradouro,numero,cidade),cycle:supervest_cycles(id,name),school_action_participants(user_id,user_name,role_in_action)")
+    .gte("action_date", start).lte("action_date", end).order("action_date").order("start_time")
+  if (scopedUserId) {
+    const ids = [...new Set((participation.data ?? []).map((p: any) => p.school_action_id))]
+    schoolQuery = ids.length
+      ? schoolQuery.or(`primary_owner_id.eq.${scopedUserId},id.in.(${ids.join(",")})`)
+      : schoolQuery.eq("primary_owner_id", scopedUserId)
+  }
+  const schoolResult = await schoolQuery
+  if (schoolResult.error) throw new Error(schoolResult.error.message)
+  const schoolOccurrences = (schoolResult.data ?? []).map((row: any) => mapSchoolAgendaOccurrence(row, profileById))
   const occurrenceIds = (occurrenceRows ?? []).map((o: any) => o.id)
   const { data: events } = occurrenceIds.length
     ? await admin.from("calendar_events").select("id,source_id,recipient_user_id,status,sequence").eq("source_type", "attendance").in("source_id", occurrenceIds)
@@ -415,6 +436,7 @@ export async function getAttendanceData(input?: { start?: string; end?: string; 
     const p: any = o.user_id ? profileById.get(o.user_id) : null
     return {
       id: o.id,
+      sourceType: "attendance",
       cycleId: o.cycle_id,
       seriesKey: o.series_key,
       templateWeekIndex: o.template_week_index,
@@ -438,7 +460,11 @@ export async function getAttendanceData(input?: { start?: string; end?: string; 
   })
 
   const providerStatus = await getCalendarProviderStatus(false)
-  return { actor, manager, start, end, ...base, occurrences, providerStatus }
+  const schoolOptions = [...new Map(schoolOccurrences.map((o) => [o.schoolId, { id: o.schoolId, name: o.schoolName }])).values()]
+  const schoolCycleOptions = [...new Map(schoolOccurrences.filter((o) => o.schoolCycleId).map((o) => [o.schoolCycleId, { id: o.schoolCycleId, name: o.schoolCycleName }])).values()]
+  const allOccurrences = [...occurrences, ...schoolOccurrences.filter((o) => matchesAgendaFilters(o, { ...input, userId: scopedUserId }))]
+    .sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime))
+  return { actor, manager, start, end, ...base, occurrences: allOccurrences, schoolOptions, schoolCycleOptions, providerStatus }
 }
 
 export async function updateTeamSlot(slotKey: string, userId: string | null): Promise<AttendanceActionResult> {

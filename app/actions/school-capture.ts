@@ -16,6 +16,8 @@ function refreshSchoolCapture(schoolId?: string) {
     "/high-school/captacao-escolas",
     "/high-school",
     "/high-school/agenda",
+    "/atendimento",
+    "/atendimento/minha-agenda",
     "/supervest",
     "/gestao/metas",
   ])

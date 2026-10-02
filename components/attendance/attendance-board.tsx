@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useMemo, useState, useTransition } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import {
   CalendarDays,
@@ -44,6 +44,7 @@ import {
   updateTeamSlot,
 } from "@/app/actions/attendance"
 import { loadAttendanceRange, previewAttendanceSchedule } from "@/app/actions/attendance-ui"
+import { matchesAgendaFilters } from "@/lib/domain/school-agenda"
 import { updateRotationEntry } from "@/app/actions/attendance-template"
 
 const purple = "#88005b"
@@ -85,21 +86,27 @@ function InviteBadge({ invite, status }: { invite?: any; status: string }) {
 }
 
 function OccurrenceCard({ occ, canManage, onEdit }: { occ: any; canManage: boolean; onEdit: (o: any) => void }) {
+  const isSchool = occ.sourceType === "school_action"
   return (
     <button
       type="button"
-      onClick={() => canManage && onEdit(occ)}
-      className={`w-full rounded-xl border p-2.5 text-left transition ${ACTIVITY_STYLE[occ.activity as AttendanceActivity]} ${canManage ? "hover:-translate-y-0.5 hover:shadow-sm" : "cursor-default"}`}
+      data-school-action-id={isSchool ? occ.id : undefined}
+      onClick={() => (isSchool || canManage) && onEdit(occ)}
+      className={`w-full rounded-xl border p-2.5 text-left transition ${isSchool ? "border-emerald-200 bg-emerald-50 text-emerald-900" : ACTIVITY_STYLE[occ.activity as AttendanceActivity]} ${isSchool || canManage ? "hover:-translate-y-0.5 hover:shadow-sm" : "cursor-default"}`}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="truncate text-xs font-semibold">{ACTIVITY_LABEL[occ.activity as AttendanceActivity]}</p>
-          <p className="mt-0.5 truncate text-[11px] opacity-80">{occ.responsibleName}</p>
+          <p className={`text-xs font-semibold ${isSchool ? "break-words" : "truncate"}`}>{isSchool ? occ.schoolName : ACTIVITY_LABEL[occ.activity as AttendanceActivity]}</p>
+          <p className="mt-0.5 text-[11px] opacity-80">{isSchool ? occ.actionType : occ.responsibleName}</p>
         </div>
         <span className="shrink-0 font-mono text-[10px]">{occ.startTime}–{occ.endTime}</span>
       </div>
       {occ.breakStart && occ.breakEnd && <p className="mt-1 text-[10px] opacity-75">Intervalo {occ.breakStart}–{occ.breakEnd}</p>}
-      <div className="mt-1.5"><InviteBadge invite={occ.invite} status={occ.status} /></div>
+      {isSchool ? <>
+        <p className="mt-1 break-words text-[10px] opacity-80">{occ.location}</p>
+        <p className="mt-1 text-[10px] capitalize">{occ.schoolStatus}</p>
+        <p className="mt-1 text-[10px] opacity-80">{occ.participants.map((p: any) => p.name).join(", ")}</p>
+      </> : <div className="mt-1.5"><InviteBadge invite={occ.invite} status={occ.status} /></div>}
     </button>
   )
 }
@@ -119,7 +126,7 @@ function ListView({ occurrences, canManage, onEdit }: { occurrences: any[]; canM
             <h3 className="text-sm font-semibold text-slate-900">{dayNames[weekdayOf(date)]}, {formatDateBr(date)}</h3>
             <span className="text-xs text-slate-400">{items.length} compromisso(s)</span>
           </div>
-          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">{items.map((o) => <OccurrenceCard key={o.id} occ={o} canManage={canManage} onEdit={onEdit} />)}</div>
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">{items.map((o) => <OccurrenceCard key={`${o.sourceType}:${o.id}`} occ={o} canManage={canManage} onEdit={onEdit} />)}</div>
         </section>
       ))}
     </div>
@@ -136,7 +143,7 @@ function WeekView({ start, occurrences, canManage, onEdit }: { start: string; oc
       <div className="grid min-h-[520px] min-w-[1000px] grid-cols-7">
         {days.map((date) => {
           const items = occurrences.filter((o) => o.date === date)
-          return <div key={date} className="space-y-2 border-r border-slate-100 p-2 last:border-r-0">{items.map((o) => <OccurrenceCard key={o.id} occ={o} canManage={canManage} onEdit={onEdit} />)}</div>
+          return <div key={date} className="space-y-2 border-r border-slate-100 p-2 last:border-r-0">{items.map((o) => <OccurrenceCard key={`${o.sourceType}:${o.id}`} occ={o} canManage={canManage} onEdit={onEdit} />)}</div>
         })}
       </div>
     </div>
@@ -159,7 +166,7 @@ function MonthView({ anchor, occurrences, canManage, onEdit }: { anchor: string;
           return (
             <div key={date} className={`min-h-[150px] border-b border-r border-slate-100 p-2 ${inMonth ? "bg-white" : "bg-slate-50/70"}`}>
               <p className={`mb-2 text-[11px] font-semibold ${inMonth ? "text-slate-600" : "text-slate-300"}`}>{date.slice(-2)}</p>
-              <div className="space-y-1.5">{items.slice(0, 4).map((o) => <OccurrenceCard key={o.id} occ={o} canManage={canManage} onEdit={onEdit} />)}{items.length > 4 && <p className="text-center text-[10px] text-slate-400">+{items.length - 4}</p>}</div>
+              <div className="space-y-1.5">{items.slice(0, 4).map((o) => <OccurrenceCard key={`${o.sourceType}:${o.id}`} occ={o} canManage={canManage} onEdit={onEdit} />)}{items.length > 4 && <p className="text-center text-[10px] text-slate-400">+{items.length - 4}</p>}</div>
             </div>
           )
         })}
@@ -168,33 +175,61 @@ function MonthView({ anchor, occurrences, canManage, onEdit }: { anchor: string;
   )
 }
 
+function SchoolActionDetails({ occ, onClose }: { occ: any; onClose: () => void }) {
+  return <Modal title="Divulgação em escola" onClose={onClose}>
+    <h3 className="mb-4 text-xl font-bold text-slate-900">{occ.schoolName}</h3>
+    <dl className="space-y-3 text-sm text-slate-700">
+      <div><dt className={labelCls}>Tipo da ação</dt><dd>{occ.actionType}</dd></div>
+      <div><dt className={labelCls}>Data e horário · São Paulo</dt><dd>{formatDateBr(occ.date)} · {occ.startTime || "—"}–{occ.endTime || "—"}</dd></div>
+      <div><dt className={labelCls}>Local</dt><dd className="break-words">{occ.location}</dd></div>
+      <div><dt className={labelCls}>Situação</dt><dd className="capitalize">{occ.schoolStatus}</dd></div>
+      <div><dt className={labelCls}>Edição do SuperVestibular</dt><dd>{occ.schoolCycleName}</dd></div>
+      <div><dt className={labelCls}>Participantes</dt><dd>{occ.participants.map((p: any) => <p key={p.userId}>{p.name} · {p.role}</p>)}</dd></div>
+      {occ.objective && <div><dt className={labelCls}>Objetivo</dt><dd className="whitespace-pre-wrap break-words">{occ.objective}</dd></div>}
+      {occ.notes && <div><dt className={labelCls}>Observações</dt><dd className="whitespace-pre-wrap break-words">{occ.notes}</dd></div>}
+      <div><dt className={labelCls}>Identificador da ação</dt><dd className="break-all font-mono text-xs">{occ.id}</dd></div>
+    </dl>
+    <Link className={`${btnPrimary} mt-5`} href={`/high-school/escolas/${occ.schoolId}`}>Abrir escola e histórico</Link>
+  </Modal>
+}
+
 export function AttendanceBoard({ initial, personalOnly = false }: { initial: any; personalOnly?: boolean }) {
   const router = useRouter()
   const [data, setData] = useState(initial)
   const [view, setView] = useState<"week" | "month" | "list">("week")
-  const [anchor, setAnchor] = useState(initial.start)
+  const [anchor, setAnchor] = useState(initial.anchor || initial.start)
   const [userFilter, setUserFilter] = useState(personalOnly ? initial.actor.id : "")
   const [activityFilter, setActivityFilter] = useState("")
   const [statusFilter, setStatusFilter] = useState("")
+  const [schoolFilter, setSchoolFilter] = useState("")
+  const [schoolCycleFilter, setSchoolCycleFilter] = useState("")
+  const requestSequence = useRef(0)
   const [modal, setModal] = useState<null | "suggest" | "new" | "settings" | "model" | "exception" | "absence" | { edit: any }>(null)
   const [feedback, setFeedback] = useState<{ ok: boolean; message: string } | null>(null)
   const [pending, startTransition] = useTransition()
   const canManage = Boolean(data.manager && !personalOnly)
 
-  const range = useMemo(() => view === "month" ? monthRange(anchor) : view === "week" ? { start: mondayOf(anchor), end: sundayOf(anchor) } : { start: data.start, end: data.end }, [anchor, data.end, data.start, view])
+  const range = useMemo(() => view === "month" ? monthRange(anchor) : view === "week" ? { start: mondayOf(anchor), end: sundayOf(anchor) } : { start: initial.start, end: initial.end }, [anchor, initial.end, initial.start, view])
+  const actorId = data.actor.id
+  const reload = useCallback(async (nextRange = range) => {
+    const request = ++requestSequence.current
+    // Os filtros locais partem do período completo, permitindo limpar um filtro sem perder eventos.
+    const fresh = await loadAttendanceRange({ start: nextRange.start, end: nextRange.end, userId: personalOnly ? actorId : userFilter || undefined })
+    if (request === requestSequence.current) setData(fresh)
+  }, [range, actorId, personalOnly, userFilter])
 
-  const reload = async (nextRange = range) => {
-    const fresh = await loadAttendanceRange({ start: nextRange.start, end: nextRange.end, userId: personalOnly ? data.actor.id : userFilter || undefined, activity: activityFilter || undefined, status: statusFilter || undefined })
-    setData(fresh)
-  }
+  useEffect(() => {
+    startTransition(async () => {
+      try { await reload() }
+      catch (error) { setFeedback({ ok: false, message: error instanceof Error ? error.message : "Não foi possível carregar a agenda." }) }
+    })
+    return () => { requestSequence.current += 1 }
+  }, [reload])
 
   const filtered = useMemo(() => (data.occurrences ?? []).filter((o: any) => {
     if (o.date < range.start || o.date > range.end) return false
-    if (userFilter && o.userId !== userFilter) return false
-    if (activityFilter && o.activity !== activityFilter) return false
-    if (statusFilter && o.status !== statusFilter) return false
-    return true
-  }), [data.occurrences, range, userFilter, activityFilter, statusFilter])
+    return matchesAgendaFilters(o, { userId: userFilter, activity: activityFilter, status: statusFilter, schoolId: schoolFilter, schoolCycleId: schoolCycleFilter })
+  }), [data.occurrences, range, userFilter, activityFilter, statusFilter, schoolFilter, schoolCycleFilter])
 
   const navigate = (direction: number) => {
     let nextAnchor = anchor
@@ -204,8 +239,7 @@ export function AttendanceBoard({ initial, personalOnly = false }: { initial: an
       nextAnchor = d.toISOString().slice(0, 10)
     } else nextAnchor = addDays(anchor, direction * 7)
     setAnchor(nextAnchor)
-    const nextRange = view === "month" ? monthRange(nextAnchor) : { start: mondayOf(nextAnchor), end: sundayOf(nextAnchor) }
-    startTransition(() => { void reload(nextRange) })
+
   }
 
   const action = (fn: () => Promise<any>, after?: () => void) => {
@@ -229,7 +263,7 @@ export function AttendanceBoard({ initial, personalOnly = false }: { initial: an
           <div>
             <div className="mb-2 h-1 w-9 rounded-full" style={{ background: orange }} />
             <div className="flex items-center gap-2"><CalendarDays className="h-5 w-5 text-[#88005b]" /><h1 className="text-2xl font-bold tracking-[-0.03em] text-slate-950">{personalOnly ? "Minha agenda" : "Atendimento"}</h1></div>
-            <p className="mt-1 max-w-2xl text-sm text-slate-500">{personalOnly ? "Sua programação publicada no UniConecta." : "Escala operacional da sala de matrícula, conversão e atividade externa."}</p>
+            <p className="mt-1 max-w-2xl text-sm text-slate-500">{personalOnly ? "Seus atendimentos e ações nas escolas." : "Escala operacional da sala de matrícula, conversão e atividade externa."}</p>
           </div>
           <div className="flex flex-wrap gap-2">
             {!personalOnly && <Link href="/atendimento/minha-agenda" className={btnSecondary}><UserRound className="h-4 w-4" />Minha agenda</Link>}
@@ -284,12 +318,14 @@ export function AttendanceBoard({ initial, personalOnly = false }: { initial: an
             {(["week", "month", "list"] as const).map((v) => <button key={v} onClick={() => setView(v)} className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${view === v ? "bg-white text-[#88005b] shadow-sm" : "text-slate-500"}`}>{v === "week" ? "Semana" : v === "month" ? "Mês" : "Lista"}</button>)}
           </div>
           {view !== "list" && <div className="flex items-center gap-1"><button className={btnSecondary} onClick={() => navigate(-1)} aria-label="Anterior"><ChevronLeft className="h-4 w-4" /></button><button className={btnSecondary} onClick={() => navigate(1)} aria-label="Próximo"><ChevronRight className="h-4 w-4" /></button></div>}
-          <div className="uni-filter-field"><label className={labelCls}>Consultor</label><select className={inputCls} value={userFilter} disabled={personalOnly} onChange={(e) => setUserFilter(e.target.value)}><option value="">Todos</option>{(data.members ?? []).filter((m: any) => m.attendanceEnabled || m.id === data.actor.id).map((m: any) => <option key={m.id} value={m.id}>{m.full_name}</option>)}</select></div>
-          <div className="uni-filter-field"><label className={labelCls}>Atividade</label><select className={inputCls} value={activityFilter} onChange={(e) => setActivityFilter(e.target.value)}><option value="">Todas</option><option value="room">Sala de matrícula</option><option value="conversion">Conversão</option><option value="external">Atividade externa</option></select></div>
-          <div className="uni-filter-field"><label className={labelCls}>Situação</label><select className={inputCls} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}><option value="">Todas</option><option value="draft">Rascunho</option><option value="published">Publicado</option><option value="cancelled">Cancelado</option></select></div>
-          <button className={btnSecondary} disabled={pending} onClick={() => startTransition(() => { void reload() })}><RefreshCw className={`h-4 w-4 ${pending ? "animate-spin" : ""}`} />Atualizar</button>
+          <div className="uni-filter-field"><label className={labelCls}>Consultor</label><select aria-label="Consultor" className={inputCls} value={userFilter} disabled={personalOnly} onChange={(e) => setUserFilter(e.target.value)}><option value="">Todos</option>{(data.members ?? []).map((m: any) => <option key={m.id} value={m.id}>{m.full_name}</option>)}</select></div>
+          <div className="uni-filter-field"><label className={labelCls}>Atividade</label><select aria-label="Atividade" className={inputCls} value={activityFilter} onChange={(e) => setActivityFilter(e.target.value)}><option value="">Todas</option><option value="room">Sala de matrícula</option><option value="conversion">Conversão</option><option value="external">Atividade externa</option><option value="school">Divulgação em escola</option></select></div>
+          <div className="uni-filter-field"><label className={labelCls}>Situação</label><select aria-label="Situação" className={inputCls} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}><option value="">Todas</option><option value="draft">Rascunho</option><option value="published">Publicado</option><option value="cancelled">Cancelado</option><option value="agendada">Agendada</option><option value="confirmada">Confirmada</option><option value="reagendada">Reagendada</option><option value="realizada">Realizada</option></select></div>
+          <div className="uni-filter-field"><label className={labelCls}>Escola</label><select aria-label="Escola" className={inputCls} value={schoolFilter} onChange={(e) => setSchoolFilter(e.target.value)}><option value="">Todas</option>{(data.schoolOptions ?? []).map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></div>
+          <div className="uni-filter-field"><label className={labelCls}>Edição do SuperVestibular</label><select aria-label="Edição do SuperVestibular" className={inputCls} value={schoolCycleFilter} onChange={(e) => setSchoolCycleFilter(e.target.value)}><option value="">Todas</option>{(data.schoolCycleOptions ?? []).map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
+          <button className={btnSecondary} disabled={pending} onClick={() => startTransition(async () => { await reload() })}><RefreshCw className={`h-4 w-4 ${pending ? "animate-spin" : ""}`} />Atualizar</button>
         </div>
-        <div className="mt-3 flex flex-wrap gap-3 text-[11px] text-slate-500"><span className="inline-flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-full bg-violet-400" />Sala de matrícula</span><span className="inline-flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-full bg-amber-400" />Conversão</span><span className="inline-flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-full bg-sky-400" />Atividade externa</span><span>Fuso: São Paulo/Brasília</span></div>
+        <div className="mt-3 flex flex-wrap gap-3 text-[11px] text-slate-500"><span className="inline-flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-full bg-violet-400" />Sala de matrícula</span><span className="inline-flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-full bg-amber-400" />Conversão</span><span className="inline-flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-full bg-sky-400" />Atividade externa</span><span className="inline-flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-full bg-emerald-400" />Divulgação em escola</span><span>Fuso: São Paulo/Brasília</span></div>
       </section>
 
       {view === "week" && <WeekView start={range.start} occurrences={filtered} canManage={canManage} onEdit={(o) => setModal({ edit: o })} />}
@@ -299,9 +335,10 @@ export function AttendanceBoard({ initial, personalOnly = false }: { initial: an
 
       <p className="mt-4 text-xs leading-relaxed text-slate-400">O status “Enviado ao provedor” confirma somente o envio pelo servidor de e-mail. A inclusão/aceitação no Outlook depende das configurações e da ação do destinatário; esta versão não lê respostas Aceito/Recusado nem conflitos do calendário externo.</p>
 
-      {modal === "suggest" && <SuggestModal data={data} pending={pending} onClose={() => setModal(null)} onFeedback={setFeedback} onReload={async (start, end) => { setAnchor(start); const fresh = await loadAttendanceRange({ start, end }); setData(fresh) }} />}
-      {modal === "new" && <OccurrenceEditor data={data} pending={pending} onClose={() => setModal(null)} onSave={(payload) => action(() => saveOccurrence(payload), () => setModal(null))} />}
-      {typeof modal === "object" && modal?.edit && <OccurrenceEditor data={data} occurrence={modal.edit} pending={pending} onClose={() => setModal(null)} onSave={(payload) => action(() => saveOccurrence(payload), () => setModal(null))} onCancel={() => action(() => cancelOccurrence(modal.edit.id), () => setModal(null))} />}
+      {modal === "suggest" && <SuggestModal data={data} pending={pending} onClose={() => setModal(null)} onFeedback={setFeedback} onReload={async (start: string, end: string) => { setAnchor(start); const fresh = await loadAttendanceRange({ start, end }); setData(fresh) }} />}
+      {modal === "new" && <OccurrenceEditor data={data} pending={pending} onClose={() => setModal(null)} onSave={(payload: Parameters<typeof saveOccurrence>[0]) => action(() => saveOccurrence(payload), () => setModal(null))} />}
+      {typeof modal === "object" && modal?.edit && modal.edit.sourceType !== "school_action" && <OccurrenceEditor data={data} occurrence={modal.edit} pending={pending} onClose={() => setModal(null)} onSave={(payload: Parameters<typeof saveOccurrence>[0]) => action(() => saveOccurrence(payload), () => setModal(null))} onCancel={() => action(() => cancelOccurrence(modal.edit.id), () => setModal(null))} />}
+      {typeof modal === "object" && modal?.edit?.sourceType === "school_action" && <SchoolActionDetails occ={modal.edit} onClose={() => setModal(null)} />}
       {modal === "settings" && <SettingsModal data={data} pending={pending} onClose={() => setModal(null)} action={action} openModel={() => setModal("model")} openException={() => setModal("exception")} openAbsence={() => setModal("absence")} />}
       {modal === "model" && <ModelModal data={data} pending={pending} onClose={() => setModal("settings")} action={action} />}
       {modal === "exception" && <ExceptionModal pending={pending} onClose={() => setModal("settings")} action={action} />}

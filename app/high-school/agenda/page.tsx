@@ -74,7 +74,7 @@ export default async function AgendaPage({
               </div>
               <div className="space-y-2">
                 {grupos.get(data)!.map((a) => (
-                  <Link key={a.id} href={`/high-school/escolas/${a.escolaId}`}>
+                  <Link key={a.id} data-school-action-id={a.id} href={`/high-school/escolas/${a.escolaId}`}>
                     <Card className="flex flex-wrap items-center justify-between gap-3 p-3 transition hover:border-brand/40">
                       <div className="min-w-0">
                         <p className="truncate text-sm font-medium text-slate-800">
@@ -82,9 +82,11 @@ export default async function AgendaPage({
                         </p>
                         <p className="text-xs text-slate-500">
                           {a.tipo}
-                          {a.inicio ? ` · ${a.inicio.slice(0, 5)}` : ""}
+                          {a.inicio ? ` · ${a.inicio.slice(0, 5)}${a.fim ? `–${a.fim.slice(0, 5)}` : ""}` : ""}
                           {a.objetivo ? ` · ${a.objetivo}` : ""}
                         </p>
+                        <p className="mt-1 text-xs text-slate-600">Local: {a.local || "Consultar a escola"}</p>
+                        <p className="mt-1 text-xs text-slate-600">Participantes: {[a.consultorPrincipalNome, ...a.participantes.filter(p => p.userId !== a.primaryOwnerId).map(p => p.nome)].filter(Boolean).join(", ") || "Não informados"}</p>
                         <p className="mt-1 text-xs text-slate-500">{cycles.find(c=>c.id===a.supervestCicloId)?.name??"Sem edição vinculada"} · Fuso de São Paulo</p>
                       </div>
                       <Chip className={CORES_STATUS_ACAO[a.status]}>

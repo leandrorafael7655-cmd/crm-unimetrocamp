@@ -32,6 +32,8 @@ function revalidarHS() {
   revalidatePath("/high-school/escolas")
   revalidatePath("/high-school/pipeline")
   revalidatePath("/high-school/agenda")
+  revalidatePath("/atendimento")
+  revalidatePath("/atendimento/minha-agenda")
   revalidatePath("/high-school/captacao-escolas")
 }
 
