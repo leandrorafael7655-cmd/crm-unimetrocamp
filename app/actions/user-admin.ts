@@ -160,10 +160,9 @@ export async function addUser(input: {
     if (attendanceError) attendanceWarning = " O usuário foi criado, mas não foi possível incluí-lo automaticamente no Atendimento."
   }
 
-  const redirectTo = await resetRedirectUrl()
-  const { error: mailError } = await admin.auth.resetPasswordForEmail(email, { redirectTo })
-  if (mailError) {
-    return { ok: true, message: `Usuário criado${input.includeInAttendance ? " e incluído no Atendimento" : ""}, mas o e-mail para definir a senha não pôde ser enviado agora. Use “Enviar recuperação” para tentar novamente.${attendanceWarning}` }
+  const mailResult = await sendUserRecovery(data.user.id)
+  if (!mailResult.ok) {
+    return { ok: true, message: `Usuário criado${input.includeInAttendance ? " e incluído no Atendimento" : ""}, mas não foi possível confirmar a recuperação de acesso. ${mailResult.message} Use “Enviar recuperação” para tentar novamente.${attendanceWarning}` }
   }
 
   return {

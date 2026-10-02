@@ -17,9 +17,14 @@ export default function AuthCallbackPage() {
     const input = callbackInput(window.location.search, window.location.hash)
     window.history.replaceState(null, "", "/auth/callback")
     completeAuthCallback(input).then(result => {
+      window.history.replaceState(null, "", "/auth/callback")
       if (result.ok && result.destination) router.replace(result.destination)
-      else setError(result.message)
-    }).catch(() => setError("Não foi possível validar o link. Solicite uma nova recuperação."))
+      else { setError(result.message); router.replace("/auth/callback") }
+    }).catch(() => {
+      window.history.replaceState(null, "", "/auth/callback")
+      setError("Não foi possível validar o link. Solicite uma nova recuperação.")
+      router.replace("/auth/callback")
+    })
   }, [router])
   return <AuthShell titulo="Validar link de acesso" subtitulo="Estamos validando seu link no provedor de autenticação.">
     {error ? <div className="space-y-4">

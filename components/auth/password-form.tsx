@@ -44,6 +44,8 @@ export function PasswordForm({ own = false }: { own?: boolean }) {
       if (containsAuthCallback(input)) {
         window.history.replaceState(null, "", "/auth/reset-password")
         const result = await completeAuthCallback({ ...input, next: "/auth/reset-password" })
+        window.history.replaceState(null, "", "/auth/reset-password")
+        router.replace("/auth/reset-password")
         if (!result.ok) { setError(result.message); setAllowed(false); return }
       }
       const access = await passwordResetAccess()
@@ -52,7 +54,7 @@ export function PasswordForm({ own = false }: { own?: boolean }) {
       if (!access.allowed) setError("O link é inválido, expirou ou já foi utilizado. Solicite um novo link de recuperação.")
     }
     validate().catch(() => { setAllowed(false); setError("Não foi possível validar seu acesso. Solicite outro link.") }).finally(() => setChecking(false))
-  }, [own])
+  }, [own, router])
   async function submit(event: React.FormEvent) {
     event.preventDefault()
     const validation = passwordValidation(password, confirmation)

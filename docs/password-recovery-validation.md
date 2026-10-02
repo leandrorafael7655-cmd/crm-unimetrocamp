@@ -14,6 +14,7 @@ O callback anterior só aceitava `code` (PKCE). A recuperação administrativa u
 - Cookie de autorização de recuperação assinado, HttpOnly, vinculado a usuário e sessão, com validade de 20 minutos. Uma sessão comum não abre a redefinição.
 - Nova senha e confirmação, controles de exibir/ocultar, validação no navegador e servidor: mínimo de 12 caracteres, maiúscula, minúscula, número e símbolo; máximo 128. O provedor ainda pode recusar senhas conforme sua política.
 - Troca própria exige senha atual; a verificação ocorre em cliente isolado do mesmo provedor. Sucesso depende da resposta efetiva do Auth. Após a troca, sessões são encerradas e o usuário volta ao login.
+- Alteração administrativa do e-mail de login também é restrita ao Gerente Comercial, impedindo desvio da recuperação para outro endereço. O envio inicial ao cadastrar um colaborador usa a mesma auditoria.
 - Gerente Comercial pode enviar recuperação ao usuário selecionado ou gerar senha temporária forte. Supervisor, Consultor B2B e High School são bloqueados no servidor. A senha temporária aparece apenas no retorno da criação e pode ser copiada; não existe leitura de senha anterior.
 - Troca obrigatória protegida em ações do servidor, middleware, políticas restritivas RLS e verificação anterior às requisições do Data API, incluindo RPCs SECURITY DEFINER. Alterações diretas do perfil não removem a obrigação.
 - A flag é liberada por um trigger somente após mudança efetiva da senha no Auth. Operações administrativas ficam bloqueadas durante a chamada ao provedor.
@@ -49,6 +50,10 @@ O callback anterior só aceitava `code` (PKCE). A recuperação administrativa u
 | Troca obrigatória no banco | Passou em Postgres local | PGlite testa RLS, pré-requisição, estado protegido e liberação após mudança de hash no Auth simulado |
 | Auditoria sem senha e sem edição pelos usuários | Passou | Testes de ausência de senha nas escritas, bloqueio de INSERT/DELETE e restrição de leitura |
 | Migração no banco do CRM | Passou | Trigger ativo, auditoria com RLS, pré-requisição configurada e 51 políticas de bloqueio; nenhum usuário real teve senha alterada |
+| Login → Esqueci minha senha | Passou na interface publicada | Campos de e-mail e botão Enviar link de redefinição visíveis |
+| Erro de link expirado e solicitar outro link | Passou na interface publicada | Callback com erro simulado do provedor exibiu mensagem clara; botão abriu o formulário de recuperação |
+| Perfil sem sessão | Passou na interface publicada | `/perfil` redirecionou a `/auth/login?next=%2Fperfil` |
+| Perfil e gestão com usuário autenticado | Não verificado na interface | A sessão do CRM encerrou; não houve novo login durante a validação |
 | Solicitação e recebimento real do e-mail | Não verificado | Não há caixa de e-mail de teste conectada; autenticação no painel foi recusada |
 | Abrir e-mail sem login e salvar senha de conta real de teste | Não verificado | Não houve acesso ao painel nem credenciais de conta de teste; não foi substituído por simulação apresentada como teste real |
 | Login com nova senha e rejeição da antiga | Não verificado no provedor real | Depende da execução com uma conta de teste do Supabase |

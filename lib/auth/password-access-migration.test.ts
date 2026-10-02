@@ -34,7 +34,7 @@ describe("Password rotation database protection", () => {
       insert into auth.users values('${collaborator}','hash-inicial-simulado');
       insert into public.companies values(1,'Empresa de teste');
     `)
-    await db.exec(readFileSync(new URL("../../supabase/migrations/20261002185826_user_password_access.sql", import.meta.url), "utf8"))
+    await db.exec(readFileSync(new URL("../../supabase/migrations/20261002191852_user_password_access.sql", import.meta.url), "utf8"))
   })
   afterAll(async () => { await db.close() })
 
