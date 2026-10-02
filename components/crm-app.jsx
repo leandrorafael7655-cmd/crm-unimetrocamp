@@ -1332,6 +1332,11 @@ function FormAtividade({ empresa, aoSalvar, aoFechar }) {
 
 function FichaEmpresa({ empresa, atividades, equipe, config, podeGerir, usuario, modo, aoFechar, aoEditar, aoRegistrar, aoTransferir, aoAdicionarContato, aoRemoverContato, aoAbrirConvenio, aoExcluirAtividade, aoSalvarLink, aoAtualizar }) {
   const [novoContato, setNovoContato] = useState(null);
+  const [portfolioVersion, setPortfolioVersion] = useState(0);
+  const atualizarFicha = useCallback(async () => {
+    await aoAtualizar?.();
+    setPortfolioVersion(version => version + 1);
+  }, [aoAtualizar]);
   const hoje = hojeISO();
   const sem = diffDias(empresa.ultimoContato, hoje);
   const hist = atividades.filter((a) => a.empresaId === empresa.id && !a.meetingType).sort((a, b) => b.data.localeCompare(a.data));
@@ -1354,8 +1359,8 @@ function FichaEmpresa({ empresa, atividades, equipe, config, podeGerir, usuario,
         </span>
       </div>
 
-      {modo === "supabase" && <CompanyPortfolioSummary companyId={empresa.id} refreshToken={empresa.updatedAt} onChanged={aoAtualizar} />}
-      {modo === "supabase" && <CompanyMeetings companyId={empresa.id} companyName={empresa.nomeFantasia || empresa.razaoSocial} onChanged={aoAtualizar} />}
+      {modo === "supabase" && <CompanyPortfolioSummary companyId={empresa.id} refreshToken={`${empresa.updatedAt}:${portfolioVersion}`} onChanged={atualizarFicha} />}
+      {modo === "supabase" && <CompanyMeetings companyId={empresa.id} companyName={empresa.nomeFantasia || empresa.razaoSocial} onChanged={atualizarFicha} />}
 
       <div className="grid gap-4 py-3 lg:grid-cols-5">
         <div className="space-y-3 lg:col-span-2">
@@ -1503,6 +1508,7 @@ function FichaEmpresa({ empresa, atividades, equipe, config, podeGerir, usuario,
             canManage={podeGerir}
             userName={usuario.nome}
             onDeleteLegacy={aoExcluirAtividade}
+            onChanged={atualizarFicha}
           />
 
           {/* Anexos só no modo Supabase: dependem de auth real + RLS. No demo

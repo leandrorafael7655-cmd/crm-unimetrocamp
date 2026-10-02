@@ -155,7 +155,7 @@ function LegacyCard({ activity: a, canDelete, onDelete }: { activity: Atividade;
   )
 }
 
-export function CompanyActions({ companyId, companyName, legacyHistory, enabled, canManage, userName, onDeleteLegacy }: {
+export function CompanyActions({ companyId, companyName, legacyHistory, enabled, canManage, userName, onDeleteLegacy, onChanged }: {
   companyId: string
   companyName: string
   legacyHistory: Atividade[]
@@ -163,6 +163,7 @@ export function CompanyActions({ companyId, companyName, legacyHistory, enabled,
   canManage: boolean
   userName: string
   onDeleteLegacy: (id: string) => void
+  onChanged?: () => void
 }) {
   const [data, setData] = useState<PanelData | null>(null)
   const [loading, setLoading] = useState(enabled)
@@ -213,6 +214,7 @@ export function CompanyActions({ companyId, companyName, legacyHistory, enabled,
       if (result.ok) {
         setData(current => current ? { ...current, actions: [result.action, ...current.actions.filter(a => a.id !== result.action.id)] } : current)
         setFilter("all"); setDraft(null); setNotice(result.message); registerButton.current?.focus()
+        onChanged?.()
       } else setSaveError(result.message)
     } catch { setSaveError("A conexão não respondeu. Seus dados foram mantidos; tente salvar novamente.") }
     finally { saving.current = false; setBusy(false) }
