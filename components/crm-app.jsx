@@ -2107,7 +2107,7 @@ export default function CrmApp({ modo = "demo", aoSair, usuarioInicial = null, p
             <div className="mt-1 flex items-center gap-3">
               <button onClick={sair} className="text-[11px] text-teal-400 hover:underline">{modo === "demo" ? "trocar usuário" : "sair"}</button>
               {modo === "supabase" && (
-                <a href="/auth/reset-password" className="text-[11px] text-slate-400 hover:underline">trocar senha</a>
+                <a href="/perfil/alterar-senha" className="text-[11px] text-slate-400 hover:underline">trocar senha</a>
               )}
             </div>
           </div>

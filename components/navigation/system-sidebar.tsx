@@ -50,7 +50,7 @@ function groupForPath(pathname: string): GroupKey {
   if (pathname.startsWith("/high-school") || pathname.startsWith("/supervest")) return "high-school"
   if (pathname.startsWith("/mapa")) return "routes"
   if (pathname.startsWith("/atendimento")) return "attendance"
-  if (pathname.startsWith("/gestao") || pathname.startsWith("/auth/reset-password")) return "settings"
+  if (pathname.startsWith("/gestao") || pathname.startsWith("/perfil/alterar-senha")) return "settings"
   return "b2b"
 }
 
@@ -213,7 +213,7 @@ export function SystemSidebarMenu({ role, embedded = false, activeLegacyView = "
             <GroupButton group="settings" label="Configurações" Icone={Settings} open={openGroup === "settings"} onClick={toggle} />
             {openGroup === "settings" && (
               <div className="ml-3 mt-1 space-y-0.5 border-l border-white/10 pl-2">
-                <NavLink href="/auth/reset-password" label="Alterar minha senha" Icone={KeyRound} active={pathname === "/auth/reset-password"} />
+                <NavLink href="/perfil/alterar-senha" label="Alterar minha senha" Icone={KeyRound} active={pathname === "/perfil/alterar-senha"} />
                 {(can(canonicalRole, "goals.read.own") || can(canonicalRole, "goals.read.all")) && <NavLink href="/gestao/metas" label="Central de Metas" Icone={Target} active={pathname.startsWith("/gestao/metas")} />}
                 {isManager && (
                   <>
@@ -252,12 +252,12 @@ export function SystemSidebar({ role, userName }: { role?: RoleInput; userName?:
       </Link>
       <div className="min-h-0 flex-1 overflow-y-auto py-2.5"><SystemSidebarMenu role={role} /></div>
       <div className="border-t border-white/10 px-4 py-3.5 md:px-5 md:py-4">
-        {userName && <p className="truncate text-sm font-semibold text-white">{userName}</p>}
+        {userName && <Link href="/perfil" className="block truncate text-sm font-semibold text-white hover:underline" aria-label="Meu perfil">{userName}</Link>}
         <p className="mt-0.5 text-[11px] text-[#b4fcf1]/55">{rotuloRole(role)}</p>
         <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
           <button type="button" disabled={signingOut} onClick={sair} className="rounded font-medium text-[#b4fcf1] underline-offset-4 hover:text-white hover:underline disabled:opacity-50">{signingOut ? "saindo…" : "sair"}</button>
           <span className="h-3 w-px bg-white/15" aria-hidden />
-          <Link href="/auth/reset-password" className="rounded text-[#b4fcf1]/65 underline-offset-4 hover:text-white hover:underline">trocar senha</Link>
+          <Link href="/perfil/alterar-senha" className="rounded text-[#b4fcf1]/65 underline-offset-4 hover:text-white hover:underline">trocar senha</Link>
         </div>
       </div>
     </nav>

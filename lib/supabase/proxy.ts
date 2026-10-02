@@ -65,5 +65,15 @@ export async function updateSession(request: NextRequest) {
     return copySessionCookies(supabaseResponse, NextResponse.redirect(loginUrl))
   }
 
+  if (user && !isApiRoute && !isPublicPage(pathname)) {
+    const { data: profile, error } = await supabase.from("profiles").select("must_change_password,password_reset_pending").eq("id", user.id).maybeSingle()
+    if (error || profile?.must_change_password || profile?.password_reset_pending) {
+      const resetUrl = request.nextUrl.clone()
+      resetUrl.pathname = "/auth/reset-password"
+      resetUrl.search = ""
+      return copySessionCookies(supabaseResponse, NextResponse.redirect(resetUrl))
+    }
+  }
+
   return supabaseResponse
 }

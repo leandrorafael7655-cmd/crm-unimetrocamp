@@ -1,10 +1,11 @@
 "use server"
 
-import { headers } from "next/headers"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { requireManager, requireRole } from "@/lib/auth/guards"
 import { normalizeRole, type Role } from "@/lib/domain/roles"
 import { authRedirectUrl, siteUrl } from "@/lib/auth/urls"
+import { recoveryRedirectUrl } from "@/lib/auth/recovery-email"
+import { sendUserRecovery } from "@/app/actions/user-access"
 
 const ROLES: Role[] = ["gerente", "supervisor", "consultor_b2b", "high_school"]
 
@@ -14,6 +15,7 @@ export interface ManagedUser {
   email: string
   role: Role
   active: boolean
+  must_change_password: boolean
   consultant_tag: string | null
   email_confirmed: boolean
   created_at: string | null
@@ -46,15 +48,7 @@ function isDeletedAuthUser(user: unknown): boolean {
 }
 
 async function resetRedirectUrl(): Promise<string> {
-  try {
-    const h = await headers()
-    const host = h.get("x-forwarded-host") ?? h.get("host")
-    const proto = h.get("x-forwarded-proto") ?? "https"
-    if (host) return authRedirectUrl(`${proto}://${host}`, "/auth/reset-password")
-  } catch {
-    // Usa a URL pública configurada quando não houver request disponível.
-  }
-  return authRedirectUrl(siteUrl(), "/auth/reset-password")
+  return recoveryRedirectUrl()
 }
 
 export async function listManagedUsers(): Promise<ManagedUsersResult> {
@@ -75,7 +69,7 @@ export async function listManagedUsers(): Promise<ManagedUsersResult> {
 
   const ids = authUsers.map((u) => u.id)
   const [{ data: profiles, error: profileError }, { data: attendanceRows, error: attendanceError }] = await Promise.all([
-    admin.from("profiles").select("id, full_name, email, role, active, consultant_tag").in("id", ids),
+    admin.from("profiles").select("id, full_name, email, role, active, consultant_tag, must_change_password").in("id", ids),
     admin.from("attendance_members").select("user_id,enabled").in("user_id", ids),
   ])
 
@@ -94,6 +88,7 @@ export async function listManagedUsers(): Promise<ManagedUsersResult> {
         email: p?.email || u.email || "",
         role: normalizeRole(p?.role || meta.role),
         active: p?.active !== false,
+        must_change_password: p?.must_change_password === true,
         consultant_tag: p?.consultant_tag || meta.consultant_tag || null,
         email_confirmed: Boolean(u.email_confirmed_at),
         created_at: u.created_at || null,
@@ -178,18 +173,15 @@ export async function addUser(input: {
 }
 
 export async function sendPasswordRecovery(emailInput: string): Promise<UserAdminResult> {
+  // Compatibility for existing callers; resolve a canonical profile, never an arbitrary email.
   try {
-    await requireManager()
-  } catch (e) {
-    return { ok: false, message: (e as Error).message }
+    await requireRole("gerente")
+    const { data } = await createAdminClient().from("profiles").select("id").eq("email", emailInput.trim().toLowerCase()).maybeSingle()
+    if (!data) return { ok: false, message: "Colaborador não encontrado." }
+    return sendUserRecovery(data.id)
+  } catch {
+    return { ok: false, message: "Operação restrita ao Gerente Comercial." }
   }
-  const email = emailInput.trim().toLowerCase()
-  if (!validEmail(email)) return { ok: false, message: "E-mail inválido." }
-  const admin = createAdminClient()
-  const redirectTo = await resetRedirectUrl()
-  const { error } = await admin.auth.resetPasswordForEmail(email, { redirectTo })
-  if (error) return { ok: false, message: `Não foi possível enviar a recuperação: ${error.message}` }
-  return { ok: true, message: `E-mail de recuperação enviado para ${email}.` }
 }
 
 async function cancelFutureCalendarEventsForUser(userId: string, actorId: string): Promise<string[]> {

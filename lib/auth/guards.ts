@@ -14,6 +14,8 @@ export interface ActorProfile {
   role: Role
   active: boolean
   consultant_tag: string | null
+  must_change_password: boolean
+  password_reset_pending: boolean
 }
 
 /** Perfil do usuário autenticado no request atual (ou null). */
@@ -26,7 +28,7 @@ export async function getActor(): Promise<ActorProfile | null> {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, email, full_name, role, active, consultant_tag")
+    .select("id, email, full_name, role, active, consultant_tag, must_change_password, password_reset_pending")
     .eq("id", user.id)
     .maybeSingle()
 
@@ -46,6 +48,7 @@ export async function requireActor(): Promise<ActorProfile> {
   const actor = await getActor()
   if (!actor) throw new Error("Não autenticado.")
   if (!actor.active) throw new Error("Seu acesso está desativado. Procure a gerência.")
+  if (actor.must_change_password || actor.password_reset_pending) throw new Error("Altere sua senha temporária antes de acessar o CRM.")
   return actor
 }
 

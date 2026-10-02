@@ -21,6 +21,7 @@ import {
   type UserAdminResult,
 } from "@/app/actions/user-admin"
 import { setAttendanceMember } from "@/app/actions/attendance"
+import { UserAccessActions, UserAccessHistory } from "@/components/team/user-access-actions"
 
 const input =
   "rounded-md border border-slate-300 px-2.5 py-1.5 text-sm text-slate-900 outline-none focus:border-[#88005b] focus:ring-2 focus:ring-[#88005b]/20"
@@ -80,10 +81,13 @@ export function GerenciarUsuarios({ perfil }: { perfil: Usuario }) {
 
   const acao = async (chave: string, fn: () => Promise<Result>, recarregar = true) => {
     setOcupado(chave)
-    const r = await fn()
-    mostrar(r)
-    if (r.ok && recarregar) await carregar()
-    setOcupado(null)
+    try {
+      const r = await fn()
+      mostrar(r)
+      if (r.ok && recarregar) await carregar()
+    } catch {
+      mostrar({ ok: false, message: "Não foi possível concluir a operação. Tente novamente." })
+    } finally { setOcupado(null) }
   }
 
   const excluir = async (u: ManagedUser) => {
@@ -117,7 +121,7 @@ export function GerenciarUsuarios({ perfil }: { perfil: Usuario }) {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Link href="/auth/reset-password" className={btnNeutro}>Alterar minha senha</Link>
+          <Link href="/perfil/alterar-senha" className={btnNeutro}>Alterar minha senha</Link>
           <span className="rounded-full bg-[#b4fcf1]/40 px-2 py-0.5 font-mono text-[10px] uppercase text-[#00302b]">{rotuloRole(perfil.role)}</span>
         </div>
       </div>
@@ -182,7 +186,7 @@ export function GerenciarUsuarios({ perfil }: { perfil: Usuario }) {
             {carregando && <tr><td colSpan={5} className="px-3 py-4 text-center text-xs text-slate-400">Carregando…</td></tr>}
             {!carregando && linhas.map((u) => {
               const busy = ocupado === u.id
-              const status = !u.active ? "Desativado" : u.email_confirmed ? "Ativo" : "Pendente"
+              const status = !u.active ? "Desativado" : u.must_change_password ? "Troca de senha obrigatória" : u.email_confirmed ? "Ativo" : "Pendente"
               return (
                 <tr key={u.id}>
                   <td className="px-3 py-2">
@@ -215,7 +219,7 @@ export function GerenciarUsuarios({ perfil }: { perfil: Usuario }) {
                   <td className="uni-table-actions px-3 py-2">
                     <div className="flex flex-wrap justify-end gap-1.5">
                       <button type="button" className={btnNeutro} disabled={busy || u.id === perfil.id} onClick={() => acao(u.id, () => setActive(u.id, !u.active))}>{u.active ? "Desativar" : "Ativar"}</button>
-                      <button type="button" className={btnNeutro} disabled={busy || !u.email} onClick={() => acao(u.id, () => sendPasswordRecovery(u.email), false)}>Enviar recuperação</button>
+                      {ehAdministrador && <UserAccessActions userId={u.id} name={u.full_name} self={u.id === perfil.id} disabled={busy || !u.active || !u.email} feedback={mostrar} />}
                       {ehAdministrador && u.id !== perfil.id && <button type="button" className={btnDanger} disabled={busy} onClick={() => excluir(u)}>Excluir</button>}
                     </div>
                   </td>
@@ -226,6 +230,8 @@ export function GerenciarUsuarios({ perfil }: { perfil: Usuario }) {
           </tbody>
         </table>
       </div>
+
+      {ehAdministrador && <UserAccessHistory />}
 
       {ehAdministrador && (
         <div className="mt-4 rounded-md border border-dashed border-slate-300 p-3">

@@ -1,4 +1,4 @@
-import { Analytics } from '@vercel/analytics/next'
+import { SafeAnalytics } from '@/components/auth/safe-analytics'
 import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import './globals.css'
@@ -34,7 +34,7 @@ export default function RootLayout({
     <html lang="pt-BR" className={`${geistSans.variable} ${geistMono.variable} bg-background`}>
       <body className="font-sans antialiased">
         {children}
-        {process.env.NODE_ENV === 'production' && <Analytics />}
+        {process.env.NODE_ENV === 'production' && <SafeAnalytics />}
       </body>
     </html>
   )

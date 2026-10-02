@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { Suspense, useEffect, useMemo, useState } from "react"
 import { Eye, EyeOff } from "lucide-react"
 import { AuthShell } from "@/components/auth/auth-shell"
+import { requestPasswordRecovery } from "@/app/actions/password"
+import { callbackInput, containsAuthCallback } from "@/lib/auth/callback-input"
 import { authRedirectUrl, browserOrigin } from "@/lib/auth/urls"
 
 type Modo = "login" | "recuperar" | "reenviar"
@@ -48,7 +50,7 @@ function LoginInner() {
   const params = useSearchParams()
   const destino = useMemo(() => destinoSeguro(params.get("next")), [params])
 
-  const [modo, setModo] = useState<Modo>("login")
+  const [modo, setModo] = useState<Modo>(params.get("modo") === "recuperar" ? "recuperar" : "login")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [mostrarSenha, setMostrarSenha] = useState(false)
@@ -58,6 +60,12 @@ function LoginInner() {
   const [precisaConfirmar, setPrecisaConfirmar] = useState(false)
 
   useEffect(() => {
+    const callback = callbackInput(window.location.search, window.location.hash)
+    if (containsAuthCallback(callback) && (callback.type === "recovery" || callback.error || callback.next === "/auth/reset-password")) {
+      // A provider Site URL fallback can reach login with the fragment still intact.
+      window.location.replace(`/auth/callback${window.location.search}${window.location.hash}`)
+      return
+    }
     const e = params.get("erro")
     const m = params.get("msg")
     if (e && MENSAGENS_URL[e]) setErro(MENSAGENS_URL[e])
@@ -82,7 +90,6 @@ function LoginInner() {
       router.refresh()
     } catch (err) {
       const { code, status } = (err ?? {}) as { code?: string; status?: number }
-      console.error("[auth] login error:", err)
       setErro(mensagemDeCodigo(code, status))
     } finally {
       setCarregando(false)
@@ -95,15 +102,11 @@ function LoginInner() {
     setErro(null)
     setAviso(null)
     try {
-      const supabase = createClient()
-      const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
-        redirectTo: authRedirectUrl(browserOrigin(), "/auth/reset-password"),
-      })
-      if (error) throw error
-      setAviso("Se existir uma conta com este e-mail, enviaremos um link para redefinir a senha.")
-    } catch (err) {
-      console.error("[auth] reset error:", err)
-      setAviso("Se existir uma conta com este e-mail, enviaremos um link para redefinir a senha.")
+      const result = await requestPasswordRecovery(email)
+      if (result.ok) setAviso(result.message)
+      else setErro(result.message)
+    } catch {
+      setErro("Não foi possível solicitar a recuperação. Tente novamente.")
     } finally {
       setCarregando(false)
     }
@@ -124,7 +127,6 @@ function LoginInner() {
       if (error) throw error
       setAviso("Se o e-mail estiver pendente de confirmação, reenviamos o link de acesso.")
     } catch (err) {
-      console.error("[auth] resend error:", err)
       setAviso("Se o e-mail estiver pendente de confirmação, reenviamos o link de acesso.")
     } finally {
       setCarregando(false)
