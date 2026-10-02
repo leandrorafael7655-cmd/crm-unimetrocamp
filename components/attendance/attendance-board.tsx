@@ -97,15 +97,16 @@ function OccurrenceCard({ occ, canManage, onEdit }: { occ: any; canManage: boole
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className={`text-xs font-semibold ${isSchool ? "break-words" : "truncate"}`}>{isSchool ? occ.schoolName : ACTIVITY_LABEL[occ.activity as AttendanceActivity]}</p>
-          <p className="mt-0.5 text-[11px] opacity-80">{isSchool ? occ.actionType : occ.responsibleName}</p>
+          <p className={`mt-0.5 text-[11px] opacity-80 ${isSchool ? "line-clamp-2 break-words" : ""}`}>{isSchool ? occ.actionType : occ.responsibleName}</p>
         </div>
-        <span className="shrink-0 font-mono text-[10px]">{occ.startTime}–{occ.endTime}</span>
+        {!isSchool && <span className="shrink-0 font-mono text-[10px]">{occ.startTime}–{occ.endTime}</span>}
       </div>
       {occ.breakStart && occ.breakEnd && <p className="mt-1 text-[10px] opacity-75">Intervalo {occ.breakStart}–{occ.breakEnd}</p>}
       {isSchool ? <>
-        <p className="mt-1 break-words text-[10px] opacity-80">{occ.location}</p>
+        <p className="mt-1 font-mono text-[10px]">{occ.startTime}–{occ.endTime}</p>
+        <p className="mt-1 line-clamp-2 break-words text-[10px] opacity-80">{occ.location}</p>
         <p className="mt-1 text-[10px] capitalize">{occ.schoolStatus}</p>
-        <p className="mt-1 text-[10px] opacity-80">{occ.participants.map((p: any) => p.name).join(", ")}</p>
+        <p className="mt-1 line-clamp-2 text-[10px] opacity-80">{occ.participants.map((p: any) => p.name).join(", ")}</p>
       </> : <div className="mt-1.5"><InviteBadge invite={occ.invite} status={occ.status} /></div>}
     </button>
   )
