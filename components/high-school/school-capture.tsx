@@ -29,6 +29,8 @@ import {
 import {
   CAPTURE_STATES,
   CAPTURE_METRICS,
+  CAPTURE_STATUSES,
+  UNIDENTIFIED_CONSULTANT,
   EMPTY_CAPTURE_FILTERS,
   selectedCaptureCycle,
   schoolCaptureSummaries,
@@ -43,6 +45,17 @@ import {
   type SchoolCaptureSummary,
   type CampaignAudit,
 } from "@/lib/school-capture/domain"
+import {
+  captureConsultantStats,
+  type CaptureOrganization,
+} from "@/lib/school-capture/kanban"
+import {
+  actionLabel,
+  dateLabel,
+  instantLabel,
+  interactionDateLabel,
+} from "@/lib/school-capture/format"
+import { SchoolCaptureKanban } from "@/components/high-school/school-capture-kanban"
 import {
   STATUS_ACAO_HS,
   TIPOS_ACAO_HS,
@@ -70,22 +83,6 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
       {children}
     </label>
   )
-}
-function dateLabel(date: string) {
-  return date ? date.slice(0, 10).split("-").reverse().join("/") : "—"
-}
-function instantLabel(iso: string) {
-  return new Date(iso).toLocaleString("pt-BR", {
-    timeZone: "America/Sao_Paulo",
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  })
-}
-function actionLabel(a: AcaoEscola) {
-  return `${dateLabel(a.data)} · ${a.inicio?.slice(0, 5) || "Sem horário"}${a.fim ? `–${a.fim.slice(0, 5)}` : ""}`
 }
 function Dialog({
   title,
@@ -196,6 +193,9 @@ export function SchoolCapture({
   const [historyCycle, setHistoryCycle] = useState(initial?.id ?? "all")
   const [modal, setModal] = useState<ModalState | null>(null)
   const [configuration, setConfiguration] = useState(false)
+  const [view, setView] = useState<"list" | "kanban">("list")
+  const [organization, setOrganization] =
+    useState<CaptureOrganization>("situation")
   const [message, setMessage] = useState("")
   const [pending, startTransition] = useTransition()
   const managerial = ["gerente", "supervisor"].includes(actor.role)
@@ -206,9 +206,27 @@ export function SchoolCapture({
     () => (cycle ? schoolCaptureSummaries(data, cycle, now, filters) : []),
     [data, cycle, now, filters],
   )
-  const baseRows = filterCaptureSummaries(summaries, filters, false)
   const rows = filterCaptureSummaries(summaries, filters)
   const totals = captureTotals(rows)
+  const attendanceStats = captureConsultantStats(rows)
+  const consultantOptions = [
+    ...new Map([
+      ...data.owners.map(
+        (o) => [o.id, { id: o.id, name: o.nome, active: o.active }] as const,
+      ),
+      ...captureConsultantStats(summaries).map(
+        (s) =>
+          [
+            s.id,
+            {
+              id: s.id,
+              name: s.name,
+              active: data.owners.find((o) => o.id === s.id)?.active,
+            },
+          ] as const,
+      ),
+    ]).values(),
+  ].sort((a, b) => a.name.localeCompare(b.name, "pt-BR"))
   const official = cycle
     ? data.officialSnapshots
         .filter((s) => s.cycle_id === cycle.id)
@@ -347,7 +365,8 @@ export function SchoolCapture({
   function situation(row: SchoolCaptureSummary) {
     return (
       <div className="flex flex-wrap gap-1.5">
-        {row.scheduled.length > 0 && (
+        <Chip>{CAPTURE_STATUSES[row.status]}</Chip>
+        {row.status === "performed" && row.scheduled.length > 0 && (
           <Chip className="border-sky-200 bg-sky-50 text-sky-800">
             {row.scheduled.length} agendada(s)/confirmada(s)
           </Chip>
@@ -357,8 +376,9 @@ export function SchoolCapture({
             {row.performed.length} realizada(s)
           </Chip>
         )}
-        {row.metrics.to_schedule && <Chip>Para agendar divulgação</Chip>}
-        {row.contacts.length === 0 && <Chip>Sem contato no ciclo</Chip>}
+        {row.metrics.to_schedule && (
+          <Chip>Precisa de atendimento e agendamento</Chip>
+        )}
       </div>
     )
   }
@@ -789,7 +809,14 @@ export function SchoolCapture({
           titulo="Captação Escolas"
           descricao="Carteira compartilhada para divulgar cada edição do SuperVestibular."
           acao={
-            <Link href="/high-school/agenda" className={buttonCls}>
+            <Link
+              href={
+                cycle
+                  ? `/high-school/agenda?ciclo=${encodeURIComponent(cycle.id)}`
+                  : "/high-school/agenda"
+              }
+              className={buttonCls}
+            >
               Agenda High School
             </Link>
           }
@@ -802,6 +829,56 @@ export function SchoolCapture({
           </h2>
         )}
         {toolbar}
+        {!compact && cycle && (
+          <div className="flex flex-wrap items-center gap-3 border-t border-slate-100 pt-3">
+            <div
+              className="inline-flex rounded-lg border border-slate-200 p-1"
+              role="group"
+              aria-label="Visualização da captação"
+            >
+              {(
+                [
+                  ["list", "Lista"],
+                  ["kanban", "Kanban"],
+                ] as const
+              ).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={view === value}
+                  className={`min-h-10 rounded-md px-4 text-sm font-medium ${view === value ? "bg-brand text-white" : "text-slate-600 hover:bg-slate-50"}`}
+                  onClick={() => setView(value)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {view === "kanban" && (
+              <div
+                className="inline-flex rounded-lg border border-slate-200 p-1"
+                role="group"
+                aria-label="Organização do Kanban"
+              >
+                {(
+                  [
+                    ["situation", "Por situação"],
+                    ["consultant", "Por consultor"],
+                  ] as const
+                ).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-pressed={organization === value}
+                    className={`min-h-10 rounded-md px-3 text-xs font-medium ${organization === value ? "bg-brand/10 text-brand" : "text-slate-600 hover:bg-slate-50"}`}
+                    onClick={() => setOrganization(value)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         {cycle && (
           <p className="text-xs text-slate-500">
             {cycle.name} · Ano letivo da divulgação:{" "}
@@ -838,6 +915,7 @@ export function SchoolCapture({
             {CAPTURE_METRICS.map((metric) => (
               <button
                 key={metric.key}
+                data-capture-metric={metric.key}
                 aria-pressed={filters.situation === metric.key}
                 className={`min-w-0 rounded-xl border bg-white p-3 text-left transition hover:border-brand/50 ${filters.situation === metric.key ? "border-brand ring-1 ring-brand/20" : "border-slate-200"}`}
                 onClick={() =>
@@ -849,17 +927,77 @@ export function SchoolCapture({
               >
                 <p className="text-xs text-slate-500">{metric.label}</p>
                 <p className="mt-1 text-2xl font-semibold text-slate-900">
-                  {baseRows.filter((r) => r.metrics[metric.key]).length}
+                  {rows.filter((r) => r.metrics[metric.key]).length}
                 </p>
               </button>
             ))}
           </div>
           <p className="text-xs text-slate-500">
-            Indicadores acima contam escolas, uma vez por escola.{" "}
-            {baseRows.filter((r) => r.eligibility === "unknown").length}{" "}
-            escola(s) aguardam confirmação de séries e permanecem no
-            levantamento.
+            Indicadores acima contam escolas, uma vez por escola. Os números
+            acompanham todos os filtros aplicados.{" "}
+            {rows.filter((r) => r.eligibility === "unknown").length} escola(s)
+            aguardam confirmação de séries e permanecem no levantamento.
           </p>
+          <Card className="space-y-3 p-4">
+            <h2 className="text-sm font-semibold">
+              Escolas atendidas por consultor
+            </h2>
+            <div className="flex flex-wrap gap-2">
+              {attendanceStats.map((stat) => (
+                <button
+                  key={stat.id}
+                  className={`${buttonCls} min-w-0 max-w-full text-left`}
+                  aria-pressed={filters.attendingConsultant === stat.id}
+                  onClick={() =>
+                    updateFilter({
+                      attendingConsultant:
+                        filters.attendingConsultant === stat.id ? "" : stat.id,
+                      situation: "all",
+                    })
+                  }
+                >
+                  <span className="break-words">
+                    {stat.name} · {stat.schools} escola(s) · {stat.actions}{" "}
+                    ação(ões)
+                  </span>
+                </button>
+              ))}
+              {rows.some((r) => r.unidentifiedPerformed.length > 0) && (
+                <button
+                  className={buttonCls}
+                  aria-pressed={
+                    filters.attendingConsultant === UNIDENTIFIED_CONSULTANT
+                  }
+                  onClick={() =>
+                    updateFilter({
+                      attendingConsultant:
+                        filters.attendingConsultant === UNIDENTIFIED_CONSULTANT
+                          ? ""
+                          : UNIDENTIFIED_CONSULTANT,
+                      situation: "all",
+                    })
+                  }
+                >
+                  Consultor a identificar ·{" "}
+                  {
+                    rows.filter((r) => r.unidentifiedPerformed.length > 0)
+                      .length
+                  }{" "}
+                  escola(s)
+                </button>
+              )}
+              {!attendanceStats.length &&
+                !rows.some((r) => r.unidentifiedPerformed.length > 0) && (
+                  <p className="text-xs text-slate-500">
+                    Sem atendimento realizado nesta seleção.
+                  </p>
+                )}
+            </div>
+            <p className="text-xs text-slate-500">
+              Cada consultor recebe sua participação. A escola e a ação são
+              contadas uma única vez nos totais gerais.
+            </p>
+          </Card>
           <Card className="p-4">
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
               <Field label="Nome da escola">
@@ -928,6 +1066,24 @@ export function SchoolCapture({
               <Field label="Situação da captação">
                 <select
                   className={inputCls}
+                  value={filters.status}
+                  onChange={(e) =>
+                    updateFilter({
+                      status: e.target.value as CaptureFilters["status"],
+                    })
+                  }
+                >
+                  <option value="all">Todas</option>
+                  {Object.entries(CAPTURE_STATUSES).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Indicador de acompanhamento">
+                <select
+                  className={inputCls}
                   value={filters.situation}
                   onChange={(e) =>
                     updateFilter({
@@ -943,20 +1099,45 @@ export function SchoolCapture({
                   ))}
                 </select>
               </Field>
-              <Field label="Consultor em atuação ou participante">
+              <Field label="Consultor atuando">
                 <select
                   className={inputCls}
-                  value={filters.consultant}
-                  onChange={(e) => updateFilter({ consultant: e.target.value })}
+                  value={filters.actingConsultant}
+                  onChange={(e) =>
+                    updateFilter({ actingConsultant: e.target.value })
+                  }
                 >
                   <option value="">Todos</option>
-                  {data.owners
-                    .map((o) => (
-                      <option key={o.id} value={o.id}>
-                        {o.nome}
-                        {o.active === false ? " · Inativo (histórico)" : ""}
-                      </option>
-                    ))}
+                  {data.owners.map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {o.nome}
+                      {o.active === false ? " · Inativo (histórico)" : ""}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Consultor que realizou atendimento">
+                <select
+                  className={inputCls}
+                  value={filters.attendingConsultant}
+                  onChange={(e) =>
+                    updateFilter({ attendingConsultant: e.target.value })
+                  }
+                >
+                  <option value="">Todos</option>
+                  {consultantOptions.map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {o.name}
+                      {o.active === false
+                        ? " · Inativo (histórico)"
+                        : o.id.startsWith("historical:")
+                          ? " · Histórico"
+                          : ""}
+                    </option>
+                  ))}
+                  <option value={UNIDENTIFIED_CONSULTANT}>
+                    Consultor a identificar
+                  </option>
                 </select>
               </Field>
               <Field label="Movimentações a partir de">
@@ -982,6 +1163,19 @@ export function SchoolCapture({
                 Limpar filtros / Todas
               </button>
             </div>
+            <button
+              type="button"
+              aria-pressed={filters.situation === "to_schedule"}
+              className={`${buttonCls} mt-3 ${filters.situation === "to_schedule" ? "border-brand bg-brand/5 text-brand" : ""}`}
+              onClick={() =>
+                updateFilter({
+                  situation:
+                    filters.situation === "to_schedule" ? "all" : "to_schedule",
+                })
+              }
+            >
+              Precisam de atendimento e agendamento
+            </button>
           </Card>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <Card className="p-4">
@@ -1034,188 +1228,213 @@ export function SchoolCapture({
               A atuação não reserva a escola.
             </p>
           </div>
-          <div className="space-y-3 lg:hidden">
-            {rows.map((row) => (
-              <Card key={row.school.id} className="space-y-3 p-4">
-                <div>
-                  <button
-                    onClick={() => openDetail(row.school.id)}
-                    className="break-words text-left text-sm font-semibold text-brand hover:underline"
-                  >
-                    {row.school.nome}
-                  </button>
-                  <p className="mt-1 text-xs text-slate-500">
-                    {row.school.cidade} · {row.school.rede} · {row.school.etapa}
-                  </p>
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {row.school.classificacao && (
-                      <Chip
-                        className={
-                          CORES_CLASSIFICACAO_HS[row.school.classificacao]
-                        }
+          {view === "kanban" ? (
+            <SchoolCaptureKanban
+              rows={rows}
+              organization={organization}
+              cycleName={cycle.name}
+              now={now}
+              canWrite={canWrite}
+              actor={actor}
+              onOpen={open}
+              onHistory={openDetail}
+            />
+          ) : (
+            <>
+              <div className="space-y-3 lg:hidden">
+                {rows.map((row) => (
+                  <Card key={row.school.id} className="space-y-3 p-4">
+                    <div>
+                      <button
+                        onClick={() => openDetail(row.school.id)}
+                        className="break-words text-left text-sm font-semibold text-brand hover:underline"
                       >
-                        {row.school.classificacao}
-                      </Chip>
-                    )}
-                    <Chip>
-                      {row.eligibility === "eligible"
-                        ? "3º ano confirmado"
-                        : row.eligibility === "unknown"
-                          ? "Confirmar séries"
-                          : "Elegibilidade alterada · histórico"}
-                    </Chip>
-                  </div>
-                </div>
-                {situation(row)}
-                <div className="text-xs text-slate-600">
-                  <p className="mb-1 font-semibold">Quem está atuando</p>
-                  {who(row)}
-                </div>
-                <div className="text-xs text-slate-600">
-                  <p className="mb-1 font-semibold">Último contato do ciclo</p>
-                  {row.lastContact
-                    ? `${instantLabel(row.lastContact.occurred_at)} · ${row.lastContact.consultant_name}`
-                    : "Sem contato"}
-                </div>
-                <div className="text-xs text-slate-600">
-                  <p className="mb-1 font-semibold">Próximo passo e prazo</p>
-                  {nextSteps(row)}
-                </div>
-                <div className="text-xs text-slate-600">
-                  <p className="mb-1 font-semibold">Próxima divulgação</p>
-                  {row.nextAction
-                    ? `${actionLabel(row.nextAction)} · ${row.nextAction.tipo}`
-                    : "Nenhuma divulgação válida agendada"}
-                </div>
-                <div className="text-xs text-slate-600">{results(row)}</div>
-                <button
-                  className={buttonCls}
-                  onClick={() => openDetail(row.school.id)}
-                >
-                  Ver histórico / registrar
-                </button>
-              </Card>
-            ))}
-          </div>
-          <Card className="hidden lg:block">
-            <div
-              className="uni-scroll-region max-h-[75vh] overflow-auto"
-              tabIndex={0}
-              role="region"
-              aria-label="Escolas e acompanhamento da captação"
-            >
-              <table
-                data-capture-table
-                className="w-full min-w-[1735px] table-fixed text-left text-xs"
-              >
-                <colgroup>
-                  {[230, 150, 220, 180, 180, 210, 185, 240, 140].map(
-                    (width, index) => (
-                      <col key={index} style={{ width }} />
-                    ),
-                  )}
-                </colgroup>
-                <thead className="bg-slate-50 text-slate-500">
-                  <tr>
-                    {[
-                      "Escola / cidade",
-                      "Classificação / séries",
-                      "Quem está atuando",
-                      "Situação da captação",
-                      "Último contato do ciclo",
-                      "Próximo passo / prazo",
-                      "Próxima divulgação",
-                      "Resultados / pendências",
-                      "",
-                    ].map((label) => (
-                      <th key={label} className="p-3 font-medium">
-                        {label}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {rows.map((row) => (
-                    <tr
-                      key={row.school.id}
-                      className="align-top text-slate-600"
+                        {row.school.nome}
+                      </button>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {row.school.cidade} · {row.school.rede} ·{" "}
+                        {row.school.etapa}
+                      </p>
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {row.school.classificacao && (
+                          <Chip
+                            className={
+                              CORES_CLASSIFICACAO_HS[row.school.classificacao]
+                            }
+                          >
+                            {row.school.classificacao}
+                          </Chip>
+                        )}
+                        <Chip>
+                          {row.eligibility === "eligible"
+                            ? "3º ano confirmado"
+                            : row.eligibility === "unknown"
+                              ? "Confirmar séries"
+                              : "Elegibilidade alterada · histórico"}
+                        </Chip>
+                      </div>
+                    </div>
+                    {situation(row)}
+                    <div className="text-xs text-slate-600">
+                      <p className="mb-1 font-semibold">Quem está atuando</p>
+                      {who(row)}
+                    </div>
+                    <div className="text-xs text-slate-600">
+                      <p className="mb-1 font-semibold">
+                        Último contato do ciclo
+                      </p>
+                      {row.lastInteraction
+                        ? `${interactionDateLabel(row.lastInteraction)} · ${row.lastInteraction.author}`
+                        : "Sem contato"}
+                    </div>
+                    <div className="text-xs text-slate-600">
+                      <p className="mb-1 font-semibold">
+                        Próximo passo e prazo
+                      </p>
+                      {nextSteps(row)}
+                    </div>
+                    <div className="text-xs text-slate-600">
+                      <p className="mb-1 font-semibold">Próxima divulgação</p>
+                      {row.nextAction
+                        ? `${actionLabel(row.nextAction)} · ${row.nextAction.tipo}`
+                        : "Nenhuma divulgação válida agendada"}
+                    </div>
+                    <div className="text-xs text-slate-600">{results(row)}</div>
+                    <button
+                      className={buttonCls}
+                      onClick={() => openDetail(row.school.id)}
                     >
-                      <td className="w-48 p-3">
-                        <button
-                          onClick={() => openDetail(row.school.id)}
-                          className="break-words text-left font-semibold text-brand hover:underline"
+                      Ver histórico / registrar
+                    </button>
+                  </Card>
+                ))}
+              </div>
+              <Card className="hidden lg:block">
+                <div
+                  className="uni-scroll-region max-h-[75vh] overflow-auto"
+                  tabIndex={0}
+                  role="region"
+                  aria-label="Escolas e acompanhamento da captação"
+                >
+                  <table
+                    data-capture-table
+                    className="w-full min-w-[1735px] table-fixed text-left text-xs"
+                  >
+                    <colgroup>
+                      {[230, 150, 220, 180, 180, 210, 185, 240, 140].map(
+                        (width, index) => (
+                          <col key={index} style={{ width }} />
+                        ),
+                      )}
+                    </colgroup>
+                    <thead className="bg-slate-50 text-slate-500">
+                      <tr>
+                        {[
+                          "Escola / cidade",
+                          "Classificação / séries",
+                          "Quem está atuando",
+                          "Situação da captação",
+                          "Último contato do ciclo",
+                          "Próximo passo / prazo",
+                          "Próxima divulgação",
+                          "Resultados / pendências",
+                          "",
+                        ].map((label) => (
+                          <th key={label} className="p-3 font-medium">
+                            {label}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {rows.map((row) => (
+                        <tr
+                          key={row.school.id}
+                          className="align-top text-slate-600"
                         >
-                          {row.school.nome}
-                        </button>
-                        <p className="mt-1">
-                          {row.school.cidade} · {row.school.rede}
-                        </p>
-                        <p className="mt-1 text-slate-400">
-                          {row.school.etapa}
-                        </p>
-                      </td>
-                      <td className="w-36 p-3">
-                        <div className="space-y-2">
-                          {row.school.classificacao && (
-                            <Chip
-                              className={
-                                CORES_CLASSIFICACAO_HS[row.school.classificacao]
-                              }
+                          <td className="w-48 p-3">
+                            <button
+                              onClick={() => openDetail(row.school.id)}
+                              className="break-words text-left font-semibold text-brand hover:underline"
                             >
-                              {row.school.classificacao}
-                            </Chip>
-                          )}
-                          <p>
-                            {row.eligibility === "eligible"
-                              ? "3º ano confirmado"
-                              : row.eligibility === "unknown"
-                                ? "Confirmar séries"
-                                : "Elegibilidade alterada"}
-                          </p>
-                        </div>
-                      </td>
-                      <td className="w-56 p-3">{who(row)}</td>
-                      <td className="w-40 p-3">{situation(row)}</td>
-                      <td className="w-40 p-3">
-                        {row.lastContact ? (
-                          <>
-                            <p>{instantLabel(row.lastContact.occurred_at)}</p>
+                              {row.school.nome}
+                            </button>
                             <p className="mt-1">
-                              {row.lastContact.consultant_name}
+                              {row.school.cidade} · {row.school.rede}
                             </p>
-                          </>
-                        ) : (
-                          "Sem contato"
-                        )}
-                      </td>
-                      <td className="w-48 p-3">{nextSteps(row)}</td>
-                      <td className="w-40 p-3">
-                        {row.nextAction ? (
-                          <>
-                            <p>{actionLabel(row.nextAction)}</p>
-                            <p className="mt-1">
-                              {row.nextAction.tipo} · {row.nextAction.status}
+                            <p className="mt-1 text-slate-400">
+                              {row.school.etapa}
                             </p>
-                          </>
-                        ) : (
-                          "Nenhuma divulgação válida"
-                        )}
-                      </td>
-                      <td className="w-56 p-3">{results(row)}</td>
-                      <td className="uni-table-actions sticky right-0 w-28 bg-white p-3 shadow-[-4px_0_8px_rgba(0,0,0,0.04)]">
-                        <button
-                          className={buttonCls}
-                          onClick={() => openDetail(row.school.id)}
-                        >
-                          Ver / registrar
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Card>
+                          </td>
+                          <td className="w-36 p-3">
+                            <div className="space-y-2">
+                              {row.school.classificacao && (
+                                <Chip
+                                  className={
+                                    CORES_CLASSIFICACAO_HS[
+                                      row.school.classificacao
+                                    ]
+                                  }
+                                >
+                                  {row.school.classificacao}
+                                </Chip>
+                              )}
+                              <p>
+                                {row.eligibility === "eligible"
+                                  ? "3º ano confirmado"
+                                  : row.eligibility === "unknown"
+                                    ? "Confirmar séries"
+                                    : "Elegibilidade alterada"}
+                              </p>
+                            </div>
+                          </td>
+                          <td className="w-56 p-3">{who(row)}</td>
+                          <td className="w-40 p-3">{situation(row)}</td>
+                          <td className="w-40 p-3">
+                            {row.lastInteraction ? (
+                              <>
+                                <p>
+                                  {interactionDateLabel(row.lastInteraction)}
+                                </p>
+                                <p className="mt-1">
+                                  {row.lastInteraction.author}
+                                </p>
+                              </>
+                            ) : (
+                              "Sem contato"
+                            )}
+                          </td>
+                          <td className="w-48 p-3">{nextSteps(row)}</td>
+                          <td className="w-40 p-3">
+                            {row.nextAction ? (
+                              <>
+                                <p>{actionLabel(row.nextAction)}</p>
+                                <p className="mt-1">
+                                  {row.nextAction.tipo} ·{" "}
+                                  {row.nextAction.status}
+                                </p>
+                              </>
+                            ) : (
+                              "Nenhuma divulgação válida"
+                            )}
+                          </td>
+                          <td className="w-56 p-3">{results(row)}</td>
+                          <td className="uni-table-actions sticky right-0 w-28 bg-white p-3 shadow-[-4px_0_8px_rgba(0,0,0,0.04)]">
+                            <button
+                              className={buttonCls}
+                              onClick={() => openDetail(row.school.id)}
+                            >
+                              Ver / registrar
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </Card>
+            </>
+          )}
           {!rows.length && (
             <p className="rounded-xl border border-dashed p-8 text-center text-sm text-slate-500">
               Nenhuma escola para estes filtros. Limpe os filtros para voltar ao

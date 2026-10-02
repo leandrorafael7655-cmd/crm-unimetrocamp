@@ -4,6 +4,7 @@ import path from "node:path"
 import os from "node:os"
 import http from "node:http"
 import assert from "node:assert/strict"
+import { verifyCaptureKanban } from "./school-capture-kanban-flow.mjs"
 import { createRequire } from "node:module"
 import postcss from "postcss"
 import tailwind from "@tailwindcss/postcss"
@@ -268,6 +269,7 @@ try {
           await detail.getByRole("button",{name:"Fechar Escola mapeada de teste",exact:true}).click()
           await page.getByLabel("Edição do SuperVestibular").selectOption("10000000-0000-4000-8000-000000000027")
           await check("Capture 2027 preserved after 2028 selection "+width)
+          await verifyCaptureKanban({page, check, width, settle, engine})
           if(width===320||width===1366) await page.screenshot({path:`responsive-results/${engine}-capture-${width}.png`,fullPage:true})
         }
         if(name==="atendimento") {

@@ -1,6 +1,17 @@
 import { readFileSync } from "node:fs"
 import { PGlite } from "@electric-sql/pglite"
 import { describe, it, expect } from "vitest"
+import {
+  mapAcaoRow,
+  mapEscolaRow,
+  mapResultadoRow,
+} from "@/lib/domain/high-school"
+import {
+  schoolCaptureSummaries,
+  captureTotals,
+  type CaptureData,
+} from "./domain"
+import { captureConsultantStats } from "./kanban"
 
 describe("persistência, auditoria e RLS da captação", () => {
   it("valida carteira compartilhada, isolamento por edição, transações e histórico", async () => {
@@ -83,7 +94,71 @@ describe("persistência, auditoria e RLS da captação", () => {
         estimated_classes: 1,
         notes: "Teste",
       }
+      const reloadCapture = async (): Promise<CaptureData> => {
+        const read = async (table: string) =>
+          (
+            await db.query<{ data: Record<string, unknown> }>(
+              `select to_jsonb(t) data from ${table} t`,
+            )
+          ).rows.map((r) => r.data)
+        const [
+          schools,
+          cycles,
+          actions,
+          participants,
+          results,
+          contacts,
+          engagements,
+          profiles,
+        ] = await Promise.all([
+          read("schools"),
+          read("supervest_cycles"),
+          read("school_actions"),
+          read("school_action_participants"),
+          read("school_action_grade_results"),
+          read("school_campaign_contacts"),
+          read("school_campaign_engagements"),
+          read("profiles"),
+        ])
+        return {
+          schools: schools.map(mapEscolaRow),
+          cycles: cycles as unknown as CaptureData["cycles"],
+          contacts: contacts as unknown as CaptureData["contacts"],
+          engagements: engagements as unknown as CaptureData["engagements"],
+          actions: actions.map((a) =>
+            mapAcaoRow(
+              a,
+              participants
+                .filter((p) => p.school_action_id === a.id)
+                .map((p) => ({
+                  userId: String(p.user_id),
+                  nome: String(p.user_name),
+                })),
+              results
+                .filter((r) => r.school_action_id === a.id)
+                .map(mapResultadoRow),
+            ),
+          ),
+          owners: profiles.map((p) => ({
+            id: String(p.id),
+            nome: String(p.full_name),
+            role: String(p.role),
+          })),
+          estimates: [],
+          grades: [],
+          institutionalContacts: [],
+          history: [],
+          officialSnapshots: [],
+        }
+      }
+      const cycleRows = (d: CaptureData, id: string) =>
+        schoolCaptureSummaries(
+          d,
+          d.cycles.find((c) => c.id === id)!,
+          "2026-10-02T12:00:00.000Z",
+        )
       await asUser(carla)
+      expect(cycleRows(await reloadCapture(), c27)[0].status).toBe("no_contact")
       await save("start", { status: "em_negociacao", support_ids: [] })
       await asUser(ramon)
       await save("start", { status: "aguardando_retorno", support_ids: [] })
@@ -137,7 +212,13 @@ describe("persistência, auditoria e RLS da captação", () => {
       ).toEqual([
         { consultant_id: carla, consultant_name: "Carla", created_by: carla },
       ])
+      await asUser(manager)
       const first = (await save("action", actionPayload)).id
+      expect(cycleRows(await reloadCapture(), c27)[0]).toMatchObject({
+        status: "scheduled",
+        nextAction: { id: first },
+      })
+      await asUser(carla)
       expect(
         (
           await db.query(
@@ -204,6 +285,28 @@ describe("persistência, auditoria e RLS da captação", () => {
         },
         c28,
       )
+      // Consulta nova do banco: a situação e os resultados não dependem do
+      // estado do formulário nem do autor que cadastrou a ação.
+      const persisted = await reloadCapture(),
+        persisted27 = cycleRows(persisted, c27)
+      expect(persisted27[0].status).toBe("performed")
+      expect(persisted27[0].pendingResults).toHaveLength(0)
+      expect(captureConsultantStats(persisted27).map((s) => s.id)).toEqual([
+        carla,
+        ramon,
+      ])
+      expect(captureTotals(persisted27)).toMatchObject({
+        performed: 1,
+        leads: 0,
+        registrations: 0,
+      })
+      expect(cycleRows(persisted, c28)[0].metrics.to_schedule).toBe(true)
+      expect(cycleRows(persisted, c28)[0].alerts).toContain(
+        "Ação cancelada: reagendar",
+      )
+      expect(
+        cycleRows(await reloadCapture(), c27)[0].performed[0].resultados,
+      ).toHaveLength(1)
       await expect(
         db.query(
           "update school_action_grade_results set school_action_id=$1 where school_action_id=$2",

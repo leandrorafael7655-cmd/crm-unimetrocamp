@@ -10,7 +10,9 @@ export const captureActor = {
 export const captureCycleIds = [uid(27), uid(28)]
 export const captureSchoolId = uid(90)
 let data
+let agendaEnabled = false
 export function resetCaptureFixtures() {
+  agendaEnabled = false
   data = {
     cycles: [27, 28].map((edition, i) => ({
       id: captureCycleIds[i],
@@ -92,6 +94,18 @@ export function resetCaptureFixtures() {
 }
 resetCaptureFixtures()
 export const captureFixtureData = () => structuredClone(data)
+export const enableCaptureAgendaFixture = () => {agendaEnabled = true}
+export const isCaptureAgendaFixture = () => agendaEnabled
+export function listCaptureFixtureActions(filters = {}) {
+  return captureFixtureData().actions.filter((a) => (!filters.cicloId || a.supervestCicloId === filters.cicloId) && (!filters.status || a.status === filters.status))
+}
+export function seedCaptureUnidentifiedFixture() {
+  data.schools.push({...data.schools[0], id: uid(93), nome: "Escola com atendimento sem participantes"})
+  data.actions.push({id: uid(94), escolaId: uid(93), escolaNome: "Escola com atendimento sem participantes",
+    supervestCicloId: captureCycleIds[0], data: "2026-09-29", inicio: "10:00", fim: "11:00",
+    tipo: "Divulgação SuperVestibular", status: "realizada", primaryOwnerId: null,
+    createdBy: captureActor.id, participantes: [], resultados: []})
+}
 const nameOf = (id) => data.owners.find((o) => o.id === id)?.nome
 const now = () => "2026-10-02T00:30:00.000Z"
 function begin(input, payload) {

@@ -17,7 +17,7 @@ export const CAPTURE_STATES = {
   em_contato: "Em contato",
   em_negociacao: "Em negociação",
   aguardando_retorno: "Aguardando retorno",
-  agendamento_conjunto: "Agendamento em conjunto",
+  agendamento_conjunto: "Pronta para agendar / agendamento em conjunto",
   encerrada: "Encerrada",
 } as const
 export type EngagementStatus = keyof typeof CAPTURE_STATES
@@ -103,27 +103,45 @@ export type CaptureMetric =
   | "no_contact"
   | "no_engagement"
   | "negotiating"
+  | "ready_to_schedule"
   | "to_schedule"
   | "scheduled"
   | "performed"
   | "pending_results"
 export const CAPTURE_METRICS: { key: CaptureMetric; label: string }[] = [
   { key: "eligible", label: "Escolas elegíveis" },
-  { key: "no_contact", label: "Sem contato no ciclo" },
+  { key: "no_contact", label: "Escolas sem contato" },
   { key: "no_engagement", label: "Sem atuação atual" },
   { key: "negotiating", label: "Em contato ou negociação" },
-  { key: "to_schedule", label: "Para agendar divulgação" },
-  { key: "scheduled", label: "Com ações agendadas" },
-  { key: "performed", label: "Com ações realizadas" },
+  { key: "ready_to_schedule", label: "Prontas para agendar" },
+  { key: "to_schedule", label: "Precisam de atendimento e agendamento" },
+  { key: "scheduled", label: "Escolas agendadas" },
+  { key: "performed", label: "Escolas atendidas" },
   { key: "pending_results", label: "Com resultados pendentes" },
 ]
+export const CAPTURE_STATUSES = {
+  no_contact: "Sem contato",
+  negotiating: "Em contato / negociação",
+  ready_to_schedule: "Para agendar",
+  scheduled: "Agendadas / confirmadas",
+  performed: "Atendidas",
+} as const
+export type CaptureStatus = keyof typeof CAPTURE_STATUSES
+export const UNIDENTIFIED_CONSULTANT = "unidentified"
+export interface CaptureAttendance {
+  id: string
+  name: string
+  actionIds: string[]
+}
 export interface CaptureFilters {
   name: string
   city: string
   network: string
   classification: string
   stage: string
-  consultant: string
+  actingConsultant: string
+  attendingConsultant: string
+  status: CaptureStatus | "all"
   from: string
   to: string
   situation: CaptureMetric
@@ -134,7 +152,9 @@ export const EMPTY_CAPTURE_FILTERS: CaptureFilters = {
   network: "",
   classification: "",
   stage: "",
-  consultant: "",
+  actingConsultant: "",
+  attendingConsultant: "",
+  status: "all",
   from: "",
   to: "",
   situation: "all",
@@ -167,7 +187,44 @@ export function eligibility(
     : "unknown"
 }
 export function publicityAction(a: AcaoEscola) {
+  // Contatos legados nunca representam uma ação de divulgação realizada.
+  const contactTypes = [
+    "ligacao",
+    "telefone",
+    "whatsapp",
+    "e-mail",
+    "email",
+    "contato",
+  ]
+  const type = a.tipo
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+  if (contactTypes.includes(type)) return false
   return Boolean(a.divulgacaoCaptacao || ACOES_SUPERVEST.includes(a.tipo))
+}
+export function actionAttendees(a: AcaoEscola, owners: CaptureOwner[]) {
+  const people = new Map<string, { id: string; name: string }>()
+  const add = (
+    userId: string | null | undefined,
+    snapshot: string | null | undefined,
+  ) => {
+    const owner = owners.find((o) => o.id === userId)
+    const name = snapshot?.trim() || owner?.nome.trim()
+    if (
+      !name ||
+      ["Usuário do histórico", "Consultor a identificar"].includes(name)
+    )
+      return
+    // Um nome preservado no registro identifica participação histórica mesmo
+    // quando a conta já foi removida. Nunca usamos o cadastrador como participante.
+    const id = isUuid(userId) ? userId : `historical:${name}`
+    if (!people.has(id)) people.set(id, { id, name })
+  }
+  add(a.primaryOwnerId, a.consultorPrincipalNome)
+  for (const p of a.participantes) add(p.userId, p.nome)
+  return [...people.values()]
 }
 export function actionHasResults(a: AcaoEscola) {
   return a.resultados.length > 0 || Boolean(a.resultadoInformadoEm)
@@ -176,12 +233,22 @@ export function actionStartsAt(a: AcaoEscola) {
   return actionTimestamp(a.data, a.inicio?.slice(0, 5) || "00:00")
 }
 export function validScheduledAction(a: AcaoEscola, now: string) {
-  return (
-    publicityAction(a) &&
-    ["agendada", "confirmada", "reagendada"].includes(a.status) &&
-    Boolean(a.inicio && a.fim) &&
-    actionStartsAt(a) >= now
+  if (
+    !(
+      publicityAction(a) &&
+      ["agendada", "confirmada", "reagendada"].includes(a.status) &&
+      a.inicio &&
+      a.fim
+    )
   )
+    return false
+  try {
+    const start = actionStartsAt(a)
+    const end = actionTimestamp(a.data, a.fim.slice(0, 5))
+    return end > start && start >= now
+  } catch {
+    return false
+  }
 }
 function periodMatches(
   date: string,
@@ -197,11 +264,18 @@ function dayOf(iso: string) {
 }
 export interface SchoolCaptureSummary {
   school: Escola
+  status: CaptureStatus
   eligibility: ReturnType<typeof eligibility>
   contacts: CampaignContact[]
   engagements: CampaignEngagement[]
   actions: AcaoEscola[]
   lastContact: CampaignContact | null
+  lastInteraction: {
+    at: string
+    hasTime: boolean
+    author: string
+    channel: string
+  } | null
   nextSteps: CampaignContact[]
   nextAction: AcaoEscola | null
   scheduled: AcaoEscola[]
@@ -213,7 +287,8 @@ export interface SchoolCaptureSummary {
   pendingRegistrations: number
   registrations: number
   impacted: number | null
-  participantIds: string[]
+  attendances: CaptureAttendance[]
+  unidentifiedPerformed: AcaoEscola[]
   hasMovementInPeriod: boolean
 }
 export function schoolCaptureSummaries(
@@ -260,12 +335,47 @@ export function schoolCaptureSummaries(
       .filter((e) => !e.ended_at)
       .sort((a, b) => a.user_name.localeCompare(b.user_name, "pt-BR"))
     const actions = allActions.filter((a) => periodMatches(a.data, filters))
+    const interactionActions = actions.filter(
+      (a) => a.status === "realizada" && !publicityAction(a),
+    )
+    const lastInteraction =
+      [
+        ...contacts.map((c) => ({
+          at: c.occurred_at,
+          hasTime: true,
+          author: c.consultant_name,
+          channel: c.channel,
+        })),
+        ...interactionActions.map((a) => ({
+          at: actionStartsAt(a),
+          hasTime: Boolean(a.inicio),
+          author:
+            data.owners.find((o) => o.id === a.createdBy)?.nome ??
+            "Autor a identificar",
+          channel: a.tipo,
+        })),
+      ].sort((a, b) => b.at.localeCompare(a.at))[0] ?? null
     const scheduled = actions
       .filter((a) => validScheduledAction(a, now))
       .sort((a, b) => actionStartsAt(a).localeCompare(actionStartsAt(b)))
-    const performed = actions.filter(
-      (a) => publicityAction(a) && a.status === "realizada",
-    )
+    const performed = actions
+      .filter((a) => publicityAction(a) && a.status === "realizada")
+      .sort((a, b) => actionStartsAt(b).localeCompare(actionStartsAt(a)))
+    const attendances = new Map<string, CaptureAttendance>()
+    const unidentifiedPerformed: AcaoEscola[] = []
+    for (const action of performed) {
+      const participants = actionAttendees(action, data.owners)
+      if (!participants.length) unidentifiedPerformed.push(action)
+      for (const person of participants) {
+        const attendance = attendances.get(person.id) ?? {
+          ...person,
+          actionIds: [],
+        }
+        if (!attendance.actionIds.includes(action.id))
+          attendance.actionIds.push(action.id)
+        attendances.set(person.id, attendance)
+      }
+    }
     const pendingResults = performed.filter((a) => !actionHasResults(a))
     const latestByUser = new Map<string, CampaignContact>()
     for (const contact of contacts)
@@ -278,7 +388,7 @@ export function schoolCaptureSummaries(
         (a.return_at || "9999").localeCompare(b.return_at || "9999"),
       )
     const alerts: string[] = []
-    if (!contacts.length) alerts.push("Sem contato no ciclo")
+    if (!lastInteraction) alerts.push("Sem contato no ciclo")
     if (elig === "unknown") alerts.push("Confirmar séries")
     if (nextSteps.some((c) => c.return_at && c.return_at < now))
       alerts.push("Retorno vencido")
@@ -308,32 +418,31 @@ export function schoolCaptureSummaries(
       )
     )
       alerts.push("Ação vencida: confirmar realização ou reagendar")
-    if (actions.some((a) => a.status === "cancelada") && !scheduled.length)
+    if (
+      actions.some((a) => publicityAction(a) && a.status === "cancelada") &&
+      !scheduled.length &&
+      !performed.length
+    )
       alerts.push("Ação cancelada: reagendar")
     if (pendingResults.length)
       alerts.push("Ação realizada com resultado pendente")
-    const hasValid = actions.some(
-      (a) =>
-        publicityAction(a) &&
-        (a.status === "realizada" || validScheduledAction(a, now)),
-    )
+    const ready =
+      Boolean(lastInteraction) &&
+      (contacts[0]?.negotiation_status === "agendamento_conjunto" ||
+        engagements.some((e) => e.status === "agendamento_conjunto"))
+    const status: CaptureStatus = performed.length
+      ? "performed"
+      : scheduled.length
+        ? "scheduled"
+        : !lastInteraction
+          ? "no_contact"
+          : ready
+            ? "ready_to_schedule"
+            : "negotiating"
     const resultRows = performed
       .filter(actionHasResults)
       .flatMap((a) => a.resultados)
     const impacts = resultRows.filter((r) => r.impactados != null)
-    const participantIds = [
-      ...new Set([
-        ...allContacts.map((c) => c.consultant_id),
-        ...allEngagements.map((e) => e.user_id),
-        ...allActions.flatMap((a) =>
-          [
-            a.primaryOwnerId,
-            a.createdBy,
-            ...a.participantes.map((p) => p.userId),
-          ].filter((id): id is string => Boolean(id)),
-        ),
-      ]),
-    ]
     const hasMovementInPeriod =
       contacts.length > 0 ||
       actions.length > 0 ||
@@ -341,11 +450,13 @@ export function schoolCaptureSummaries(
     return [
       {
         school,
+        status,
         eligibility: elig,
         contacts,
         engagements,
         actions,
         lastContact: contacts[0] ?? null,
+        lastInteraction,
         nextSteps,
         nextAction: scheduled[0] ?? null,
         scheduled,
@@ -355,11 +466,12 @@ export function schoolCaptureSummaries(
         metrics: {
           all: true,
           eligible: elig === "eligible",
-          no_contact: !contacts.length,
+          no_contact: status === "no_contact",
           no_engagement: !engagements.length,
-          negotiating: engagements.length > 0,
-          to_schedule: !hasValid,
-          scheduled: scheduled.length > 0,
+          negotiating: status === "negotiating",
+          ready_to_schedule: status === "ready_to_schedule",
+          to_schedule: !performed.length && !scheduled.length,
+          scheduled: status === "scheduled",
           performed: performed.length > 0,
           pending_results: pendingResults.length > 0,
         },
@@ -375,7 +487,10 @@ export function schoolCaptureSummaries(
         impacted: impacts.length
           ? impacts.reduce((s, r) => s + (r.impactados || 0), 0)
           : null,
-        participantIds,
+        attendances: [...attendances.values()].sort((a, b) =>
+          a.name.localeCompare(b.name, "pt-BR"),
+        ),
+        unidentifiedPerformed,
         hasMovementInPeriod,
       },
     ]
@@ -399,12 +514,19 @@ export function filterCaptureSummaries(
       (!filters.classification ||
         r.school.classificacao === filters.classification) &&
       (!filters.stage || r.school.etapa === filters.stage) &&
-      (!filters.consultant || r.participantIds.includes(filters.consultant)) &&
+      (!filters.actingConsultant ||
+        r.engagements.some((e) => e.user_id === filters.actingConsultant)) &&
+      (!filters.attendingConsultant ||
+        (filters.attendingConsultant === UNIDENTIFIED_CONSULTANT
+          ? r.unidentifiedPerformed.length > 0
+          : r.attendances.some((a) => a.id === filters.attendingConsultant))) &&
+      (filters.status === "all" || r.status === filters.status) &&
       (!(filters.from || filters.to) || r.hasMovementInPeriod) &&
       (!applySituation || r.metrics[filters.situation]),
   )
 }
 export function captureTotals(rows: SchoolCaptureSummary[]) {
+  rows = [...new Map(rows.map((r) => [r.school.id, r])).values()]
   return {
     actions: rows.reduce((s, r) => s + r.actions.length, 0),
     scheduled: rows.reduce((s, r) => s + r.scheduled.length, 0),

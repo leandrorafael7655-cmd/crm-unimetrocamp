@@ -1,6 +1,6 @@
 // Dados sintéticos: a validação visual não usa contas, banco ou credenciais reais.
 import { validateCompanyAction } from "../../lib/company-actions/domain.ts"
-import { captureMocks } from "./school-capture-fixtures.mjs"
+import { captureMocks, captureFixtureData, isCaptureAgendaFixture, listCaptureFixtureActions } from "./school-capture-fixtures.mjs"
 
 let completedCompanyActions = []
 export function resetCompanyActionFixtures() { completedCompanyActions = [] }
@@ -65,14 +65,14 @@ export const meetingPanel = {
 export const mockQueries = {
   ...captureMocks,
   getActor: async () => actor, requireActor: async () => actor, requireManager: async () => actor, requireCan: async () => actor,
-  listSchools: async () => schools, listOwners: async () => owners, listActions: async () => actions,
+  listSchools: async () => schools, listOwners: async () => owners, listActions: async (filters) => isCaptureAgendaFixture() ? listCaptureFixtureActions(filters) : actions,
   listGradeLevels: async () => grades, listEstimatesByEscola: async () => Object.fromEntries(schools.map(e => [e.id, ["3em"]])),
   getSchool360: async () => ({ escola: schools[0], contatos: [{ ...contact, escolaId: schools[0].id, principal: true }],
     estimativas: [{ id: "estimate", escolaId: schools[0].id, serie: "3em", anoLetivo: 2026, estimativaAlunos: 120, numTurmas: 4 }],
     acoes: actions, historicoEtapa: [], historicoDono: [] }),
   listGoals: async () => goals, metasAtivasComRealizado: async () => goals, realizadoDaMeta: async () => 2800,
   listCommercialCycles: async () => [{ id: "cc", name: "Captação 27.1" }],
-  listSupervestCycles: async () => [cycle], getSupervestCycle: async () => cycle,
+  listSupervestCycles: async () => isCaptureAgendaFixture() ? captureFixtureData().cycles : [cycle], getSupervestCycle: async () => cycle,
   listSupervestSnapshots: async () => [{ snapshotDate: "2026-09-15", officialRegistrations: 1800 }, { snapshotDate: "2026-09-30", officialRegistrations: 2800 }],
   apuracaoSupervest: async () => ({ oficial: 2800, hsAtribuidas: 1800, b2bAtribuidas: 350, outrosCanais: 650, inconsistente: false }),
   aderenciaDoConsultor: async () => ({ aderenciaPct: 80, semanasAtingidas: 8, semanasAplicaveis: 10, semanaCorrente: { completed: 2, target: 3, achieved: false } }),

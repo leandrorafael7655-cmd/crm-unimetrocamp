@@ -31,7 +31,7 @@ import { GerenciarUsuarios } from "../../components/team/gerenciar-usuarios"
 import { CompanyMeetings } from "../../components/b2b/company-meetings"
 import { MapView } from "../../components/maps/map-view"
 import { SchoolCapture } from "../../components/high-school/school-capture"
-import { captureActor, captureFixtureData, resetCaptureFixtures } from "./school-capture-fixtures.mjs"
+import { captureActor, captureFixtureData, resetCaptureFixtures, seedCaptureUnidentifiedFixture, enableCaptureAgendaFixture } from "./school-capture-fixtures.mjs"
 
 const pages = {
   dashboard: Dashboard, hs: HighSchool, escolas: Escolas, escola: Escola360, pipeline: Pipeline,
@@ -54,6 +54,12 @@ window.renderFixture = async (name) => {
     window.refreshFixture = ()=>root.render(<React.Fragment key={key}><ResponsiveShell sidebar={<SystemSidebar role="gerente" userName={captureActor.name}/>} mainClassName="p-4 sm:p-6">
       <SchoolCapture data={captureFixtureData()} actor={captureActor} canWrite canConfigure now="2026-10-02T00:30:00.000Z"/>
     </ResponsiveShell></React.Fragment>)
+    window.seedCaptureUnidentifiedFixture = ()=>{seedCaptureUnidentifiedFixture();window.refreshFixture()}
+    window.showCaptureAgendaFixture = async (cycleId)=>{
+      enableCaptureAgendaFixture()
+      const agenda = await AgendaHS({searchParams: Promise.resolve({ciclo: cycleId})})
+      root.render(<React.Fragment key="capture-agenda"><ResponsiveShell sidebar={<SystemSidebar role="gerente" userName={captureActor.name}/>} mainClassName="p-4 sm:p-6">{agenda}</ResponsiveShell></React.Fragment>)
+    }
     window.refreshFixture()
     document.body.dataset.ready=name
     return

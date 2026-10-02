@@ -66,7 +66,10 @@ function fixture(): CaptureData {
     engagements: [],
     actions: [],
     history: [],
-    owners: [],
+    owners: [
+      { id: u1, nome: "Carla", role: "high_school" },
+      { id: u2, nome: "João", role: "high_school" },
+    ],
     officialSnapshots: [],
   }
 }
@@ -140,7 +143,12 @@ describe("captação compartilhada por edição", () => {
     const row = schoolCaptureSummaries(d, d.cycles[0], now)[0]
     expect(row.engagements.map((e) => e.user_id)).toEqual([u2])
     expect(d.engagements).toHaveLength(2)
-    expect(row.participantIds).toContain(u1)
+    expect(
+      filterCaptureSummaries([row], {
+        ...EMPTY_CAPTURE_FILTERS,
+        actingConsultant: u1,
+      }),
+    ).toHaveLength(0)
   })
   it("ações de 2027 não retiram pendências de 2028 e registros sem vínculo não contam", () => {
     const d = fixture()
@@ -249,19 +257,24 @@ describe("captação compartilhada por edição", () => {
         created_at: now,
       },
     ]
-    d.actions = [action("support", { participantes: [{ userId: u2 }] })]
+    d.actions = [
+      action("support", {
+        status: "realizada",
+        participantes: [{ userId: u2 }],
+      }),
+    ]
     const rows = schoolCaptureSummaries(d, d.cycles[0], now)
     expect(rows[0].alerts).toContain("Retorno vencido")
     expect(
       filterCaptureSummaries(rows, {
         ...EMPTY_CAPTURE_FILTERS,
-        consultant: u2,
+        attendingConsultant: u2,
       }),
     ).toHaveLength(1)
     expect(
       filterCaptureSummaries(schoolCaptureSummaries(d, d.cycles[1], now), {
         ...EMPTY_CAPTURE_FILTERS,
-        consultant: u2,
+        attendingConsultant: u2,
       }),
     ).toHaveLength(0)
   })
