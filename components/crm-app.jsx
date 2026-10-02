@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 import { getStorage } from "@/lib/data/storage-context";
 import { CompanyMeetings } from "@/components/b2b/company-meetings";
+import { portfolioMetrics } from "@/lib/b2b-portfolio/domain";
+import { CompanyPortfolioSummary } from "@/components/b2b/company-portfolio-summary";
 import { CompanyActions } from "@/components/b2b/company-actions";
 import { can, normalizeRole } from "@/lib/domain/roles";
 import {
@@ -706,6 +708,7 @@ function Indicador({ rotulo, valor, detalhe, alerta }) {
 }
 
 function Painel({ empresas, atividades, equipe, fila, aoAbrir, escopo, aoIrPara }) {
+  const portfolio = portfolioMetrics(empresas.map(e => e.portfolio).filter(Boolean));
   const hoje = hojeISO();
   const inicioMes = hoje.slice(0, 8) + "01";
   const conveniadas = empresas.filter((e) => e.convenio && e.convenio.ativo && e.convenio.status !== "Encerrado");
@@ -736,7 +739,12 @@ function Painel({ empresas, atividades, equipe, fila, aoAbrir, escopo, aoIrPara 
   return (
     <div className="space-y-4">
       <FilaDoDia fila={fila} aoAbrir={aoAbrir} escopo={escopo} />
+      <a href="/b2b/carteira" className="block rounded-lg border border-teal-200 bg-teal-50 p-3 text-sm font-medium text-teal-800">Gestão de carteiras · ciclos, relacionamento, solicitações e transferências</a>
       <div className="uni-kpi-grid gap-3">
+        <Indicador rotulo="Relacionamento ativo" valor={portfolio.active} detalhe="ações comerciais válidas" />
+        <Indicador rotulo="Sem relacionamento ativo" valor={portfolio.inactive} detalhe="convênio preservado" />
+        <Indicador rotulo="Sem ação no ciclo" valor={portfolio.noAction} detalhe="ciclo comercial atual" />
+        <Indicador rotulo="Empresas em risco" valor={portfolio.risk} detalhe="prioridade de atendimento" />
         <Indicador rotulo="Empresas" valor={empresas.length} detalhe="na carteira" />
         <Indicador rotulo="Conveniadas" valor={conveniadas.length} detalhe="convênio vigente" />
         <Indicador rotulo="Sem matrícula" valor={semMatricula} detalhe="conveniadas há +90 dias" alerta={semMatricula > 0} />
@@ -1122,7 +1130,7 @@ function TabelaEmpresas({ empresas, aoAbrir, hoje }) {
                   <span className="block font-mono text-[11px] text-slate-400">{e.cidade} · {e.segmento}</span>
                 </td>
                 <td className="px-3 py-2"><ChipClasse valor={e.classificacao} /></td>
-                <td className="px-3 py-2 text-xs text-slate-700">{e.etapa}</td>
+                <td className="px-3 py-2 text-xs text-slate-700">{e.etapa === "Relacionamento ativo" ? "Conveniada (etapa legada)" : e.etapa}{e.portfolio && <span className="mt-1 block text-[10px] text-slate-500">Convênio: {e.portfolio.agreement_status} · {e.portfolio.effective_relationship === "active" ? "Relacionamento ativo" : "Sem relacionamento ativo"} · Ciclo {e.portfolio.current_cycle.code}</span>}</td>
                 <td className="px-3 py-2 font-mono text-xs tabular-nums">
                   <span className={sem === null || sem > 30 ? "text-rose-600" : "text-slate-600"}>
                     {e.ultimoContato ? `${brData(e.ultimoContato)} · ${sem}d` : "nunca"}
@@ -1166,7 +1174,7 @@ function FormEmpresa({ inicial, equipe, empresas, aoSalvar, aoFechar, aoExcluir,
 
   const salvar = () => {
     if (!d.razaoSocial.trim()) return setErro("Informe a razão social.");
-    if (!d.consultor) return setErro("Escolha o consultor responsável.");
+    if (!d.id && !d.consultor) return setErro("Escolha o consultor responsável.");
     if (d.cnpj && !cnpjValido(d.cnpj)) return setErro("CNPJ inválido — confira os dígitos.");
     if (d.cnpj) {
       const dup = empresas.find((e) => soDigitos(e.cnpj) === soDigitos(d.cnpj) && e.id !== d.id);
@@ -1207,9 +1215,9 @@ function FormEmpresa({ inicial, equipe, empresas, aoSalvar, aoFechar, aoExcluir,
           <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Estratégia</p>
           <div className="grid gap-3 sm:grid-cols-6">
             <Campo rotulo="Consultor responsável" largura="sm:col-span-2">
-              <select className={inputBase} value={d.consultor} onChange={set("consultor")}>
+              <select className={inputBase} value={d.consultor} disabled={!!d.id} onChange={(ev) => { const p = equipe.find(p => p.nome === ev.target.value); setD({ ...d, consultor: ev.target.value, ownerId: p?.id || null }); }}>
                 <option value="">Selecione</option>
-                {equipe.map((p) => <option key={p.nome}>{p.nome}</option>)}
+                {equipe.filter(p => p.ativo !== false && p.role !== "high_school").map((p) => <option key={p.id || p.nome}>{p.nome}</option>)}
               </select>
             </Campo>
             <Campo rotulo="Classificação" largura="sm:col-span-2">
@@ -1329,7 +1337,8 @@ function FichaEmpresa({ empresa, atividades, equipe, config, podeGerir, usuario,
   const hist = atividades.filter((a) => a.empresaId === empresa.id && !a.meetingType).sort((a, b) => b.data.localeCompare(a.data));
   const cv = empresa.convenio;
   const s = saudeConvenio(empresa, hoje);
-  const dono = equipe.find((p) => p.nome === empresa.consultor);
+  const dono = equipe.find((p) => p.id === empresa.ownerId || (!empresa.ownerId && p.nome === empresa.consultor));
+  const podeEditar = modo !== "supabase" || can(usuario?.role, "b2b.write") && (podeGerir || empresa.ownerId === usuario?.id);
   const link = linkAtivo(empresa);
 
   return (
@@ -1340,11 +1349,12 @@ function FichaEmpresa({ empresa, atividades, equipe, config, podeGerir, usuario,
         <Chip texto={`Potencial ${empresa.potencial}`} classe="bg-slate-100 text-slate-700 border-slate-200" />
         {cv && cv.ativo && <Chip texto={`Convênio · ${s.rotulo}`} classe={CORES_SAUDE[s.nivel]} />}
         <span className="ml-auto flex flex-wrap gap-2">
-          <Botao tamanho="sm" tipo="neutro" onClick={aoEditar}><Pencil className="h-3 w-3" />Editar</Botao>
-          <Botao tamanho="sm" onClick={aoRegistrar}><Phone className="h-3 w-3" />Registrar contato</Botao>
+          <Botao tamanho="sm" tipo="neutro" disabled={!podeEditar} onClick={aoEditar}><Pencil className="h-3 w-3" />Editar</Botao>
+          <Botao tamanho="sm" disabled={!podeEditar} onClick={aoRegistrar}><Phone className="h-3 w-3" />Registrar contato</Botao>
         </span>
       </div>
 
+      {modo === "supabase" && <CompanyPortfolioSummary companyId={empresa.id} refreshToken={empresa.updatedAt} onChanged={aoAtualizar} />}
       {modo === "supabase" && <CompanyMeetings companyId={empresa.id} companyName={empresa.nomeFantasia || empresa.razaoSocial} onChanged={aoAtualizar} />}
 
       <div className="grid gap-4 py-3 lg:grid-cols-5">
@@ -1384,7 +1394,7 @@ function FichaEmpresa({ empresa, atividades, equipe, config, podeGerir, usuario,
           <div className={`rounded border p-2.5 ${cv && cv.ativo ? "border-teal-200 bg-teal-50" : "border-slate-200 bg-slate-50"}`}>
             <div className="flex items-center justify-between">
               <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-600">Convênio</p>
-              <button onClick={aoAbrirConvenio} className="text-[11px] font-medium text-teal-700 hover:underline">
+              <button disabled={!podeEditar} onClick={aoAbrirConvenio} className="text-[11px] font-medium text-teal-700 hover:underline">
                 {cv && cv.ativo ? "editar" : "cadastrar"}
               </button>
             </div>
@@ -1414,7 +1424,7 @@ function FichaEmpresa({ empresa, atividades, equipe, config, podeGerir, usuario,
             )}
           </div>
 
-          {podeGerir ? (
+          {modo !== "supabase" && podeGerir ? (
             <Campo rotulo="Consultor responsável" dica="Ao transferir, o link do consultor anterior deixa de valer: o novo precisa cadastrar o dele e reavisar o RH.">
               <select className={inputBase} value={empresa.consultor} onChange={(e) => aoTransferir(e.target.value)}>
                 {equipe.map((p) => <option key={p.nome}>{p.nome}</option>)}
@@ -1576,7 +1586,7 @@ function Funil({ empresas, aoAbrir }) {
                     <span className="block truncate text-xs font-medium text-slate-900">{e.nomeFantasia || e.razaoSocial}</span>
                     <span className="mt-0.5 flex items-center justify-between gap-1">
                       <ChipClasse valor={e.classificacao} />
-                      <span className="truncate font-mono text-[10px] text-slate-400">{e.consultor}</span>
+                      <span className="block break-words text-[10px] text-slate-600">Responsável: {e.consultor}</span>{e.portfolio && <span className="mt-1 block text-[10px] text-slate-500">Convênio: {e.portfolio.agreement_status} · {e.portfolio.effective_relationship === "active" ? "Relacionamento ativo" : "Sem relacionamento ativo"} · {e.portfolio.current_cycle.code}</span>}
                     </span>
                   </button>
                 </li>
@@ -1832,6 +1842,11 @@ export default function CrmApp({ modo = "demo", aoSair, usuarioInicial = null, p
   const [convenioDe, setConvenioDe] = useState(null);
   const [filtros, setFiltros] = useState({ busca: "", consultor: "", classificacao: "", etapa: "" });
   const hoje = hojeISO();
+  useEffect(() => {
+    if (carregando || modo !== "supabase") return;
+    const company = new URLSearchParams(window.location.search).get("company");
+    if (company) setAberta(company);
+  }, [carregando, modo]);
 
   const recarregar = useCallback(async () => {
     setSincronizando(true);
@@ -1922,12 +1937,12 @@ export default function CrmApp({ modo = "demo", aoSair, usuarioInicial = null, p
   const empresaConvenio = empresas.find((e) => e.id === convenioDe) || null;
 
   const escopoBase = useMemo(
-    () => (ehGestor ? empresas : empresas.filter((e) => e.consultor === (usuario && usuario.nome))),
+    () => (ehGestor ? empresas : empresas.filter((e) => modo === "supabase" ? e.ownerId === usuario?.id : e.consultor === usuario?.nome)),
     [empresas, ehGestor, usuario]
   );
 
   const listaFiltrada = useMemo(() => {
-    const fonte = tela === "carteira" ? empresas.filter((e) => e.consultor === (usuario && usuario.nome)) : escopoBase;
+    const fonte = tela === "carteira" ? empresas.filter((e) => modo === "supabase" ? e.ownerId === usuario?.id : e.consultor === usuario?.nome) : escopoBase;
     const q = filtros.busca.trim().toLowerCase();
     return fonte.filter((e) =>
       (!q || `${e.razaoSocial} ${e.nomeFantasia} ${e.cnpj} ${e.cidade}`.toLowerCase().includes(q)) &&
@@ -2104,7 +2119,7 @@ export default function CrmApp({ modo = "demo", aoSair, usuarioInicial = null, p
               {(mostrarFiltros || tela === "convenios") && (
                 <Botao tipo="neutro" tamanho="sm" onClick={exportarCSV}><Download className="h-3.5 w-3.5" />CSV</Botao>
               )}
-              <Botao onClick={() => setEditando({ consultor: usuario.papel === "Consultor" ? usuario.nome : "" })}>
+              <Botao onClick={() => setEditando({ consultor: usuario.papel === "Consultor" ? usuario.nome : "", ownerId: usuario.papel === "Consultor" ? usuario.id : null })}>
                 <Plus className="h-4 w-4" />Nova empresa
               </Botao>
             </div>
@@ -2158,7 +2173,7 @@ export default function CrmApp({ modo = "demo", aoSair, usuarioInicial = null, p
           {(tela === "carteira" || tela === "empresas") && <TabelaEmpresas empresas={listaFiltrada} aoAbrir={setAberta} hoje={hoje} />}
           {tela === "consulta" && (
             <Consulta empresas={empresas} equipe={equipe} config={config} usuario={usuario} aoAbrir={setAberta}
-              aoCadastrar={() => setEditando({ consultor: usuario.papel === "Consultor" ? usuario.nome : "" })} />
+              aoCadastrar={() => setEditando({ consultor: usuario.papel === "Consultor" ? usuario.nome : "", ownerId: usuario.papel === "Consultor" ? usuario.id : null })} />
           )}
           {tela === "agenda" && <Agenda empresas={escopoBase} aoAbrir={setAberta} />}
           {tela === "funil" && <Funil empresas={escopoBase} aoAbrir={setAberta} />}

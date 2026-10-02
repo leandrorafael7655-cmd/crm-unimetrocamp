@@ -123,6 +123,7 @@ function ActionCard({ action }: { action: CompanyActionRow }) {
       </div>
       <h4 className="break-words text-sm font-semibold text-slate-900">{action.title}</h4>
       <p className="break-words text-xs text-slate-600">Consultor responsável: <span className="font-medium">{action.responsible_name}</span></p>
+      {action.commercial_cycle && <p className="text-xs text-slate-500">Ciclo {action.commercial_cycle.code} · {action.commercial_cycle.name}</p>}
       {action.location && <p className="break-words text-xs text-slate-600"><span className="font-medium">Local:</span> {action.location}</p>}
       {action.channel && <p className="break-words text-xs text-slate-600"><span className="font-medium">Canal:</span> {action.channel}</p>}
       <p className="whitespace-pre-wrap break-words text-sm text-slate-700">{action.description}</p>
@@ -138,7 +139,7 @@ function LegacyCard({ activity: a, canDelete, onDelete }: { activity: Atividade;
   return (
     <article className="min-w-0 border-l-2 border-slate-200 pl-3">
       <div className="flex flex-wrap items-baseline gap-2">
-        <span className="font-mono text-xs font-semibold text-slate-900">{brDataLonga(a.data)}</span>
+        <span className="font-mono text-xs font-semibold text-slate-900">{brDataLonga(a.data)}{a.commercialCycle ? ` · Ciclo ${a.commercialCycle.code}` : ""}</span>
         <span className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 text-[11px] text-slate-700">{a.tipo}</span>
         <span className="text-[11px] text-slate-500">{a.resultado}</span>
         <span className="ml-auto flex items-center gap-2 text-[11px] text-slate-500">{a.consultor}

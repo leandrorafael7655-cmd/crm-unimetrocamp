@@ -1,6 +1,8 @@
 import "server-only"
 import { createClient } from "@/lib/supabase/server"
 import { ETAPAS_ENCERRADAS } from "@/lib/domain/constants"
+import { loadPortfolio } from "@/app/actions/b2b-portfolio"
+import { portfolioMetrics } from "@/lib/b2b-portfolio/domain"
 
 /* ─────────────────────────  agregados do Dashboard Geral  ─────────────────────────
    Contagens leves (count/head) para a visão executiva multi-módulo. Não carrega
@@ -29,6 +31,11 @@ export interface ResumoB2B {
   followupAtrasado: number
   semProximaAcao: number
   semContato30d: number
+  conveniadas: number
+  relacionamentoAtivo: number
+  relacionamentoInativo: number
+  semAcaoCiclo: number
+  emRisco: number
 }
 
 /**
@@ -60,7 +67,13 @@ export async function resumoB2B(ownerId?: string | null): Promise<ResumoB2B> {
     ),
   ])
 
-  return { carteira, emNegociacao, followupAtrasado, semProximaAcao, semContato30d }
+  const portfolio = await loadPortfolio()
+  if (!portfolio.ok) throw new Error(portfolio.message)
+  const companies = portfolio.data.companies.filter(c => !ownerId || c.owner_id === ownerId)
+  const metrics = portfolioMetrics(companies)
+  return { carteira, emNegociacao, followupAtrasado, semProximaAcao, semContato30d,
+    conveniadas: metrics.agreements, relacionamentoAtivo: metrics.active, relacionamentoInativo: metrics.inactive,
+    semAcaoCiclo: metrics.noAction, emRisco: metrics.risk }
 }
 
 export interface ResumoMapa {

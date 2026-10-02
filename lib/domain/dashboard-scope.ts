@@ -1,4 +1,4 @@
-import { can, type Role } from "./roles"
+import { can, normalizeRole, type Role } from "./roles"
 
 /**
  * Quais blocos do Painel Geral um papel enxerga, e com que abrangência.
@@ -21,7 +21,7 @@ export function escopoDashboard(role: Role | string | null | undefined): Dashboa
   const verMetasAll = can(role, "goals.read.all")
   return {
     verB2B: can(role, "b2b.read.all") || can(role, "b2b.read.own"),
-    soCarteiraPropria: !can(role, "b2b.read.all") && can(role, "b2b.read.own"),
+    soCarteiraPropria: normalizeRole(role) === "consultor_b2b",
     verHS: can(role, "hs.read"),
     verSV: can(role, "supervest.read"),
     verMetas: can(role, "goals.read.own") || verMetasAll,

@@ -55,7 +55,7 @@ const TODAS: readonly Permission[] = [
 
 export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
   gerente: TODAS,
-  supervisor: TODAS.filter((p) => p !== "settings.write"),
+  supervisor: TODAS.filter((p) => p !== "settings.write" && p !== "b2b.transfer"),
   consultor_b2b: [
     "b2b.read.all",
     "b2b.read.own",

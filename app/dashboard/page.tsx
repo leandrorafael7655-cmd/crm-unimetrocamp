@@ -100,7 +100,7 @@ export default async function DashboardGeral() {
             <BlocoModulo
               titulo="Comercial B2B"
               subtitulo={soCarteiraPropria ? "Sua carteira e próximos passos" : "Carteira geral e próximos passos"}
-              href="/"
+              href="/b2b/carteira"
               hrefRotulo="Abrir B2B"
             >
               {b2bR.status === "rejected" ? (
@@ -110,6 +110,11 @@ export default async function DashboardGeral() {
               ) : b2bR.value ? (
                 <KpiGrid>
                   <Kpi rotulo="Empresas" valor={b2bR.value.carteira} tom="brand" />
+                  <Kpi rotulo="Conveniadas" valor={b2bR.value.conveniadas} />
+                  <Kpi rotulo="Relacionamento ativo" valor={b2bR.value.relacionamentoAtivo} tom="ok" />
+                  <Kpi rotulo="Sem relacionamento ativo" valor={b2bR.value.relacionamentoInativo} />
+                  <Kpi rotulo="Sem ação no ciclo" valor={b2bR.value.semAcaoCiclo} tom="alerta" />
+                  <Kpi rotulo="Empresas em risco" valor={b2bR.value.emRisco} tom="critico" />
                   <Kpi rotulo="Em negociação" valor={b2bR.value.emNegociacao} tom="ok" />
                   <Kpi
                     rotulo="Follow-up atrasado"

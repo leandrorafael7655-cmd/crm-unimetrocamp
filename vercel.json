@@ -2,6 +2,10 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "crons": [
     {
+      "path": "/api/cron/b2b-relationships",
+      "schedule": "0 7 * * *"
+    },
+    {
       "path": "/api/cron/close-weeks",
       "schedule": "0 6 * * 1"
     },

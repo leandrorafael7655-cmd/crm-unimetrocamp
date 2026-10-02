@@ -48,6 +48,9 @@ export const TIPOS_ATIVIDADE = [
   "Plantão comercial",
   "Divulgação",
   "Follow-up",
+  "Reunião de relacionamento",
+  "Renovação de convênio",
+  "Ativação",
 ]
 
 export const SEGMENTOS = [

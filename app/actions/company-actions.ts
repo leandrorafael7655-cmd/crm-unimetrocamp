@@ -20,7 +20,7 @@ export async function loadCompanyActions(companyId: string) {
     const { data: company, error: companyError } = await client.from("companies").select("id,owner_id").eq("id", companyId).maybeSingle()
     if (companyError || !company) throw new Error("Empresa não encontrada.")
     const [actions, profiles] = await Promise.all([
-      client.from("company_actions").select(columns).eq("company_id", companyId).order("occurred_at", { ascending: false }).order("created_at", { ascending: false }),
+      client.from("b2b_actions_with_cycle").select(columns + ",commercial_cycle").eq("company_id", companyId).order("occurred_at", { ascending: false }).order("created_at", { ascending: false }),
       client.from("profiles").select("id,full_name,consultant_tag,role,active").eq("active", true).in("role", ["gerente", "supervisor", "consultor_b2b", "consultor"]),
     ])
     if (actions.error || profiles.error) throw new Error("Não foi possível carregar as ações. Tente novamente.")
@@ -64,7 +64,11 @@ export async function saveCompanyAction(input: CompanyActionInput) {
       }) && row.responsible_user_id === input.responsibleUserId) saved = row
     }
     if (!saved) throw new Error("Não foi possível salvar a ação. Seus dados foram mantidos; tente novamente.")
+    const cycle = await client.rpc("b2b_commercial_cycle", { p_date: input.date })
+    if (!cycle.error) saved.commercial_cycle = cycle.data
     revalidatePath("/")
+    revalidatePath("/b2b/carteira")
+    revalidatePath("/dashboard")
     return { ok: true as const, action: saved, message: "Ação registrada no histórico da empresa." }
   } catch (error) { return { ok: false as const, message: message(error) } }
 }

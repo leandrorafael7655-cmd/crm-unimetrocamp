@@ -73,6 +73,7 @@ export function rowToEmpresa(row: any, contatos: Contato[], convenio: Convenio |
     observacoes: s(row.observacoes),
     consultor: s(row.consultor),
     ownerId: row.owner_id ?? null,
+    updatedAt: s(row.updated_at),
     logradouro: s(row.logradouro),
     numero: s(row.numero),
     complemento: s(row.complemento),
@@ -98,6 +99,7 @@ export function rowToEmpresa(row: any, contatos: Contato[], convenio: Convenio |
 
 export function rowToAtividade(row: any): Atividade {
   return {
+    commercialCycle: row.commercial_cycle,
     id: row.id,
     empresaId: row.company_id,
     consultor: s(row.consultor),

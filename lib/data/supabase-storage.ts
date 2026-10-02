@@ -72,7 +72,7 @@ export function makeSupabaseStorage(supabase: SupabaseClient, perfil: Usuario): 
   }
 
   function resolveOwner(e: Empresa): string | null {
-    if (e.ownerId) return e.ownerId
+    if (Object.prototype.hasOwnProperty.call(e, "ownerId")) return e.ownerId ?? null
     const porNome = profiles.find((p) => p.nome === e.consultor)
     if (porNome?.id) return porNome.id
     return perfil.id ?? null
@@ -81,7 +81,7 @@ export function makeSupabaseStorage(supabase: SupabaseClient, perfil: Usuario): 
   async function carregarEmpresas(): Promise<Empresa[]> {
     if (!profiles.length) await carregarProfiles()
     const [{ data: comp, error: e1 }, { data: cont, error: e2 }, { data: agr, error: e3 }] = await Promise.all([
-      supabase.from("companies").select("*").order("created_at", { ascending: true }),
+      supabase.from("b2b_company_portfolio").select("*").order("created_at", { ascending: true }),
       supabase.from("company_contacts").select("*").order("position", { ascending: true }),
       supabase.from("agreements").select("*"),
     ])
@@ -94,6 +94,8 @@ export function makeSupabaseStorage(supabase: SupabaseClient, perfil: Usuario): 
     for (const a of agr || []) convPor[a.company_id] = rowToConvenio(a)
     const empresas = (comp || []).map((row: any) => {
       const empresa = rowToEmpresa(row, contatosPor[row.id] || [], convPor[row.id] || null)
+      empresa.portfolio = row
+      if (!empresa.ownerId) empresa.consultor = "Sem responsável"
       if (empresa.ownerId) empresa.consultor = operationalNameFor(empresa.ownerId, empresa.consultor)
       return empresa
     })
@@ -140,8 +142,12 @@ export function makeSupabaseStorage(supabase: SupabaseClient, perfil: Usuario): 
       if (!empresaScalarIgual(antes, e)) {
         const row = empresaToRow(e, resolveOwner)
         delete (row as any).id
+        // Assignments use the audited manager RPC. An ordinary form cannot
+        // replace a newer owner or claim an unassigned company.
+        delete row.owner_id
+        delete row.consultor
         const { error } = await supabase.from("companies").update(row).eq("id", e.id)
-        log("update company", error)
+        if (error) throw error
         if (!error) changed = true
       }
       if (!contatosIguais(antes.contatos, e.contatos)) {
@@ -263,7 +269,7 @@ export function makeSupabaseStorage(supabase: SupabaseClient, perfil: Usuario): 
         if (chave === CHAVES.empresas) return { value: JSON.stringify(await carregarEmpresas()) }
         if (chave === CHAVES.atividades) {
           if (!profiles.length) await carregarProfiles()
-          const { data, error } = await supabase.from("activities").select("*").order("data", { ascending: false })
+          const { data, error } = await supabase.from("b2b_activities_with_cycle").select("*").order("data", { ascending: false })
           log("select activities", error)
           snapAtividades = (data || []).map((row: any) => {
             const atividade = rowToAtividade(row)

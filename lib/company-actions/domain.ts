@@ -18,6 +18,7 @@ export interface CompanyActionInput {
   promotionUrl: string
 }
 export interface CompanyActionRow {
+  commercial_cycle?: import("@/lib/b2b-portfolio/domain").CommercialCycle
   id: string
   company_id: string
   action_type: CompanyActionType
@@ -87,9 +88,11 @@ export function validateCompanyAction(input: CompanyActionInput) {
   const channel = input.actionType === "online" ? text(input.channel, "o canal utilizado", 100, true) : ""
   const promotionUrl = input.actionType === "online" ? text(input.promotionUrl, "o link da divulgação", 2048) : ""
   if (promotionUrl && !httpLink(promotionUrl)) throw new Error("Informe um link válido iniciado por http:// ou https://.")
+  const occurredAt = actionTimestamp(input.date, input.time)
+  if (Date.parse(occurredAt) > Date.now()) throw new Error("Registre uma ação já realizada. Para ações futuras, use o agendamento.")
   return {
     action_type: input.actionType, title, description,
-    occurred_at: actionTimestamp(input.date, input.time),
+    occurred_at: occurredAt,
     result: result || null, notes: notes || null,
     location: location || null, channel: channel || null, promotion_url: promotionUrl || null,
   }

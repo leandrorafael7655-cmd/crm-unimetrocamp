@@ -25,10 +25,13 @@ export async function createCommercialCycle(form: FormData): Promise<Resultado> 
   try {
     await requireCan("goals.write")
     const supabase = await createClient()
-    const name = s(form.get("name"))
     const startAt = s(form.get("start_at"))
     const endAt = s(form.get("end_at"))
-    if (!name || !startAt || !endAt) return { ok: false, message: "Preencha nome e período." }
+    const { data: cycle, error: cycleError } = await supabase.rpc("b2b_commercial_cycle", { p_date: startAt })
+    if (cycleError || !cycle || cycle.start !== startAt || cycle.end !== endAt) return { ok: false, message: "O período deve corresponder ao ciclo automático: outubro–abril ou maio–setembro." }
+    const name = cycle.name
+    const existing = await supabase.from("commercial_cycles").select("id").eq("start_at", startAt).eq("end_at", endAt).maybeSingle()
+    if (existing.data) return { ok: true, id: existing.data.id }
     if (endAt < startAt) return { ok: false, message: "A data final não pode ser antes da inicial." }
     const { data, error } = await supabase
       .from("commercial_cycles")

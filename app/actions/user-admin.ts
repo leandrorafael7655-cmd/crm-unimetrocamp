@@ -260,6 +260,15 @@ export async function deleteUser(userId: string): Promise<UserAdminResult> {
     if ((count ?? 0) <= 1) return { ok: false, message: "Não é possível excluir o último administrador ativo." }
   }
 
+  const { count: portfolioCount, error: portfolioError } = await admin.from("companies").select("id", { count: "exact", head: true }).eq("owner_id", userId)
+  if (portfolioError) return { ok: false, message: "Não foi possível verificar a carteira B2B." }
+  if (portfolioCount) return { ok: false, message: `Redistribua as ${portfolioCount} empresas em B2B → Desligar consultor da carteira antes de excluir o acesso.` }
+
+  // Lock out access before Auth deletion. The database guard serializes this
+  // check with any concurrent company assignment and preserves historical names.
+  const { error: deactivateError } = await admin.from("profiles").update({ active: false }).eq("id", userId)
+  if (deactivateError) return { ok: false, message: deactivateError.message }
+
   // Soft-delete é essencial: profiles.id referencia auth.users com ON DELETE CASCADE,
   // enquanto diversos históricos referenciam profiles com RESTRICT/NO ACTION.
   // Um hard-delete do Auth tentaria apagar profiles e seria bloqueado pelo banco.
@@ -277,12 +286,10 @@ export async function deleteUser(userId: string): Promise<UserAdminResult> {
   const today = new Date().toISOString().slice(0, 10)
   const now = new Date().toISOString()
 
-  const [profileUpdate, memberDelete, slotUpdate, companyOwner, companyNextOwner, schoolOwner, schoolActions, attendanceFuture, routePreference] = await Promise.all([
-    admin.from("profiles").update({ active: false, consultant_tag: null }).eq("id", userId),
+  const [profileUpdate, memberDelete, slotUpdate, schoolOwner, schoolActions, attendanceFuture, routePreference] = await Promise.all([
+    admin.from("profiles").update({ active: false }).eq("id", userId),
     admin.from("attendance_members").delete().eq("user_id", userId),
     admin.from("attendance_team_slots").update({ user_id: null, updated_by: actor.id }).eq("user_id", userId),
-    admin.from("companies").update({ owner_id: null }).eq("owner_id", userId),
-    admin.from("companies").update({ next_action_owner_id: null }).eq("next_action_owner_id", userId),
     admin.from("schools").update({ primary_owner_id: null }).eq("primary_owner_id", userId),
     admin.from("school_actions").update({ primary_owner_id: null }).eq("primary_owner_id", userId).gte("action_date", today).neq("status", "realizada").neq("status", "cancelada"),
     admin.from("attendance_occurrences").update({ user_id: null, status: "cancelled", cancelled_at: now, updated_by: actor.id }).eq("user_id", userId).gte("occurrence_date", today).neq("status", "cancelled"),
@@ -292,8 +299,6 @@ export async function deleteUser(userId: string): Promise<UserAdminResult> {
   collect("Perfil histórico", profileUpdate.error)
   collect("Participação no Atendimento", memberDelete.error)
   collect("Rodízio do Atendimento", slotUpdate.error)
-  collect("Carteira B2B", companyOwner.error)
-  collect("Próximos passos B2B", companyNextOwner.error)
   collect("Responsabilidade de escolas", schoolOwner.error)
   collect("Ações futuras de escola", schoolActions.error)
   collect("Escala futura", attendanceFuture.error)

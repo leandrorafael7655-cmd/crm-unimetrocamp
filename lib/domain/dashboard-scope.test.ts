@@ -25,11 +25,10 @@ describe("escopoDashboard — visibilidade de blocos por papel", () => {
     expect(s.verMapa).toBe(true)
   })
 
-  it("consultor_b2b vê B2B (carteira global, pois tem b2b.read.all), HS/SV em leitura, metas próprias", () => {
+  it("consultor_b2b vê indicadores da própria carteira, mantendo o diretório B2B e HS/SV em leitura", () => {
     const s = escopoDashboard("consultor_b2b")
     expect(s.verB2B).toBe(true)
-    // Tem b2b.read.all (antídoto anti-duplicação), então NÃO é só carteira própria.
-    expect(s.soCarteiraPropria).toBe(false)
+    expect(s.soCarteiraPropria).toBe(true)
     expect(s.verHS).toBe(true)
     expect(s.verSV).toBe(true)
     expect(s.verMetas).toBe(true)

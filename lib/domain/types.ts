@@ -33,6 +33,7 @@ export interface Convenio {
 }
 
 export interface Empresa {
+  portfolio?: import("@/lib/b2b-portfolio/domain").PortfolioCompany
   id: string
   razaoSocial: string
   nomeFantasia: string
@@ -51,6 +52,7 @@ export interface Empresa {
   observacoes: string
   consultor: string
   ownerId?: string | null
+  updatedAt?: string
   /* endereço estruturado e geolocalização (migration 001) */
   logradouro?: string
   numero?: string
@@ -76,6 +78,7 @@ export interface Empresa {
 }
 
 export interface Atividade {
+  commercialCycle?: import("@/lib/b2b-portfolio/domain").CommercialCycle
   id: string
   empresaId: string
   consultor: string

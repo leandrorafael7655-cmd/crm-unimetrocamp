@@ -155,7 +155,10 @@ export function SystemSidebarMenu({ role, embedded = false, activeLegacyView = "
             {openGroup === "b2b" && (
               <div className="ml-3 mt-1 space-y-0.5 border-l border-white/10 pl-2">
                 <LegacyButton label="Painel" view="painel" Icone={CircleGauge} active={pathname === "/" && activeLegacyView === "painel"} embedded={embedded} onLegacySelect={onLegacySelect} />
-                <LegacyButton label="Minha carteira" view="carteira" Icone={Briefcase} active={pathname === "/" && activeLegacyView === "carteira"} embedded={embedded} onLegacySelect={onLegacySelect} />
+                <NavLink href="/b2b/carteira?tab=carteira" label="Minha carteira" Icone={Briefcase} active={pathname.startsWith("/b2b/carteira")} />
+                <NavLink href="/b2b/carteira?tab=disponiveis" label="Empresas disponíveis" Icone={Building2} active={false} />
+                <NavLink href="/b2b/carteira?tab=solicitacoes" label="Solicitações de Carteira" Icone={Users} active={false} />
+                <NavLink href="/b2b/carteira?tab=kanban" label="Kanban de carteira" Icone={GitBranch} active={false} />
                 <LegacyButton label="De quem é?" view="consulta" Icone={Search} active={pathname === "/" && activeLegacyView === "consulta"} embedded={embedded} onLegacySelect={onLegacySelect} />
                 {isManager && <LegacyButton label="Todas as empresas" view="empresas" Icone={Building2} active={pathname === "/" && activeLegacyView === "empresas"} embedded={embedded} onLegacySelect={onLegacySelect} />}
                 <LegacyButton label="Agenda / Follow-ups" view="agenda" Icone={CalendarClock} active={pathname === "/" && activeLegacyView === "agenda"} embedded={embedded} onLegacySelect={onLegacySelect} />

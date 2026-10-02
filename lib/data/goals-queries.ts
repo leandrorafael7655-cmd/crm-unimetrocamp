@@ -64,6 +64,8 @@ export interface Meta {
 
 export async function listCommercialCycles(): Promise<CicloComercial[]> {
   const supabase = await createClient()
+  const { error } = await supabase.rpc("b2b_ensure_cycles")
+  if (error) throw new Error(error.message)
   const { data } = await supabase
     .from("commercial_cycles")
     .select("id,name,start_at,end_at,status")
