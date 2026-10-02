@@ -216,6 +216,12 @@ export function SupervestClient({
               <Campo label="Início da captação">
                 <input name="campaign_start_at" type="date" className={inputCls} />
               </Campo>
+              <Campo label="Fim da captação">
+                <input name="campaign_end_at" type="date" className={inputCls} />
+              </Campo>
+              <Campo label="Ano letivo da divulgação">
+                <input name="capture_academic_year" type="number" min="1900" max="2200" className={inputCls} placeholder="Ex.: edição 2027, divulgação em 2026" />
+              </Campo>
               <Campo label="Data/hora do evento">
                 <input name="event_at" type="datetime-local" className={inputCls} />
               </Campo>

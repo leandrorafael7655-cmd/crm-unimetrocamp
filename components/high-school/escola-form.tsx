@@ -21,7 +21,6 @@ function Campo({ label, children }: { label: string; children: React.ReactNode }
 }
 
 export function EscolaForm({
-  owners,
   escola,
   variant = "primary",
 }: {
@@ -32,6 +31,8 @@ export function EscolaForm({
 }) {
   const [aberto, setAberto] = useState(false)
   const [erro, setErro] = useState("")
+  const [gradesKnown,setGradesKnown]=useState(escola?.seriesOferecidas!=null)
+  const [offeredGrades,setOfferedGrades]=useState<string[]>(escola?.seriesOferecidas??[])
   const [pending, startTransition] = useTransition()
   const router = useRouter()
   const edicao = Boolean(escola?.id)
@@ -103,16 +104,8 @@ export function EscolaForm({
                     ))}
                   </select>
                 </Campo>
-                <Campo label="Responsável">
-                  <select name="ownerId" defaultValue={escola?.primaryOwnerId ?? ""} className={inputCls}>
-                    <option value="">— Sem responsável —</option>
-                    {owners.map((o) => (
-                      <option key={o.id} value={o.id}>
-                        {o.nome}
-                      </option>
-                    ))}
-                  </select>
-                </Campo>
+                <div className="rounded-lg bg-brand/5 p-3 text-xs text-brand">Carteira compartilhada. Os consultores aparecem nas atuações e ações de cada edição.</div>
+                <fieldset className="rounded-lg border border-slate-200 p-3 sm:col-span-2"><legend className="px-1 text-xs font-medium text-slate-600">Séries oferecidas pela escola</legend><label className="mb-3 flex items-center gap-2 text-xs"><input type="checkbox" name="gradesKnown" checked={gradesKnown} onChange={e=>setGradesKnown(e.target.checked)}/>Séries confirmadas (desmarcado: Confirmar séries)</label><div className="grid grid-cols-1 gap-2 sm:grid-cols-2">{[["8ano","8º ano"],["9ano","9º ano"],["em1","1ª série EM"],["em2","2ª série EM"],["em3","3ª série EM"],["eja","EJA"]].map(([code,label])=><label key={code} className="flex items-center gap-2 text-xs"><input type="checkbox" name="offeredGrades" value={code} checked={offeredGrades.includes(code)} onChange={e=>{setGradesKnown(true);setOfferedGrades(current=>e.target.checked?[...current,code]:current.filter(v=>v!==code))}}/>{label}</label>)}</div></fieldset>
                 <Campo label="Código INEP (opcional)">
                   <input name="inep" defaultValue={escola?.inep ?? ""} className={inputCls} />
                 </Campo>

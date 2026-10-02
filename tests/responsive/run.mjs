@@ -27,7 +27,7 @@ const mocks = {
       loader: "jsx", resolveDir: root,
       contents: args.path === "next/link"
         ? 'import React from "react"; export default function Link({href, children, ...rest}) { return <a href={typeof href==="string"?href:href.pathname} {...rest}>{children}</a> }'
-        : 'const params = new URLSearchParams(); export const usePathname=()=>window.fixturePath || "/"; export const useSearchParams=()=>params; export const useRouter=()=>({push(){},refresh(){},replace(){}}); export function redirect(to){throw new Error("Unexpected redirect: "+to)}; export function notFound(){throw new Error("Unexpected notFound")}',
+        : 'const params = new URLSearchParams(); export const usePathname=()=>window.fixturePath || "/"; export const useSearchParams=()=>params; export const useRouter=()=>({push(){},refresh(){window.refreshFixture?.()},replace(){}}); export function redirect(to){throw new Error("Unexpected redirect: "+to)}; export function notFound(){throw new Error("Unexpected notFound")}',
     }))
     builder.onResolve({ filter: /^react-map-gl\/mapbox$/ }, () => ({ path: "mapbox", namespace: "map-mock" }))
     builder.onLoad({ filter: /.*/, namespace: "map-mock" }, () => ({
@@ -75,7 +75,7 @@ await fs.mkdir("responsive-results",{recursive:true})
 const results = []
 const errors = []
 const sizes = [[320,640],[375,812],[768,1024],[1024,768],[1280,720],[1366,768],[1440,900],[1920,1080]]
-const names = process.env.RESPONSIVE_SCENARIOS?.split(",") || ["dashboard","b2b","hs","escolas","escola","pipeline","agenda","atendimento","minha-agenda","metas","supervest","rotas","mapa","mapa-interativo","usuarios","reunioes","acoes-empresa","configuracoes","login","senha","setup"]
+const names = process.env.RESPONSIVE_SCENARIOS?.split(",") || ["dashboard","b2b","hs","escolas","escola","captacao-escolas","pipeline","agenda","atendimento","minha-agenda","metas","supervest","rotas","mapa","mapa-interativo","usuarios","reunioes","acoes-empresa","configuracoes","login","senha","setup"]
 let browser, page
 async function settle() { await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))) }
 async function check(label) {
@@ -120,6 +120,15 @@ async function check(label) {
     for(const el of document.querySelectorAll(".uni-dialog, dialog[open]")) {
       const r=el.getBoundingClientRect()
       if(r.left < 0 || r.right > viewport+1 || r.top < 0 || r.bottom > innerHeight+1) issues.push("Dialog outside viewport")
+    }
+    const captureTable=document.querySelector("[data-capture-table]")
+    if(captureTable?.getBoundingClientRect().width) {
+      for(const cell of captureTable.querySelectorAll("thead th")) {
+        if(cell.getBoundingClientRect().width<120) issues.push("Capture column too narrow to read")
+      }
+      for(const row of captureTable.querySelectorAll("tbody tr")) {
+        if(row.getBoundingClientRect().height>700) issues.push("Capture row stretched by long text")
+      }
     }
     return {width:viewport,documentWidth:document.documentElement.scrollWidth,issues}
   })
@@ -195,9 +204,71 @@ try {
         }
         if(name==="escolas") { await clickText("Nova escola"); await dialogCheck("School form "+width) }
         if(name==="escola") {
-          for(const text of ["Editar escola","Nova ação","Estimar","Novo"]) {
+          for(const text of ["Editar escola","Estimar","Novo"]) {
             await clickText(text); await dialogCheck("School "+text+" "+width)
           }
+        }
+        if(name==="captacao-escolas") {
+          await page.getByRole("button",{name:"Escola mapeada de teste",exact:true}).click()
+          const detail=page.getByRole("dialog",{name:"Escola mapeada de teste",exact:true})
+          const child=()=>page.locator("dialog[open]").last()
+          const save=async(label)=>{await child().getByRole("button",{name:label,exact:true}).click();await page.waitForFunction(()=>document.querySelectorAll("dialog[open]").length===1);await settle()}
+          await detail.getByRole("button",{name:"Iniciar atuação",exact:true}).click()
+          await child().getByLabel("Situação da negociação *").selectOption("em_negociacao")
+          await child().getByRole("checkbox",{name:"Consultora de teste",exact:true}).check()
+          await check("Capture shared engagement form "+width)
+          await save("Salvar registro")
+          assert.equal(await detail.getByRole("button",{name:/^Encerrar atuação de/}).count(),2)
+          await detail.getByRole("button",{name:"Registrar contato",exact:true}).click()
+          await child().getByLabel("Data *",{exact:true}).fill("2026-09-28")
+          await child().getByLabel("Horário *",{exact:true}).fill("14:35")
+          await child().getByLabel("Contato institucional cadastrado (opcional)").selectOption("10000000-0000-4000-8000-000000000092")
+          assert.equal(await child().getByLabel("Pessoa contatada *").inputValue(),"Diretora de teste")
+          await child().getByLabel("Descrição do contato *").fill("Contato registrado para validar histórico e próximos passos. ".repeat(8))
+          await child().getByLabel("Próximo passo",{exact:true}).fill("Retornar à direção "+"Detalhe".repeat(30))
+          await child().getByLabel("Data de retorno (opcional)").fill("2026-09-30")
+          await check("Capture contact form "+width)
+          await save("Salvar registro")
+          await detail.getByRole("button",{name:"Agendar divulgação",exact:true}).click()
+          await child().getByLabel("Data *",{exact:true}).fill("2026-10-24")
+          await child().getByLabel("Horário inicial *").fill("10:00")
+          await child().getByLabel("Horário final *").fill("11:00")
+          await child().getByLabel("Local *",{exact:true}).fill("Local "+"EndereçoExtenso".repeat(20))
+          await child().getByRole("checkbox",{name:"Consultora de teste",exact:true}).check()
+          await child().getByLabel("Turmas envolvidas").fill("3º A e 3º B")
+          await check("Capture scheduling form "+width)
+          await save("Salvar registro")
+          await detail.getByRole("button",{name:"Registrar ação realizada",exact:true}).click()
+          await child().getByLabel("Data *",{exact:true}).fill("2026-09-28")
+          await child().getByLabel("Horário inicial *").fill("14:00")
+          await child().getByLabel("Horário final *").fill("15:00")
+          await child().getByLabel("Local *",{exact:true}).fill("Escola de teste")
+          await child().getByRole("checkbox",{name:"Consultora de teste",exact:true}).check()
+          await save("Salvar registro")
+          assert.equal(await detail.getByText(/^Resultado pendente de preenchimento/).count(),1)
+          await detail.getByRole("button",{name:"Registrar resultado",exact:true}).click()
+          for(const field of ["em3-leads","em3-pending","em3-registrations"]) await child().locator(`[name="${field}"]`).fill("0")
+          await check("Capture explicit zero result form "+width)
+          await save("Salvar resultado")
+          assert.equal(await detail.getByText(/^Resultado informado/).count(),1)
+          assert.equal(await detail.getByText(/^Resultado pendente de preenchimento/).count(),0)
+          await detail.getByRole("button",{name:"Encerrar atuação de Consultora de teste",exact:true}).click()
+          await page.waitForFunction(()=>document.querySelectorAll("dialog[open] button").length>0)
+          await settle()
+          assert.equal(await detail.getByRole("button",{name:/^Encerrar atuação de/}).count(),1)
+          assert.equal(await detail.getByText("Atuação de Consultora de teste",{exact:true}).count(),1)
+          await check("Capture preserved history "+width)
+          await detail.getByLabel("Histórico por edição").selectOption("all")
+          await check("Capture consolidated history "+width)
+          await detail.getByRole("button",{name:"Fechar Escola mapeada de teste",exact:true}).click()
+          await check("Capture future and completed summaries "+width)
+          await page.getByLabel("Edição do SuperVestibular").selectOption("10000000-0000-4000-8000-000000000028")
+          await page.getByRole("button",{name:"Escola mapeada de teste",exact:true}).click()
+          assert.equal(await detail.getByText(/^Sem registros nesta edição/).count(),1)
+          await detail.getByRole("button",{name:"Fechar Escola mapeada de teste",exact:true}).click()
+          await page.getByLabel("Edição do SuperVestibular").selectOption("10000000-0000-4000-8000-000000000027")
+          await check("Capture 2027 preserved after 2028 selection "+width)
+          if(width===320||width===1366) await page.screenshot({path:`responsive-results/${engine}-capture-${width}.png`,fullPage:true})
         }
         if(name==="atendimento") {
           for(const view of ["Mês","Lista","Semana"]) { await clickText(view); await check("Attendance "+view+" "+width) }

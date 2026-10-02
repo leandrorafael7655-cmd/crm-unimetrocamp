@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
 import { requireCan } from "@/lib/auth/guards"
+import { actionTimestamp } from "@/lib/company-actions/domain"
 
 type Resultado = { ok: boolean; message?: string; id?: string }
 
@@ -16,6 +17,11 @@ function n(v: FormDataEntryValue | null): number {
 function nullable(v: FormDataEntryValue | null): string | null {
   const x = s(v)
   return x === "" ? null : x
+}
+function eventTimestamp(v:FormDataEntryValue|null) {
+  const value=s(v)
+  if(!value)return null
+  return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)?actionTimestamp(value.slice(0,10),value.slice(11)):value
 }
 
 const STATUS = [
@@ -35,6 +41,9 @@ export async function createSupervestCycle(form: FormData): Promise<Resultado> {
     if (!name) return { ok: false, message: "Informe o nome do SuperVestibular." }
     const status = s(form.get("status")) || "planejamento"
     if (!STATUS.includes(status)) return { ok: false, message: "Status inválido." }
+    const academicYear=nullable(form.get("capture_academic_year"))
+    if(academicYear&&(!Number.isInteger(Number(academicYear))||Number(academicYear)<1900||Number(academicYear)>2200))return {ok:false,message:"Ano letivo inválido."}
+    if(s(form.get("campaign_start_at"))&&s(form.get("campaign_end_at"))&&s(form.get("campaign_end_at"))<s(form.get("campaign_start_at")))return {ok:false,message:"Período de captação inválido."}
 
     const { data, error } = await supabase
       .from("supervest_cycles")
@@ -44,7 +53,8 @@ export async function createSupervestCycle(form: FormData): Promise<Resultado> {
         academic_cycle: nullable(form.get("academic_cycle")),
         campaign_start_at: nullable(form.get("campaign_start_at")),
         campaign_end_at: nullable(form.get("campaign_end_at")),
-        event_at: nullable(form.get("event_at")),
+        event_at: eventTimestamp(form.get("event_at")),
+        capture_academic_year: academicYear?Number(academicYear):null,
         registrations_target: n(form.get("registrations_target")),
         high_school_actions_target: n(form.get("high_school_actions_target")),
         status,
@@ -56,6 +66,7 @@ export async function createSupervestCycle(form: FormData): Promise<Resultado> {
       .single()
     if (error) throw error
     revalidatePath("/supervest")
+    revalidatePath("/high-school/captacao-escolas")
     return { ok: true, id: data.id }
   } catch (e: any) {
     return { ok: false, message: e?.message ?? "Erro ao criar SuperVestibular." }
@@ -79,7 +90,7 @@ export async function updateSupervestCycle(form: FormData): Promise<Resultado> {
       "status",
       "notes",
     ]) {
-      if (form.get(key) != null) patch[key] = nullable(form.get(key))
+      if (form.get(key) != null) patch[key] = key==="event_at"?eventTimestamp(form.get(key)):nullable(form.get(key))
     }
     if (form.get("registrations_target") != null)
       patch.registrations_target = n(form.get("registrations_target"))
@@ -89,6 +100,7 @@ export async function updateSupervestCycle(form: FormData): Promise<Resultado> {
     const { error } = await supabase.from("supervest_cycles").update(patch).eq("id", id)
     if (error) throw error
     revalidatePath("/supervest")
+    revalidatePath("/high-school/captacao-escolas")
     return { ok: true, id }
   } catch (e: any) {
     return { ok: false, message: e?.message ?? "Erro ao atualizar SuperVestibular." }

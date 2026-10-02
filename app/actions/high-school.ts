@@ -32,6 +32,7 @@ function revalidarHS() {
   revalidatePath("/high-school/escolas")
   revalidatePath("/high-school/pipeline")
   revalidatePath("/high-school/agenda")
+  revalidatePath("/high-school/captacao-escolas")
 }
 
 /* ─────────────────────────  ESCOLAS  ───────────────────────── */
@@ -70,12 +71,17 @@ export async function upsertSchool(form: FormData): Promise<ActionResult> {
       relationship_status: orNull(s(form.get("status"))),
       potential: orNull(s(form.get("potencial"))),
       classification: orNull(s(form.get("classificacao"))),
-      primary_owner_id: orNull(s(form.get("ownerId"))),
+      offered_grades: form.get("gradesKnown")==="on" ? [...new Set(form.getAll("offeredGrades").map(String))] : null,
       next_action: orNull(s(form.get("proximaAcao"))),
       next_action_at: orNull(s(form.get("proximaAcaoEm"))),
       notes: orNull(s(form.get("observacoes"))),
     }
 
+    if(payload.offered_grades) {
+      const {data:grades,error}=await supabase.from("grade_levels").select("code")
+      if(error)return {ok:false,message:error.message}
+      if(payload.offered_grades.some(code=>!grades?.some(g=>g.code===code)))return {ok:false,message:"Série inválida."}
+    }
     const id = s(form.get("id"))
     if (id) {
       const { error } = await supabase.from("schools").update(payload).eq("id", id)

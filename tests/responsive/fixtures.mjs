@@ -1,5 +1,6 @@
 // Dados sintéticos: a validação visual não usa contas, banco ou credenciais reais.
 import { validateCompanyAction } from "../../lib/company-actions/domain.ts"
+import { captureMocks } from "./school-capture-fixtures.mjs"
 
 let completedCompanyActions = []
 export function resetCompanyActionFixtures() { completedCompanyActions = [] }
@@ -62,6 +63,7 @@ export const meetingPanel = {
   microsoft: { connected: false }, connection: { connected: false }, emailConfigured: true, emailInvitations: { configured: true },
 }
 export const mockQueries = {
+  ...captureMocks,
   getActor: async () => actor, requireActor: async () => actor, requireManager: async () => actor, requireCan: async () => actor,
   listSchools: async () => schools, listOwners: async () => owners, listActions: async () => actions,
   listGradeLevels: async () => grades, listEstimatesByEscola: async () => Object.fromEntries(schools.map(e => [e.id, ["3em"]])),

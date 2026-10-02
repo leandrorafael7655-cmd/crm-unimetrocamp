@@ -172,6 +172,7 @@ export function SystemSidebarMenu({ role, embedded = false, activeLegacyView = "
               <div className="ml-3 mt-1 space-y-0.5 border-l border-white/10 pl-2">
                 <NavLink href="/high-school" label="Painel" Icone={CircleGauge} active={pathname === "/high-school"} />
                 <NavLink href="/high-school/escolas" label="Escolas" Icone={School} active={pathname.startsWith("/high-school/escolas")} />
+                <NavLink href="/high-school/captacao-escolas" label="Captação Escolas" Icone={GraduationCap} active={pathname.startsWith("/high-school/captacao-escolas")} />
                 <NavLink href="/high-school/pipeline" label="Pipeline Escolas" Icone={GitBranch} active={pathname === "/high-school/pipeline"} />
                 <NavLink href="/high-school/agenda" label="Agenda de Ações" Icone={CalendarClock} active={pathname === "/high-school/agenda"} />
                 {can(canonicalRole, "supervest.read") && <NavLink href="/supervest" label="SuperVestibular" Icone={GraduationCap} active={pathname.startsWith("/supervest")} />}

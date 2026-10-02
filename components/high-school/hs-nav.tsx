@@ -7,6 +7,7 @@ import { LayoutDashboard, School, GitBranch, CalendarClock, ArrowLeft, Graduatio
 const ITENS = [
   { href: "/high-school", rotulo: "Dashboard", Icone: LayoutDashboard, exato: true },
   { href: "/high-school/escolas", rotulo: "Escolas", Icone: School, exato: false },
+  { href: "/high-school/captacao-escolas", rotulo: "Captação Escolas", Icone: GraduationCap, exato: true },
   { href: "/high-school/pipeline", rotulo: "Pipeline", Icone: GitBranch, exato: true },
   { href: "/high-school/agenda", rotulo: "Agenda", Icone: CalendarClock, exato: true },
 ]

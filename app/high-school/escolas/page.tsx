@@ -30,7 +30,6 @@ export default async function EscolasPage({
   const escolas = sp.classificacao
     ? escolasBase.filter((e) => e.classificacao === sp.classificacao)
     : escolasBase
-  const nomePorId = new Map(owners.map((o) => [o.id, o.nome]))
   const totaisClassificacao = Object.fromEntries(
     CLASSIFICACOES_HS.map((classificacao) => [
       classificacao,
@@ -115,7 +114,7 @@ export default async function EscolasPage({
                   <th className="px-4 py-2.5 font-medium">Rede</th>
                   <th className="px-4 py-2.5 font-medium">Cidade</th>
                   <th className="px-4 py-2.5 font-medium">Etapa</th>
-                  <th className="px-4 py-2.5 font-medium">Responsável</th>
+                  <th className="px-4 py-2.5 font-medium">Captação compartilhada</th>
                 </tr>
               </thead>
               <tbody>
@@ -140,7 +139,7 @@ export default async function EscolasPage({
                       <Chip className={CORES_ETAPA_HS[e.etapa]}>{e.etapa}</Chip>
                     </td>
                     <td className="px-4 py-2.5 text-slate-600">
-                      {e.primaryOwnerId ? nomePorId.get(e.primaryOwnerId) ?? "—" : "—"}
+                      <Link href={`/high-school/captacao-escolas?escola=${e.id}`} className="text-brand hover:underline">Ver atuações e edição</Link>
                     </td>
                   </tr>
                 ))}

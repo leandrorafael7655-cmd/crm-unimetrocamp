@@ -19,6 +19,7 @@ export type Permission =
   | "b2b.transfer"
   | "hs.read"
   | "hs.write"
+  | "hs.capture.write"
   | "supervest.read"
   | "supervest.write"
   | "goals.read.own"
@@ -38,6 +39,7 @@ const TODAS: readonly Permission[] = [
   "b2b.transfer",
   "hs.read",
   "hs.write",
+  "hs.capture.write",
   "supervest.read",
   "supervest.write",
   "goals.read.own",
@@ -59,6 +61,7 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     "b2b.read.own",
     "b2b.write",
     "hs.read",
+    "hs.capture.write",
     "supervest.read",
     "goals.read.own",
     "map.read",
@@ -68,6 +71,7 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
   high_school: [
     "hs.read",
     "hs.write",
+    "hs.capture.write",
     "b2b.read.all",
     "supervest.read",
     "supervest.write",

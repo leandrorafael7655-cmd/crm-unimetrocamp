@@ -2,6 +2,7 @@ import Link from "next/link"
 import { listActions } from "@/lib/data/high-school-queries"
 import { PageHeader, Card, Chip, EmptyState } from "@/components/high-school/hs-ui"
 import { STATUS_ACAO_HS, CORES_STATUS_ACAO } from "@/lib/domain/high-school"
+import { listSupervestCycles } from "@/lib/data/goals-queries"
 
 export const dynamic = "force-dynamic"
 
@@ -14,10 +15,11 @@ function fmtData(iso: string) {
 export default async function AgendaPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>
+  searchParams: Promise<{ status?: string; ciclo?:string }>
 }) {
-  const { status } = await searchParams
-  const acoes = await listActions({ status })
+  const { status,ciclo } = await searchParams
+  const [acoes,cycles] = await Promise.all([listActions({ status,cicloId:ciclo }),listSupervestCycles()])
+  const statusHref=(selectedStatus?:string)=>{const query=new URLSearchParams();if(ciclo)query.set("ciclo",ciclo);if(selectedStatus)query.set("status",selectedStatus);return `/high-school/agenda${query.size?`?${query}`:""}`}
 
   // agrupa por data
   const grupos = new Map<string, typeof acoes>()
@@ -34,10 +36,11 @@ export default async function AgendaPage({
         titulo="Agenda de ações"
         descricao="Visitas, palestras e aplicações do SuperVest nas escolas"
       />
+      <form action="/high-school/agenda" className="mb-4 flex flex-wrap items-end gap-3"><label className="block min-w-0 flex-1 sm:max-w-sm"><span className="mb-1 block text-xs text-slate-500">Edição do SuperVestibular</span><select name="ciclo" defaultValue={ciclo??""} className="w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"><option value="">Todas as edições e ações sem vínculo</option>{cycles.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label>{status&&<input type="hidden" name="status" value={status}/>}<button className="rounded-lg bg-brand px-3 py-2 text-sm text-white">Filtrar edição</button><Link href="/high-school/captacao-escolas" className="rounded-lg border px-3 py-2 text-sm">Captação Escolas</Link></form>
 
       <div className="mb-4 flex flex-wrap gap-1.5">
         <Link
-          href="/high-school/agenda"
+          href={statusHref()}
           className={`rounded-full px-3 py-1 text-xs font-medium transition ${
             !status ? "bg-brand text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
           }`}
@@ -47,7 +50,7 @@ export default async function AgendaPage({
         {STATUS_ACAO_HS.map((s) => (
           <Link
             key={s}
-            href={`/high-school/agenda?status=${s}`}
+            href={statusHref(s)}
             className={`rounded-full px-3 py-1 text-xs font-medium capitalize transition ${
               status === s ? "bg-brand text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
             }`}
@@ -82,6 +85,7 @@ export default async function AgendaPage({
                           {a.inicio ? ` · ${a.inicio.slice(0, 5)}` : ""}
                           {a.objetivo ? ` · ${a.objetivo}` : ""}
                         </p>
+                        <p className="mt-1 text-xs text-slate-500">{cycles.find(c=>c.id===a.supervestCicloId)?.name??"Sem edição vinculada"} · Fuso de São Paulo</p>
                       </div>
                       <Chip className={CORES_STATUS_ACAO[a.status]}>
                         <span className="capitalize">{a.status}</span>

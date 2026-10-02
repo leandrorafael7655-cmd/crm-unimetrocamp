@@ -133,6 +133,7 @@ export interface ActionFilters {
   status?: string
   escolaId?: string
   tipo?: string
+  cicloId?: string
 }
 
 export async function listActions(filtros: ActionFilters = {}): Promise<AcaoEscola[]> {
@@ -149,6 +150,7 @@ export async function listActions(filtros: ActionFilters = {}): Promise<AcaoEsco
   if (filtros.status) q = q.eq("status", filtros.status)
   if (filtros.escolaId) q = q.eq("school_id", filtros.escolaId)
   if (filtros.tipo) q = q.eq("action_type", filtros.tipo)
+  if (filtros.cicloId) q = q.eq("supervest_cycle_id", filtros.cicloId)
 
   const { data } = await q
   const rows = data ?? []

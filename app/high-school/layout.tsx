@@ -22,8 +22,8 @@ export default async function HighSchoolLayout({ children }: { children: ReactNo
           <div className="mb-4 flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm text-amber-900 shadow-sm">
             <Lock className="h-4 w-4 shrink-0" />
             <span>
-              Você está no modo somente leitura ({rotuloRole(actor.role)}). A edição de escolas e ações é restrita à
-              equipe High School e à gestão.
+              O cadastro institucional de escolas é somente leitura para {rotuloRole(actor.role)}.
+              Na aba Captação Escolas, você pode registrar contatos, atuações e ações da edição selecionada.
             </span>
           </div>
         )}

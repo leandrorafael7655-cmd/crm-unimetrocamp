@@ -6,7 +6,9 @@ import { can } from "@/lib/domain/roles"
 import { getSchool360, listOwners, listGradeLevels } from "@/lib/data/high-school-queries"
 import { Card, Chip, SectionTitle } from "@/components/high-school/hs-ui"
 import { EscolaForm } from "@/components/high-school/escola-form"
-import { ContatosPanel, EstimativasPanel, AcoesPanel } from "@/components/high-school/escola-360-panels"
+import { ContatosPanel, EstimativasPanel } from "@/components/high-school/escola-360-panels"
+import { SchoolCapture } from "@/components/high-school/school-capture"
+import { loadSchoolCaptureData } from "@/lib/data/school-capture-queries"
 import { CORES_CLASSIFICACAO_HS, CORES_ETAPA_HS } from "@/lib/domain/high-school"
 
 export const dynamic = "force-dynamic"
@@ -18,16 +20,17 @@ function fmtDataHora(iso: string) {
 
 export default async function Escola360Page({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const [dados, actor, owners, grades] = await Promise.all([
+  const [dados, actor, owners, grades, capture] = await Promise.all([
     getSchool360(id),
     getActor(),
     listOwners(),
     listGradeLevels(),
+    loadSchoolCaptureData(id),
   ])
   if (!dados) notFound()
 
   const podeEscrever = actor ? can(actor.role, "hs.write") : false
-  const { escola, contatos, estimativas, acoes, historicoEtapa, historicoDono } = dados
+  const { escola, contatos, estimativas, historicoEtapa, historicoDono } = dados
   const nomeOwner = escola.primaryOwnerId ? owners.find((o) => o.id === escola.primaryOwnerId)?.nome : null
   const endereco = [escola.logradouro, escola.numero, escola.bairro, escola.cidade].filter(Boolean).join(", ")
 
@@ -51,7 +54,8 @@ export default async function Escola360Page({ params }: { params: Promise<{ id: 
             <p className="mt-1 text-sm text-slate-500">
               {escola.rede}
               {escola.potencial ? ` · Potencial ${escola.potencial}` : ""}
-              {nomeOwner ? ` · Resp. ${nomeOwner}` : " · Sem responsável"}
+              {" · Carteira compartilhada"}
+              {nomeOwner ? ` · Referência anterior: ${nomeOwner}` : ""}
             </p>
           </div>
           {podeEscrever && (
@@ -91,7 +95,7 @@ export default async function Escola360Page({ params }: { params: Promise<{ id: 
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
-          <AcoesPanel escolaId={escola.id} acoes={acoes} grades={grades} owners={owners} podeEscrever={podeEscrever} />
+          {actor&&<SchoolCapture compact data={capture} actor={{id:actor.id,name:actor.display_name,role:actor.role}} canWrite={can(actor.role,"hs.capture.write")} canConfigure={can(actor.role,"supervest.write")} now={new Date().toISOString()}/>}
           <EstimativasPanel escolaId={escola.id} estimativas={estimativas} grades={grades} podeEscrever={podeEscrever} />
         </div>
 
@@ -123,7 +127,7 @@ export default async function Escola360Page({ params }: { params: Promise<{ id: 
             {historicoDono.length > 0 && (
               <>
                 <div className="my-3 border-t border-slate-100" />
-                <p className="mb-2 text-xs font-semibold text-slate-500">Mudanças de responsável</p>
+                <p className="mb-2 text-xs font-semibold text-slate-500">Atribuições anteriores (histórico)</p>
                 <ol className="space-y-2">
                   {historicoDono.map((h) => (
                     <li key={h.id} className="pl-4 text-xs text-slate-500">

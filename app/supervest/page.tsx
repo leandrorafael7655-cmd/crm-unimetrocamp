@@ -35,7 +35,7 @@ export default async function SupervestPage({
   }))
 
   // Ciclo ativo: o solicitado, ou o primeiro (mais recente) da lista.
-  const ativoId = ciclo && ciclos.some((c) => c.id === ciclo) ? ciclo : ciclos[0]?.id ?? null
+  const ativoId = ciclo && ciclos.some((c) => c.id === ciclo) ? ciclo : ciclosRaw.find(c=>c.isActive)?.id ?? ciclos[0]?.id ?? null
 
   let cicloAtivo: CicloView | null = null
   let apuracao: ApuracaoView | null = null

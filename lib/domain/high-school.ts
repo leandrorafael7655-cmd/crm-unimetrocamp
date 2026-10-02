@@ -61,10 +61,23 @@ export type ClassificacaoHS = (typeof CLASSIFICACOES_HS)[number]
 /** Compatibilidade com registros antigos do High School. */
 export function normalizarClassificacaoHS(valor: unknown): string {
   const atual = String(valor ?? "").trim()
-  if (atual === "Estratégica") return "Ouro"
-  if (atual === "Prioritária") return "Prata"
-  if (atual === "Regular") return "Bronze"
+  const antigo = atual.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+  if (antigo === "estrategica") return "Ouro"
+  if (antigo === "prioritaria") return "Prata"
+  if (["regular", "padrao"].includes(antigo)) return "Bronze"
   return atual
+}
+
+/** Nomes de etapas do cadastro inicial, sem alterar seus registros no banco. */
+export function normalizarEtapaHS(valor: unknown): string {
+  const atual = String(valor ?? "Mapeada")
+  const anteriores: Record<string, string> = {
+    mapeamento: "Mapeada",
+    contato: "Contato iniciado",
+    relacionamento: "Relacionamento em desenvolvimento",
+    parceria: "Relacionamento ativo",
+  }
+  return anteriores[atual.toLowerCase()] ?? atual
 }
 
 export const CORES_CLASSIFICACAO_HS: Record<string, string> = {
@@ -114,6 +127,7 @@ export interface ResultadoSerie {
   impactados: number | null
   leads: number
   inscricoesSupervest: number
+  inscricoesPendentes?: number
 }
 
 export interface ParticipanteAcao {
@@ -138,7 +152,16 @@ export interface AcaoEscola {
   estimativaTurmas?: number | null
   observacoes?: string
   resultadoObs?: string
+  local?: string | null
+  contatoId?: string | null
+  seriesAlvo?: string[]
+  turmasDescricao?: string | null
+  divulgacaoCaptacao?: boolean
+  resultadoInformadoEm?: string | null
+  resultadoInformadoPor?: string | null
+  createdBy?: string | null
   primaryOwnerId?: string | null
+  consultorPrincipalNome?: string | null
   participantes: ParticipanteAcao[]
   resultados: ResultadoSerie[]
   createdAt?: string
@@ -148,6 +171,7 @@ export interface AcaoEscola {
 export interface Escola {
   id: string
   nome: string
+  seriesOferecidas?: string[] | null
   inep?: string | null
   cnpj?: string | null
   rede: string
@@ -192,6 +216,7 @@ export function mapEscolaRow(r: Record<string, unknown>): Escola {
   return {
     id: String(r.id),
     nome: String(r.name ?? ""),
+    seriesOferecidas: Array.isArray(r.offered_grades) ? r.offered_grades.map(String) : null,
     inep: (r.inep_code as string) ?? null,
     cnpj: (r.cnpj as string) ?? null,
     rede: String(r.network_type ?? "Outra"),
@@ -207,7 +232,7 @@ export function mapEscolaRow(r: Record<string, unknown>): Escola {
     email: (r.email as string) ?? "",
     site: (r.website as string) ?? "",
     instagram: (r.instagram as string) ?? "",
-    etapa: String(r.relationship_stage ?? "Mapeada"),
+    etapa: normalizarEtapaHS(r.relationship_stage),
     status: (r.relationship_status as string) ?? "",
     potencial: (r.potential as string) ?? "",
     classificacao: normalizarClassificacaoHS(r.classification),
@@ -256,6 +281,7 @@ export function mapResultadoRow(r: Record<string, unknown>): ResultadoSerie {
     impactados: r.estimated_impacted == null ? null : Number(r.estimated_impacted),
     leads: Number(r.leads ?? 0),
     inscricoesSupervest: Number(r.supervest_registrations ?? 0),
+    inscricoesPendentes: Number(r.pending_registrations ?? 0),
   }
 }
 
@@ -280,8 +306,17 @@ export function mapAcaoRow(
     estimativaTurmas: r.estimated_classes == null ? null : Number(r.estimated_classes),
     observacoes: (r.notes as string) ?? "",
     resultadoObs: (r.result_notes as string) ?? "",
+    local: (r.location as string) ?? null,
+    contatoId: (r.school_contact_id as string) ?? null,
+    seriesAlvo: Array.isArray(r.target_grades) ? r.target_grades.map(String) : [],
+    turmasDescricao: (r.class_details as string) ?? null,
+    divulgacaoCaptacao: Boolean(r.capture_publicity),
+    resultadoInformadoEm: (r.results_recorded_at as string) ?? null,
+    resultadoInformadoPor: (r.results_recorded_by as string) ?? null,
+    createdBy: (r.created_by as string) ?? null,
     primaryOwnerId: (r.primary_owner_id as string) ?? null,
     participantes,
+    consultorPrincipalNome: (r.primary_owner_name as string) ?? null,
     resultados,
     createdAt: (r.created_at as string) ?? "",
     updatedAt: (r.updated_at as string) ?? "",

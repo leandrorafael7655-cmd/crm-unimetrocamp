@@ -30,6 +30,8 @@ import { AuthShell } from "../../components/auth/auth-shell"
 import { GerenciarUsuarios } from "../../components/team/gerenciar-usuarios"
 import { CompanyMeetings } from "../../components/b2b/company-meetings"
 import { MapView } from "../../components/maps/map-view"
+import { SchoolCapture } from "../../components/high-school/school-capture"
+import { captureActor, captureFixtureData, resetCaptureFixtures } from "./school-capture-fixtures.mjs"
 
 const pages = {
   dashboard: Dashboard, hs: HighSchool, escolas: Escolas, escola: Escola360, pipeline: Pipeline,
@@ -42,8 +44,20 @@ const paths = { dashboard: "/dashboard", hs: "/high-school", escolas: "/high-sch
   rotas: "/mapa/rotas", mapa: "/mapa", configuracoes: "/gestao/configuracoes" }
 const root = createRoot(document.getElementById("root"))
 window.renderFixture = async (name) => {
+  window.refreshFixture = undefined
   window.fixturePath = paths[name] || "/"
   document.body.dataset.ready = ""
+  if(name === "captacao-escolas") {
+    window.fixturePath = "/high-school/captacao-escolas"
+    resetCaptureFixtures()
+    const key = "capture:"+Date.now()
+    window.refreshFixture = ()=>root.render(<React.Fragment key={key}><ResponsiveShell sidebar={<SystemSidebar role="gerente" userName={captureActor.name}/>} mainClassName="p-4 sm:p-6">
+      <SchoolCapture data={captureFixtureData()} actor={captureActor} canWrite canConfigure now="2026-10-02T00:30:00.000Z"/>
+    </ResponsiveShell></React.Fragment>)
+    window.refreshFixture()
+    document.body.dataset.ready=name
+    return
+  }
   const perfil = { id: actor.id, nome: actor.full_name, papel: "Gerente", tag: "rafa", role: "gerente", email: actor.email }
   let content
   if (name === "b2b") {

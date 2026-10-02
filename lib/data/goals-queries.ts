@@ -32,6 +32,8 @@ export interface CicloSupervest {
   highSchoolActionsTarget: number
   status: string
   notes: string | null
+  isActive: boolean
+  captureAcademicYear: number | null
 }
 export interface SnapshotSupervest {
   id: string
@@ -103,6 +105,8 @@ function mapSupervestCycle(c: any): CicloSupervest {
     highSchoolActionsTarget: c.high_school_actions_target ?? 0,
     status: c.status,
     notes: c.notes,
+    isActive: Boolean(c.is_active),
+    captureAcademicYear: c.capture_academic_year ?? null,
   }
 }
 
@@ -431,6 +435,7 @@ export async function apuracaoSupervest(cycleId: string) {
     .from("school_actions")
     .select("id")
     .eq("supervest_cycle_id", cycleId)
+    .eq("status", "realizada")
   const acaoIds = (acoes ?? []).map((a) => a.id)
   let hs = 0
   if (acaoIds.length > 0) {
