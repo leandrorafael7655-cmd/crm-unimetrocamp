@@ -42,7 +42,7 @@ describe("persistência, auditoria e RLS da captação", () => {
       await db.exec(
         readFileSync(
           new URL(
-            "../../supabase/migrations/20261002004704_school_capture_by_supervest_edition.sql",
+            "../../supabase/migrations/20261002013714_school_capture_by_supervest_edition.sql",
             import.meta.url,
           ),
           "utf8",
