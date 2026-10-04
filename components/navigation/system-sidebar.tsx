@@ -23,13 +23,14 @@ import {
   Users,
   GitBranch,
   UserRound,
+  Handshake,
 } from "lucide-react"
 import { can, normalizeRole, rotuloRole } from "@/lib/domain/roles"
 import { createClient } from "@/lib/supabase/client"
 import { UniConectaBrand } from "@/components/brand/uniconecta-brand"
 
 type GroupKey = "b2b" | "high-school" | "routes" | "attendance" | "settings"
-type LegacyView = "painel" | "carteira" | "consulta" | "empresas" | "agenda" | "funil" | "equipe"
+type LegacyView = "painel" | "carteira" | "consulta" | "empresas" | "agenda" | "funil" | "convenios" | "equipe"
 type LegacyFocus = "equipe" | "links" | undefined
 
 type RoleInput = string | null | undefined
@@ -46,7 +47,8 @@ interface SystemSidebarMenuProps {
   onLegacySelect?: (selection: LegacyB2BSelection) => void
 }
 
-function groupForPath(pathname: string): GroupKey {
+function groupForPath(pathname: string, activeLegacyView?: LegacyView): GroupKey {
+  if (pathname === "/" && activeLegacyView === "equipe") return "settings"
   if (pathname.startsWith("/high-school") || pathname.startsWith("/supervest")) return "high-school"
   if (pathname.startsWith("/mapa")) return "routes"
   if (pathname.startsWith("/atendimento")) return "attendance"
@@ -71,7 +73,7 @@ function LegacyButton({ label, view, focus, Icone, active, embedded, onLegacySel
   embedded: boolean
   onLegacySelect?: (selection: LegacyB2BSelection) => void
 }) {
-  if (embedded && onLegacySelect) {
+  if (onLegacySelect) {
     return (
       <button type="button" onClick={() => onLegacySelect({ view, focus })} className={submenuClass(active)} aria-current={active ? "page" : undefined}>
         <Icone className={`h-4 w-4 shrink-0 ${active ? "text-[#b4fcf1]" : "text-[#b4fcf1]/48"}`} aria-hidden />
@@ -136,13 +138,13 @@ export function SystemSidebarMenu({ role, embedded = false, activeLegacyView = "
     return result
   }, [canonicalRole])
 
-  const inferred = allowedGroups.includes(groupForPath(pathname)) ? groupForPath(pathname) : allowedGroups[0] ?? "b2b"
+  const inferred = allowedGroups.includes(groupForPath(pathname, activeLegacyView)) ? groupForPath(pathname, activeLegacyView) : allowedGroups[0] ?? "b2b"
   const [openGroup, setOpenGroup] = useState<GroupKey | null>(inferred)
 
   useEffect(() => {
-    const current = groupForPath(pathname)
+    const current = groupForPath(pathname, activeLegacyView)
     if (allowedGroups.includes(current)) setOpenGroup(current)
-  }, [pathname, allowedGroups])
+  }, [pathname, activeLegacyView, allowedGroups])
 
   const toggle = (group: GroupKey) => setOpenGroup((current) => (current === group ? null : group))
 
@@ -163,6 +165,7 @@ export function SystemSidebarMenu({ role, embedded = false, activeLegacyView = "
                 {isManager && <LegacyButton label="Todas as empresas" view="empresas" Icone={Building2} active={pathname === "/" && activeLegacyView === "empresas"} embedded={embedded} onLegacySelect={onLegacySelect} />}
                 <LegacyButton label="Agenda / Follow-ups" view="agenda" Icone={CalendarClock} active={pathname === "/" && activeLegacyView === "agenda"} embedded={embedded} onLegacySelect={onLegacySelect} />
                 <LegacyButton label="Pipeline B2B" view="funil" Icone={GitBranch} active={pathname === "/" && activeLegacyView === "funil"} embedded={embedded} onLegacySelect={onLegacySelect} />
+                <LegacyButton label="Convênios" view="convenios" Icone={Handshake} active={pathname === "/" && activeLegacyView === "convenios"} embedded={embedded} onLegacySelect={onLegacySelect} />
               </div>
             )}
           </section>
@@ -231,12 +234,23 @@ export function SystemSidebarMenu({ role, embedded = false, activeLegacyView = "
   )
 }
 
-export function SystemSidebar({ role, userName }: { role?: RoleInput; userName?: string | null }) {
+export function SystemSidebar({ role, userName, activeLegacyView, onLegacySelect, onSignOut, signOutLabel = "sair" }: {
+  role?: RoleInput
+  userName?: string | null
+  activeLegacyView?: LegacyView
+  onLegacySelect?: (selection: LegacyB2BSelection) => void
+  onSignOut?: () => void | Promise<void>
+  signOutLabel?: string
+}) {
   const router = useRouter()
   const [signingOut, setSigningOut] = useState(false)
   const sair = async () => {
     setSigningOut(true)
     try {
+      if (onSignOut) {
+        await onSignOut()
+        return
+      }
       const supabase = createClient()
       await supabase.auth.signOut()
       router.push("/auth/login")
@@ -250,12 +264,12 @@ export function SystemSidebar({ role, userName }: { role?: RoleInput; userName?:
         <UniConectaBrand inverse />
         <div className="mt-3 h-1 w-8 rounded-full bg-[#b4fcf1]/75" aria-hidden />
       </Link>
-      <div className="min-h-0 flex-1 overflow-y-auto py-2.5"><SystemSidebarMenu role={role} /></div>
+      <div className="min-h-0 flex-1 overflow-y-auto py-2.5"><SystemSidebarMenu role={role} activeLegacyView={activeLegacyView} onLegacySelect={onLegacySelect} /></div>
       <div className="border-t border-white/10 px-4 py-3.5 md:px-5 md:py-4">
         {userName && <Link href="/perfil" className="block truncate text-sm font-semibold text-white hover:underline" aria-label="Meu perfil">{userName}</Link>}
         <p className="mt-0.5 text-[11px] text-[#b4fcf1]/55">{rotuloRole(role)}</p>
         <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
-          <button type="button" disabled={signingOut} onClick={sair} className="rounded font-medium text-[#b4fcf1] underline-offset-4 hover:text-white hover:underline disabled:opacity-50">{signingOut ? "saindo…" : "sair"}</button>
+          <button type="button" disabled={signingOut} onClick={sair} className="rounded font-medium text-[#b4fcf1] underline-offset-4 hover:text-white hover:underline disabled:opacity-50">{signingOut ? "saindo…" : signOutLabel}</button>
           <span className="h-3 w-px bg-white/15" aria-hidden />
           <Link href="/perfil/alterar-senha" className="rounded text-[#b4fcf1]/65 underline-offset-4 hover:text-white hover:underline">trocar senha</Link>
         </div>

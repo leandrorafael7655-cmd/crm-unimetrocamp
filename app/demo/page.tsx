@@ -1,4 +1,5 @@
 import CrmDemo from "@/components/crm-demo"
+import { Suspense } from "react"
 
 export const metadata = {
   title: "Demonstração",
@@ -6,5 +7,5 @@ export const metadata = {
 }
 
 export default function DemoPage() {
-  return <CrmDemo />
+  return <Suspense fallback={<p className="p-6">Carregando…</p>}><CrmDemo /></Suspense>
 }

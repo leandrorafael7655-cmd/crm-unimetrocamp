@@ -28,7 +28,7 @@ const mocks = {
       loader: "jsx", resolveDir: root,
       contents: args.path === "next/link"
         ? 'import React from "react"; export default function Link({href, children, ...rest}) { return <a href={typeof href==="string"?href:href.pathname} {...rest}>{children}</a> }'
-        : 'const params = new URLSearchParams(); export const usePathname=()=>window.fixturePath || "/"; export const useSearchParams=()=>params; export const useRouter=()=>({push(){},refresh(){window.refreshFixture?.()},replace(){}}); export function redirect(to){throw new Error("Unexpected redirect: "+to)}; export function notFound(){throw new Error("Unexpected notFound")}',
+        : 'import {useMemo,useSyncExternalStore} from "react"; const originalReplace=window.history.replaceState.bind(window.history); window.history.replaceState=(...args)=>{originalReplace(...args);window.dispatchEvent(new Event("popstate"))}; const subscribe=(notify)=>{window.addEventListener("popstate",notify);return()=>window.removeEventListener("popstate",notify)}; const readSearch=()=>window.location.search; export const usePathname=()=>window.fixturePath || "/"; export const useSearchParams=()=>{const search=useSyncExternalStore(subscribe,readSearch);return useMemo(()=>new URLSearchParams(search),[search])}; export const useRouter=()=>({push(){},refresh(){window.refreshFixture?.()},replace(){}}); export function redirect(to){throw new Error("Unexpected redirect: "+to)}; export function notFound(){throw new Error("Unexpected notFound")}',
     }))
     builder.onResolve({ filter: /^react-map-gl\/mapbox$/ }, () => ({ path: "mapbox", namespace: "map-mock" }))
     builder.onLoad({ filter: /.*/, namespace: "map-mock" }, () => ({
@@ -170,6 +170,68 @@ async function shellStates(label,width) {
     await check(label+(open?" menu open":" menu collapsed"))
   }
 }
+
+async function openMenu(width) {
+  const shell = page.locator(".uni-shell")
+  const value = await shell.getAttribute(width >= 768 ? "data-sidebar-collapsed" : "data-mobile-open")
+  if (width >= 768 ? value === "true" : value !== "true") {
+    await page.locator(width >= 768 ? ".uni-desktop-toggle" : ".uni-mobile-toggle").click()
+  }
+}
+
+async function selectB2B(label, width) {
+  await openMenu(width)
+  const nav = page.locator(".uni-sidebar nav")
+  const group = nav.getByRole("button", { name: label === "Gestão de usuários" ? "Configurações" : "B2B", exact: true })
+  if (await group.getAttribute("aria-expanded") !== "true") await group.click()
+  await nav.getByRole("button", { name: label, exact: true }).click()
+  await settle()
+}
+
+async function verifyNavigationProfiles(engine) {
+  for (const role of ["gerente", "supervisor", "consultor_b2b", "high_school", "consultor"]) {
+    const manager = role === "gerente" || role === "supervisor"
+    for (const width of [375, 1366]) {
+      await page.setViewportSize({width, height: 900})
+      for (const [view, heading] of [["carteira", "Minha carteira"], ["consulta", "De quem é a empresa?"], ["agenda", "Agenda e follow-ups"], ["funil", "Funil B2B"], ["convenios", "Convênios"], ["equipe", manager ? "Equipe e links" : "Painel"], ["empresas", manager ? "Todas as empresas" : "Painel"]]) {
+        await page.goto(url + "?fixture=b2b&role=" + role + "&view=" + view)
+        await page.getByRole("heading", {name:heading, exact:true}).waitFor()
+        await openMenu(width)
+        const nav = page.locator(".uni-sidebar nav")
+        assert.equal(await nav.count(), 1, "Only one shared navigation")
+        assert.equal(await nav.locator("ul").count(), 0, "No old flat navigation")
+        for (const groupName of ["B2B", "High School", "Rotas", "Atendimento", "Configurações"]) {
+          assert.equal(await nav.getByRole("button", {name:groupName, exact:true}).count(), 1, role + " " + groupName)
+        }
+        const b2b = nav.getByRole("button", {name:"B2B",exact:true})
+        if (await b2b.getAttribute("aria-expanded") !== "true") await b2b.click()
+        assert.equal(await nav.getByRole("button",{name:"Todas as empresas",exact:true}).count(),manager ? 1 : 0)
+        assert.equal(await nav.getByRole("button",{name:"Convênios",exact:true}).count(),1)
+        await nav.getByRole("button",{name:"Configurações",exact:true}).click()
+        assert.equal(await nav.getByRole("button",{name:"Gestão de usuários",exact:true}).count(),manager ? 1 : 0)
+        await shellStates("Navigation " + role + " " + view + " " + width,width)
+        await page.reload()
+        await page.getByRole("heading", {name:heading, exact:true}).waitFor()
+        await check("Reload " + role + " " + view + " " + width)
+      }
+      await selectB2B("Convênios", width)
+      assert.equal(new URL(page.url()).searchParams.get("view"), "convenios")
+      await page.reload()
+      await page.getByRole("heading", {name:"Convênios",exact:true}).waitFor()
+      for (const name of ["hs", "atendimento", "mapa"]) {
+        await page.evaluate(({name,role})=>window.renderFixture(name,role), {name,role})
+        await settle()
+        await openMenu(width)
+        assert.equal(await page.locator(".uni-sidebar nav").count(),1)
+        for (const groupName of ["B2B", "High School", "Rotas", "Atendimento", "Configurações"]) {
+          assert.equal(await page.locator("nav").getByRole("button",{name:groupName,exact:true}).count(),1,role + " " + name + " " + groupName)
+        }
+        await shellStates("Module " + role + " " + name + " " + width,width)
+      }
+    }
+  }
+  await page.goto(url)
+}
 try {
   const engines = [["chromium",chromium],["webkit",webkit]].filter(([name]) => !process.env.RESPONSIVE_ENGINES || process.env.RESPONSIVE_ENGINES.split(",").includes(name))
   assert.ok(engines.length, "No responsive browser engine selected")
@@ -180,6 +242,8 @@ try {
     const pageErrors=[]
     page.on("pageerror", e=>{pageErrors.push(e.message);console.log("BROWSER ERROR",e.message)})
     await page.goto(url)
+    await verifyNavigationProfiles(engine)
+    assert.equal(pageErrors.length, 0, "Navigation profiles must render without errors")
     for(const [width,height] of sizes) {
       await page.setViewportSize({width,height})
       for(const name of names) {
@@ -192,14 +256,13 @@ try {
         if(name==="acoes-empresa") await check(name+" "+width+"x"+height)
         else await shellStates(name+" "+width+"x"+height,width)
         if(name==="b2b") {
-          // O bridge aciona os botões originais sem alterar o fluxo do CRM.
-          for(const label of ["Painel","Minha carteira","De quem é?","Todas as empresas","Agenda","Funil","Convênios","Equipe e links"]) {
-            await page.locator("nav ul button").filter({hasText:new RegExp("^"+label.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"$")}).evaluate(el=>el.click())
+          for(const label of ["Painel","De quem é?","Todas as empresas","Agenda / Follow-ups","Pipeline B2B","Convênios","Gestão de usuários"]) {
+            await selectB2B(label, width)
             await shellStates("B2B "+label+" "+width,width)
           }
           await clickText("Nova empresa")
           await dialogCheck("B2B form "+width)
-          await page.locator("nav ul button").filter({hasText:"Todas as empresas"}).evaluate(el=>el.click())
+          await selectB2B("Todas as empresas", width)
           await page.locator(".uni-main tbody tr").first().click()
           await dialogCheck("B2B company "+width)
         }

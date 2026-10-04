@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { ResponsiveShell } from "@/components/navigation/responsive-shell";
+import { SystemSidebar } from "@/components/navigation/system-sidebar";
 import { UniConectaBrand } from "@/components/brand/uniconecta-brand";
 import {
   LayoutDashboard, Briefcase, Building2, CalendarClock, GitBranch, Users, Handshake,
@@ -1834,6 +1836,7 @@ const NAV = [
  * @param {{ modo?: string, aoSair?: any, usuarioInicial?: any, painelEquipe?: any }} props
  */
 export default function CrmApp({ modo = "demo", aoSair, usuarioInicial = null, painelEquipe = null }) {
+  const searchParams = useSearchParams();
   const [carregando, setCarregando] = useState(true);
   const [sincronizando, setSincronizando] = useState(false);
   const [empresas, setEmpresas] = useState([]);
@@ -1939,6 +1942,34 @@ export default function CrmApp({ modo = "demo", aoSair, usuarioInicial = null, p
      A busca "De quem é?" usa a lista completa diretamente (b2b.read.all),
      independentemente disto. */
   const ehGestor = can(papelAtual, "team.manage");
+
+  // A mesma navegação React atende todos os perfis; não depende de rótulos no DOM.
+  // Os endereços antigos continuam válidos e respeitam as permissões do usuário.
+  useEffect(() => {
+    if (carregando || !usuario) return;
+    const view = searchParams.get("view");
+    if (!view) return;
+    const item = NAV.find((n) => n.id === view && (n.todos || ehGestor));
+    setTela(item ? item.id : "painel");
+    if (item?.id !== "equipe" || searchParams.get("focus") !== "links") return;
+    const timer = window.setTimeout(() => {
+      const input = document.querySelector('input[placeholder*="inscricao.unimetrocamp"]');
+      const target = input?.closest("section") ?? input?.closest("div.rounded-lg") ?? input;
+      target?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 120);
+    return () => window.clearTimeout(timer);
+  }, [carregando, usuario, ehGestor, searchParams]);
+
+  const selecionarTela = ({ view, focus }, filtrosTela = {}) => {
+    if (!NAV.some((n) => n.id === view && (n.todos || ehGestor))) return;
+    setTela(view);
+    setFiltros({ busca: "", consultor: "", classificacao: "", etapa: "", ...filtrosTela });
+    const query = new URLSearchParams(window.location.search);
+    query.set("view", view);
+    if (focus) query.set("focus", focus);
+    else query.delete("focus");
+    window.history.replaceState(null, "", `${window.location.pathname}?${query.toString()}`);
+  };
   const empresaAberta = empresas.find((e) => e.id === aberta) || null;
   const empresaConvenio = empresas.find((e) => e.id === convenioDe) || null;
 
@@ -2075,43 +2106,9 @@ export default function CrmApp({ modo = "demo", aoSair, usuarioInicial = null, p
     <div className="min-h-screen bg-slate-100 font-sans text-slate-900">
       <Tema config={config} />
       <ResponsiveShell mainClassName="p-4 sm:p-6" sidebar={
-        <nav className="min-w-0 w-full bg-slate-900">
-          <div className="hidden px-4 py-4 md:block">
-            <Marca escuro />
-          </div>
-          <ul className="flex uni-scroll-region overflow-x-auto md:block md:px-2">
-            {NAV.filter((n) => n.todos || ehGestor).map(({ id, rotulo, Icone }) => (
-              <li key={id} className="shrink-0">
-                <button
-                  onClick={() => { setTela(id); setFiltros({ busca: "", consultor: "", classificacao: "", etapa: "" }); }}
-                  className={`flex w-full items-center gap-2 whitespace-nowrap px-4 py-3 text-sm transition md:rounded md:py-2 ${
-                    tela === id ? "bg-slate-800 font-medium text-white" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"}`}
-                >
-                  <Icone className="h-4 w-4 shrink-0" />{rotulo}
-                </button>
-              </li>
-            ))}
-          </ul>
-          <div className="mt-1 border-t border-slate-800 px-2 py-2">
-            <a
-              href="/high-school"
-              className="flex w-full items-center gap-2 whitespace-nowrap rounded px-4 py-3 text-sm text-slate-400 transition hover:bg-slate-800 hover:text-slate-200 md:py-2"
-            >
-              <GraduationCap className="h-4 w-4 shrink-0" />
-              High School
-            </a>
-          </div>
-          <div className="hidden border-t border-slate-800 px-4 py-3 md:block">
-            <p className="text-xs font-medium text-white">{usuario.nome}</p>
-            <p className="font-mono text-[10px] text-slate-500">{usuario.papel}</p>
-            <div className="mt-1 flex items-center gap-3">
-              <button onClick={sair} className="text-[11px] text-teal-400 hover:underline">{modo === "demo" ? "trocar usuário" : "sair"}</button>
-              {modo === "supabase" && (
-                <a href="/perfil/alterar-senha" className="text-[11px] text-slate-400 hover:underline">trocar senha</a>
-              )}
-            </div>
-          </div>
-        </nav>
+        <SystemSidebar role={papelAtual} userName={usuario.nome} activeLegacyView={tela}
+          onLegacySelect={selecionarTela} onSignOut={sair}
+          signOutLabel={modo === "demo" ? "trocar usuário" : "sair"} />
       }>
           <header className="mb-4 flex flex-wrap items-end justify-between gap-3">
             <div>
@@ -2173,7 +2170,7 @@ export default function CrmApp({ modo = "demo", aoSair, usuarioInicial = null, p
 
           {tela === "painel" && (
             <Painel empresas={escopoBase} atividades={atividades} equipe={equipe} fila={fila} aoAbrir={setAberta}
-              aoIrPara={(t, f) => { setTela(t); setFiltros({ busca: "", consultor: "", classificacao: "", etapa: "", ...f }); }}
+              aoIrPara={(t, f) => selecionarTela({ view: t }, f)}
               escopo={ehGestor ? "Toda a operação" : `Carteira de ${usuario.nome}`} />
           )}
           {(tela === "carteira" || tela === "empresas") && <TabelaEmpresas empresas={listaFiltrada} aoAbrir={setAberta} hoje={hoje} />}

@@ -7,7 +7,6 @@ import { createClient } from "@/lib/supabase/client"
 import { setStorage } from "@/lib/data/storage-context"
 import { makeSupabaseStorage } from "@/lib/data/supabase-storage"
 import { GerenciarUsuarios } from "@/components/team/gerenciar-usuarios"
-import { LegacySidebarBridge } from "@/components/navigation/legacy-sidebar-bridge"
 import type { Usuario } from "@/lib/domain/types"
 
 /* Modo Supabase: instala o backend do Supabase (com o perfil autenticado) antes
@@ -37,7 +36,6 @@ export default function CrmSupabase({ perfil }: { perfil: Usuario }) {
         aoSair={aoSair}
         painelEquipe={podeGerenciar ? <GerenciarUsuarios perfil={perfil} /> : null}
       />
-      <LegacySidebarBridge role={perfil.role} />
     </>
   )
 }

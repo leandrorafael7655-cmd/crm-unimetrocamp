@@ -2,7 +2,6 @@ import React from "react"
 import { createRoot } from "react-dom/client"
 import { ResponsiveShell } from "../../components/navigation/responsive-shell"
 import { SystemSidebar } from "../../components/navigation/system-sidebar"
-import { LegacySidebarBridge } from "../../components/navigation/legacy-sidebar-bridge"
 import CrmApp from "../../components/crm-app"
 import { setStorage } from "../../lib/data/storage-context"
 import { makeLocalStorage } from "../../lib/data/local-storage"
@@ -43,7 +42,7 @@ const paths = { dashboard: "/dashboard", hs: "/high-school", escolas: "/high-sch
   metas: "/gestao/metas", supervest: "/supervest", atendimento: "/atendimento", "minha-agenda": "/atendimento/minha-agenda",
   rotas: "/mapa/rotas", mapa: "/mapa", configuracoes: "/gestao/configuracoes" }
 const root = createRoot(document.getElementById("root"))
-window.renderFixture = async (name) => {
+window.renderFixture = async (name, role = "gerente") => {
   window.refreshFixture = undefined
   window.fixturePath = paths[name] || "/"
   document.body.dataset.ready = ""
@@ -64,18 +63,18 @@ window.renderFixture = async (name) => {
     document.body.dataset.ready=name
     return
   }
-  const perfil = { id: actor.id, nome: actor.full_name, papel: "Gerente", tag: "rafa", role: "gerente", email: actor.email }
+  const perfil = { id: actor.id, nome: actor.full_name, papel: role === "gerente" ? "Gerente" : role === "supervisor" ? "Supervisor" : "Consultor", tag: "rafa", role, email: actor.email }
   let content
   if (name === "b2b") {
-    localStorage.setItem(CHAVES.usuario, JSON.stringify(EQUIPE_PADRAO[0]))
-    localStorage.setItem(CHAVES.equipe, JSON.stringify(EQUIPE_PADRAO))
+    localStorage.setItem(CHAVES.usuario, JSON.stringify(perfil))
+    localStorage.setItem(CHAVES.equipe, JSON.stringify([perfil, ...EQUIPE_PADRAO]))
     localStorage.setItem(CHAVES.empresas, JSON.stringify(dadosExemplo(EQUIPE_PADRAO).map((e, i) => ({
       ...e, nomeFantasia: e.nomeFantasia + (i === 0 ? " " + "EmpresaMuitoExtensa".repeat(10) : ""),
     }))))
     localStorage.setItem(CHAVES.config, JSON.stringify(CONFIG_PADRAO))
     localStorage.setItem(CHAVES.atividades, JSON.stringify([]))
     setStorage(makeLocalStorage())
-    content = <><CrmApp modo="demo" usuarioInicial={perfil}/><LegacySidebarBridge role="gerente"/></>
+    content = <CrmApp modo="demo" usuarioInicial={perfil}/>
   } else if (name === "login") content = <Login />
   else if (name === "senha") content = <ResetPassword />
   else if (name === "setup") content = <AuthShell titulo="Configuração"><SetupForm exigeEmail={true}/></AuthShell>
@@ -95,8 +94,12 @@ window.renderFixture = async (name) => {
     }
     else if (name === "mapa-interativo") child = <div className="h-[700px]"><MapView token="fixture" opcoes={{ cidades: ["Campinas"], etapas: ["Mapeada"], responsaveis: owners }} centroInicial={{longitude:-47, latitude:-22, zoom:10}}/></div>
     else child = await pages[name]({ searchParams: Promise.resolve({}), params: Promise.resolve({ id: "school-0" }) })
-    content = <ResponsiveShell sidebar={<SystemSidebar role="gerente" userName={actor.full_name}/>} mainClassName={name.startsWith("mapa") ? "" : "p-4 sm:p-6"}>{child}</ResponsiveShell>
+    content = <ResponsiveShell sidebar={<SystemSidebar role={role} userName={actor.full_name}/>} mainClassName={name.startsWith("mapa") ? "" : "p-4 sm:p-6"}>{child}</ResponsiveShell>
   }
   root.render(<React.Fragment key={name + ":" + Date.now()}>{content}</React.Fragment>)
   document.body.dataset.ready = name
 }
+
+// Recarregamento e acesso direto são exercitados sem contas ou dados de produção.
+const query = new URLSearchParams(window.location.search)
+if (query.has("fixture")) window.renderFixture(query.get("fixture"), query.get("role") || "gerente")
