@@ -11,6 +11,7 @@ export function SetupForm({ exigeEmail }: { exigeEmail: boolean }) {
   const [nome, setNome] = useState("")
   const [email, setEmail] = useState("")
   const [senha, setSenha] = useState("")
+  const [setupToken, setSetupToken] = useState("")
   const [erro, setErro] = useState<string | null>(null)
   const [sucesso, setSucesso] = useState<string | null>(null)
   const [carregando, setCarregando] = useState(false)
@@ -21,7 +22,7 @@ export function SetupForm({ exigeEmail }: { exigeEmail: boolean }) {
     setSucesso(null)
     setCarregando(true)
     try {
-      const r = await bootstrapAdmin({ fullName: nome, email, password: senha })
+      const r = await bootstrapAdmin({ fullName: nome, email, password: senha, setupToken })
       if (r.ok) setSucesso(r.message)
       else setErro(r.message)
     } catch (err) {
@@ -48,7 +49,7 @@ export function SetupForm({ exigeEmail }: { exigeEmail: boolean }) {
     <form onSubmit={enviar} className="flex flex-col gap-4">
       {exigeEmail && (
         <p className="rounded-md bg-[#b4fcf1]/40 px-3 py-2 text-xs text-[#00302b]">
-          Este ambiente exige que o e-mail coincida com INITIAL_ADMIN_EMAIL.
+          Use o e-mail e o código de configuração fornecidos pelo responsável técnico.
         </p>
       )}
       <div className="flex flex-col gap-1.5">
@@ -65,7 +66,12 @@ export function SetupForm({ exigeEmail }: { exigeEmail: boolean }) {
       <div className="flex flex-col gap-1.5">
         <label htmlFor="senha" className="text-xs font-medium text-slate-700">Senha</label>
         <input id="senha" type="password" required autoComplete="new-password" value={senha}
-          onChange={(e) => setSenha(e.target.value)} className={inputCls} placeholder="Mínimo 8 caracteres" />
+          onChange={(e) => setSenha(e.target.value)} className={inputCls} placeholder="Ao menos 12 caracteres, letras, número e símbolo" />
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="setupToken" className="text-xs font-medium text-slate-700">Código de configuração inicial</label>
+        <input id="setupToken" type="password" required autoComplete="off" value={setupToken}
+          onChange={(e) => setSetupToken(e.target.value)} className={inputCls} />
       </div>
       {erro && <p className="text-sm text-[#ff1a00]" role="alert">{erro}</p>}
       <button type="submit" disabled={carregando}

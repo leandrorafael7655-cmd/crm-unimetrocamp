@@ -23,7 +23,7 @@ import {
 } from "@/lib/domain/constants";
 import {
   hojeISO, diffDias, brData, brDataLonga, somarDias, uid, num, meses,
-  slug, soDigitos, mascaraCNPJ, cnpjValido, completarCNPJ,
+  slug, soDigitos, canonicalCnpj, mascaraCNPJ, cnpjValido, completarCNPJ,
 } from "@/lib/domain/utils";
 import { dadosExemplo } from "@/lib/domain/seed";
 import {
@@ -129,13 +129,12 @@ async function ler(chave, compartilhado, padrao) {
   try {
     const r = await getStorage().get(chave, compartilhado);
     return r && r.value ? JSON.parse(r.value) : padrao;
-  } catch { return padrao; }
+  } catch (error) { if (getStorage().mode === "supabase") throw error; return padrao; }
 }
 async function gravar(chave, valor, compartilhado) {
-  try {
-    await getStorage().set(chave, JSON.stringify(valor), compartilhado);
-    return true;
-  } catch { return false; }
+  const ok = await getStorage().set(chave, JSON.stringify(valor), compartilhado);
+  if (!ok) throw new Error("Não foi possível confirmar a gravação. Seus dados foram mantidos no formulário.");
+  return true;
 }
 
 /* ─────────────────────────  tema da marca  ───────────────────────── */
@@ -515,7 +514,7 @@ function BlocoLinkEmpresa({ empresa, config, consultorTag, aoSalvarLink }) {
       )}
       <div className="mt-2 flex justify-end gap-2">
         {ativo && <Botao tamanho="sm" tipo="neutro" onClick={() => { setValor(ativo); setEditando(false); }}>Cancelar</Botao>}
-        <Botao tamanho="sm" onClick={() => { aoSalvarLink(valor.trim()); setEditando(false); }}>
+        <Botao tamanho="sm" onClick={async () => { if (await aoSalvarLink(valor.trim()) !== false) setEditando(false); }}>
           {defasado ? "Salvar meu link" : "Salvar link"}
         </Botao>
       </div>
@@ -1007,11 +1006,16 @@ function Convenios({ empresas, equipe, config, aoAbrir, aoCadastrar }) {
 function FormConvenio({ empresa, aoSalvar, aoFechar, aoEncerrar }) {
   const [d, setD] = useState({ ...CONVENIO_VAZIO, ...(empresa.convenio || {}) });
   const [erro, setErro] = useState("");
+  const [saving, setSaving] = useState(false);
   const set = (k) => (ev) => setD({ ...d, [k]: ev.target.value });
-  const salvar = () => {
+  const salvar = async () => {
+    if (saving) return;
     if (!d.dataInicio) return setErro("Informe a data de início. Como o convênio não tem vencimento, é ela que mede há quanto tempo ele existe sem gerar aluno.");
     if (d.dataInicio > hojeISO()) return setErro("A data de início não pode estar no futuro.");
-    aoSalvar({ ...d, ativo: true });
+    setSaving(true);
+    try { if (await aoSalvar({ ...d, ativo: true }) === false) setErro("Não foi possível salvar. Confira a mensagem e tente novamente."); }
+    catch (error) { setErro(error?.message || "Não foi possível salvar. Seus dados foram preservados."); }
+    finally { setSaving(false); }
   };
   return (
     <Modal titulo={empresa.convenio && empresa.convenio.ativo ? "Editar convênio" : "Cadastrar convênio"} subtitulo={empresa.nomeFantasia || empresa.razaoSocial} aoFechar={aoFechar} largo>
@@ -1085,7 +1089,7 @@ function FormConvenio({ empresa, aoSalvar, aoFechar, aoEncerrar }) {
         {empresa.convenio && empresa.convenio.ativo && <Botao tipo="perigo" onClick={aoEncerrar}>Remover convênio</Botao>}
         <span className="flex-1" />
         <Botao tipo="neutro" onClick={aoFechar}>Cancelar</Botao>
-        <Botao onClick={salvar}>Salvar convênio</Botao>
+        <Botao onClick={salvar} disabled={saving}>Salvar convênio</Botao>
       </div>
     </Modal>
   );
@@ -1171,18 +1175,23 @@ const EMPRESA_VAZIA = {
 function FormEmpresa({ inicial, equipe, empresas, aoSalvar, aoFechar, aoExcluir, podeGerir }) {
   const [d, setD] = useState({ ...EMPRESA_VAZIA, ...inicial });
   const [erro, setErro] = useState("");
+  const [saving, setSaving] = useState(false);
   const [confirmando, setConfirmando] = useState(false);
   const set = (k) => (ev) => setD({ ...d, [k]: ev.target.value });
 
-  const salvar = () => {
+  const salvar = async () => {
+    if (saving) return;
     if (!d.razaoSocial.trim()) return setErro("Informe a razão social.");
     if (!d.id && !d.consultor) return setErro("Escolha o consultor responsável.");
     if (d.cnpj && !cnpjValido(d.cnpj)) return setErro("CNPJ inválido — confira os dígitos.");
     if (d.cnpj) {
-      const dup = empresas.find((e) => soDigitos(e.cnpj) === soDigitos(d.cnpj) && e.id !== d.id);
+      const dup = empresas.find((e) => canonicalCnpj(e.cnpj) === canonicalCnpj(d.cnpj) && e.id !== d.id);
       if (dup) return setErro(`Esse CNPJ já está cadastrado como "${dup.nomeFantasia || dup.razaoSocial}", na carteira de ${dup.consultor}.`);
     }
-    aoSalvar({ ...d, cnpj: d.cnpj ? mascaraCNPJ(d.cnpj) : "" });
+    setSaving(true);
+    try { if (await aoSalvar({ ...d, cnpj: d.cnpj ? mascaraCNPJ(d.cnpj) : "" }) === false) setErro("Não foi possível salvar. Confira a mensagem e tente novamente."); }
+    catch (error) { setErro(error?.message || "Não foi possível salvar. Seus dados foram preservados."); }
+    finally { setSaving(false); }
   };
 
   return (
@@ -1267,25 +1276,38 @@ function FormEmpresa({ inicial, equipe, empresas, aoSalvar, aoFechar, aoExcluir,
         )}
         {!confirmando && <span className="flex-1" />}
         <Botao tipo="neutro" onClick={aoFechar}>Cancelar</Botao>
-        <Botao onClick={salvar}>Salvar empresa</Botao>
+        <Botao onClick={salvar} disabled={saving}>Salvar empresa</Botao>
       </div>
     </Modal>
   );
 }
 
-function FormAtividade({ empresa, aoSalvar, aoFechar }) {
+function FormAtividade({ empresa, equipe, aoSalvar, aoFechar }) {
   const hoje = hojeISO();
   const [d, setD] = useState({
     data: hoje, tipo: "Ligação", contato: "", resultado: "Contato realizado",
     observacao: "", proximaAcao: "", dataProximoContato: somarDias(hoje, 7),
+    proximoInicio: "09:00", proximoFim: "10:00", proximoLocal: "",
+    proximoResponsavelId: empresa.ownerId || (equipe.find((p) => p.nome === empresa.consultor)?.id || ""),
     leads: "", impactados: "", novaEtapa: empresa.etapa,
   });
   const [erro, setErro] = useState("");
+  const [saving, setSaving] = useState(false);
   const set = (k) => (ev) => setD({ ...d, [k]: ev.target.value });
-  const salvar = () => {
+  const salvar = async () => {
+    if (saving) return;
     if (!d.observacao.trim()) return setErro("Escreva o que aconteceu no contato — é isso que vira histórico da conta.");
     if (d.data > hoje) return setErro("A data do contato não pode estar no futuro. Para agendar, use o campo de próximo passo.");
-    aoSalvar(d);
+    if (d.proximaAcao.trim()) {
+      if (!d.dataProximoContato) return setErro("Informe a data do próximo passo.");
+      if (!d.proximoResponsavelId) return setErro("Selecione o responsável pelo próximo passo para gerar o convite.");
+      if (!d.proximoInicio || !d.proximoFim) return setErro("Informe início e fim do próximo passo.");
+      if (d.proximoFim <= d.proximoInicio) return setErro("O horário final do próximo passo deve ser posterior ao inicial.");
+    }
+    setSaving(true);
+    try { if (await aoSalvar(d) === false) setErro("Não foi possível salvar. Confira a mensagem e tente novamente."); }
+    catch (error) { setErro(error?.message || "Não foi possível salvar. Seus dados foram preservados."); }
+    finally { setSaving(false); }
   };
   return (
     <Modal titulo="Registrar contato" subtitulo={empresa.nomeFantasia || empresa.razaoSocial} aoFechar={aoFechar}>
@@ -1314,6 +1336,17 @@ function FormAtividade({ empresa, aoSalvar, aoFechar }) {
           <input className={inputBase} value={d.proximaAcao} onChange={set("proximaAcao")} placeholder="Ex.: enviar proposta de convênio" />
         </Campo>
         <Campo rotulo="Quando" largura="sm:col-span-2"><input type="date" className={`${inputBase} font-mono`} value={d.dataProximoContato} onChange={set("dataProximoContato")} /></Campo>
+        <Campo rotulo="Início" largura="sm:col-span-2"><input type="time" className={`${inputBase} font-mono`} value={d.proximoInicio} onChange={set("proximoInicio")} /></Campo>
+        <Campo rotulo="Fim" largura="sm:col-span-2"><input type="time" className={`${inputBase} font-mono`} value={d.proximoFim} onChange={set("proximoFim")} /></Campo>
+        <Campo rotulo="Responsável pelo próximo passo" largura="sm:col-span-2">
+          <select className={inputBase} value={d.proximoResponsavelId} onChange={set("proximoResponsavelId")}>
+            <option value="">Selecione</option>
+            {equipe.filter((p) => p.id).map((p) => <option key={p.id} value={p.id}>{p.nome}</option>)}
+          </select>
+        </Campo>
+        <Campo rotulo="Local / link da reunião" largura="sm:col-span-6" dica="Com responsável, data e horário, o UniConecta gera o convite usando o e-mail cadastrado no usuário.">
+          <input className={inputBase} value={d.proximoLocal} onChange={set("proximoLocal")} placeholder="Ex.: Empresa XYZ, Teams ou UniMetrocamp" />
+        </Campo>
         <Campo rotulo="Leads gerados" largura="sm:col-span-3"><input type="number" className={`${inputBase} font-mono`} value={d.leads} onChange={set("leads")} /></Campo>
         <Campo rotulo="Colaboradores impactados" largura="sm:col-span-3"><input type="number" className={`${inputBase} font-mono`} value={d.impactados} onChange={set("impactados")} /></Campo>
       </div>
@@ -1324,7 +1357,7 @@ function FormAtividade({ empresa, aoSalvar, aoFechar }) {
       )}
       <div className="mt-4 flex justify-end gap-2 border-t border-slate-200 pt-3">
         <Botao tipo="neutro" onClick={aoFechar}>Cancelar</Botao>
-        <Botao onClick={salvar}>Registrar contato</Botao>
+        <Botao onClick={salvar} disabled={saving}>Registrar contato</Botao>
       </div>
     </Modal>
   );
@@ -1683,7 +1716,7 @@ function Equipe({ equipe, empresas, config, aoSalvarEquipe, aoSalvarConfig, pain
         <div className="mt-3 flex items-center justify-end gap-2">
           <Botao tipo="neutro" tamanho="sm" onClick={() => setCfg({ ...cfg, ...MARCA_PADRAO })}>Restaurar paleta oficial</Botao>
           {salvoMarca && <span className="text-xs text-teal-700">Salvo</span>}
-          <Botao onClick={() => { aoSalvarConfig(cfg); setSalvoMarca(true); setTimeout(() => setSalvoMarca(false), 2000); }}>
+          <Botao onClick={async () => { if (!await aoSalvarConfig(cfg)) return; setSalvoMarca(true); setTimeout(() => setSalvoMarca(false), 2000); }}>
             Aplicar identidade
           </Botao>
         </div>
@@ -1740,7 +1773,7 @@ function Equipe({ equipe, empresas, config, aoSalvarEquipe, aoSalvarConfig, pain
 
         <div className="mt-3 flex items-center justify-end gap-2">
           {salvo && <span className="text-xs text-teal-700">Salvo</span>}
-          <Botao onClick={() => { aoSalvarConfig(cfg); setSalvo(true); setTimeout(() => setSalvo(false), 2000); }}>
+          <Botao onClick={async () => { if (!await aoSalvarConfig(cfg)) return; setSalvo(true); setTimeout(() => setSalvo(false), 2000); }}>
             Salvar configuração
           </Botao>
         </div>
@@ -1838,6 +1871,7 @@ const NAV = [
 export default function CrmApp({ modo = "demo", aoSair, usuarioInicial = null, painelEquipe = null }) {
   const searchParams = useSearchParams();
   const [carregando, setCarregando] = useState(true);
+  const [writeError, setWriteError] = useState("");
   const [sincronizando, setSincronizando] = useState(false);
   const [empresas, setEmpresas] = useState([]);
   const [atividades, setAtividades] = useState([]);
@@ -1893,30 +1927,42 @@ export default function CrmApp({ modo = "demo", aoSair, usuarioInicial = null, p
         setUsuario(usr);
       }
       setCarregando(false);
-    })();
+    })().catch(error => { setWriteError(error?.message || "Não foi possível carregar a base."); setCarregando(false); });
   }, []);
 
   useEffect(() => {
     if (!usuario) return;
-    const t = setInterval(() => { if (!editando && !registrando && !convenioDe) recarregar(); }, 60000);
+    const t = setInterval(() => { if (!editando && !registrando && !convenioDe) recarregar().catch(error => setWriteError(error?.message || "Falha ao atualizar a base.")); }, 60000);
     return () => clearInterval(t);
   }, [usuario, editando, registrando, convenioDe, recarregar]);
 
   /* grava a partir da cópia mais recente da base, para não sobrescrever a equipe */
+  const writeFailure = (error) => {
+    setWriteError(error?.message || "Não foi possível confirmar a gravação. Os dados preenchidos foram preservados.");
+    return false;
+  };
   const mutarEmpresas = async (fn) => {
-    const remoto = await ler(CHAVES.empresas, true, empresas);
-    const novo = fn(remoto);
-    setEmpresas(novo);
-    await gravar(CHAVES.empresas, novo, true);
+    setWriteError("");
+    try {
+      const remoto = await ler(CHAVES.empresas, true, empresas);
+      const novo = fn(remoto);
+      await gravar(CHAVES.empresas, novo, true);
+      setEmpresas(novo);
+      return true;
+    } catch (error) { return writeFailure(error); }
   };
   const mutarAtividades = async (fn) => {
-    const remoto = await ler(CHAVES.atividades, true, atividades);
-    const novo = fn(remoto);
-    setAtividades(novo);
-    await gravar(CHAVES.atividades, novo, true);
+    setWriteError("");
+    try {
+      const remoto = await ler(CHAVES.atividades, true, atividades);
+      const novo = fn(remoto);
+      await gravar(CHAVES.atividades, novo, true);
+      setAtividades(novo);
+      return true;
+    } catch (error) { return writeFailure(error); }
   };
-  const salvarEquipe = async (nova) => { setEquipe(nova); await gravar(CHAVES.equipe, nova, true); };
-  const salvarConfig = async (nova) => { setConfig(nova); await gravar(CHAVES.config, nova, true); };
+  const salvarEquipe = async (nova) => { try { await gravar(CHAVES.equipe,nova,true); setEquipe(nova); return true; } catch (error) { return writeFailure(error); } };
+  const salvarConfig = async (nova) => { try { await gravar(CHAVES.config,nova,true); setConfig(nova); return true; } catch (error) { return writeFailure(error); } };
   const entrar = (p) => { setUsuario(p); gravar(CHAVES.usuario, p, false); };
   const sair = async () => {
     if (modo === "supabase" && aoSair) { await aoSair(); return; }
@@ -1991,41 +2037,41 @@ export default function CrmApp({ modo = "demo", aoSair, usuarioInicial = null, p
 
   const fila = useMemo(() => construirFila(escopoBase, hoje), [escopoBase, hoje]);
 
-  const guardarEmpresa = (dados) => {
-    if (dados.id) mutarEmpresas((base) => base.map((e) => {
+  const guardarEmpresa = async (dados) => {
+    const ok = await mutarEmpresas((base) => dados.id ? base.map(e => {
       if (e.id !== dados.id) return e;
-      const trocouLink = (dados.linkInscricao || "") !== (e.linkInscricao || "");
-      /* quem digitou o link no formulário é o responsável escolhido ali */
-      return { ...e, ...dados, linkConsultor: trocouLink ? (dados.linkInscricao ? dados.consultor : "") : e.linkConsultor };
-    }));
-    else mutarEmpresas((base) => [...base, { ...dados, id: uid(), dataEntrada: hoje, ultimoContato: "", proximaAcao: "", dataProximaAcao: "", convenio: null }]);
-    setEditando(null);
+      const changed = (dados.linkInscricao || "") !== (e.linkInscricao || "");
+      return { ...e,...dados,linkConsultor: changed ? (dados.linkInscricao ? dados.consultor : "") : e.linkConsultor };
+    }) : [...base,{...dados,id:uid(),dataEntrada:hoje,ultimoContato:"",proximaAcao:"",dataProximaAcao:"",convenio:null}]);
+    if (ok) setEditando(null);
+    return ok;
   };
-
   const excluirEmpresa = async () => {
     const id = editando.id;
-    await mutarEmpresas((base) => base.filter((e) => e.id !== id));
-    await mutarAtividades((base) => base.filter((a) => a.empresaId !== id));
+    if (!await mutarEmpresas(base => base.filter(e => e.id!==id))) return false;
+    setAtividades(base => base.filter(a => a.empresaId!==id));
     setEditando(null); setAberta(null);
+    return true;
   };
-
   const guardarAtividade = async (d) => {
-    const alvo = empresaAberta;
-    /* a atividade guarda o HISTÓRICO do próximo passo prometido; a empresa
-       guarda o estado ATUAL. Encadeado com await para não haver corrida entre
-       as duas escritas remotas (read-modify-write). */
-    await mutarAtividades((base) => [...base, {
-      id: uid(), empresaId: alvo.id, consultor: usuario.nome, data: d.data, tipo: d.tipo,
-      contato: d.contato, resultado: d.resultado, observacao: d.observacao,
-      leads: d.leads, impactados: d.impactados, etapaAnterior: alvo.etapa, etapaNova: d.novaEtapa,
-      proximaAcao: d.proximaAcao, dataProximoContato: d.dataProximoContato,
-    }]);
-    await mutarEmpresas((base) => base.map((e) => e.id === alvo.id ? {
-      ...e, ultimoContato: d.data, etapa: d.novaEtapa,
-      proximaAcao: d.proximaAcao, dataProximaAcao: d.proximaAcao ? d.dataProximoContato : "",
-    } : e));
-    setRegistrando(false);
-    if (ETAPAS_CONVENIO.includes(d.novaEtapa) && !(alvo.convenio && alvo.convenio.ativo)) setConvenioDe(alvo.id);
+    setWriteError("");
+    try {
+      const alvo = empresaAberta;
+      const activity = {id:d.id || uid(),empresaId:alvo.id,consultor:usuario.nome,data:d.data,tipo:d.tipo,
+        contato:d.contato,resultado:d.resultado,observacao:d.observacao,leads:d.leads,impactados:d.impactados,
+        etapaAnterior:alvo.etapa,etapaNova:d.novaEtapa,proximaAcao:d.proximaAcao,dataProximoContato:d.dataProximoContato};
+      const company = {...alvo,ultimoContato:d.data,etapa:d.novaEtapa,proximaAcao:d.proximaAcao,
+        dataProximaAcao:d.proximaAcao ? d.dataProximoContato : "",proximaAcaoInicio:d.proximaAcao ? d.proximoInicio : "",
+        proximaAcaoFim:d.proximaAcao ? d.proximoFim : "",proximaAcaoLocal:d.proximaAcao ? d.proximoLocal : "",
+        proximaAcaoOwnerId:d.proximaAcao ? d.proximoResponsavelId : null};
+      const storage = getStorage();
+      if (!storage.saveInteraction || !await storage.saveInteraction(activity,company)) throw new Error("Não foi possível confirmar a interação. Seus dados foram preservados.");
+      setEmpresas(base => base.map(e => e.id===company.id ? company : e));
+      setAtividades(base => [...base,activity]);
+      setRegistrando(false);
+      if (ETAPAS_CONVENIO.includes(d.novaEtapa) && !alvo.convenio?.ativo) setConvenioDe(alvo.id);
+      return true;
+    } catch (error) { return writeFailure(error); }
   };
 
   const exportarCSV = () => {
@@ -2059,6 +2105,8 @@ export default function CrmApp({ modo = "demo", aoSair, usuarioInicial = null, p
       </div>
     );
   }
+
+  if (writeError && !usuario) return <div role="alert" className="p-8 text-rose-800">{writeError}<button className="ml-4 underline" onClick={() => window.location.reload()}>Tentar novamente</button></div>;
 
   if (!usuario && modo !== "demo") {
     return (
@@ -2110,6 +2158,7 @@ export default function CrmApp({ modo = "demo", aoSair, usuarioInicial = null, p
           onLegacySelect={selecionarTela} onSignOut={sair}
           signOutLabel={modo === "demo" ? "trocar usuário" : "sair"} />
       }>
+          {modo === "demo" && <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">Demonstração · dados salvos somente neste navegador. Este ambiente não grava na base oficial.</p>}
           <header className="mb-4 flex flex-wrap items-end justify-between gap-3">
             <div>
               <h1 className="text-lg font-semibold tracking-tight text-slate-900">{titulos[tela]}</h1>
@@ -2208,20 +2257,21 @@ export default function CrmApp({ modo = "demo", aoSair, usuarioInicial = null, p
         />
       )}
 
+      {writeError && <div role="alert" className="pointer-events-none fixed bottom-4 left-4 right-4 z-[100] rounded-lg border border-rose-300 bg-white p-4 text-sm text-rose-800 shadow-lg">{writeError}<button type="button" className="pointer-events-auto ml-4 underline" onClick={() => setWriteError("")}>Fechar aviso</button></div>}
       {editando && (
             <FormEmpresa inicial={editando} equipe={equipe} empresas={empresas} podeGerir={ehGestor}
           aoSalvar={guardarEmpresa} aoExcluir={excluirEmpresa} aoFechar={() => setEditando(null)} />
       )}
 
       {registrando && empresaAberta && (
-        <FormAtividade empresa={empresaAberta} aoSalvar={guardarAtividade} aoFechar={() => setRegistrando(false)} />
+        <FormAtividade empresa={empresaAberta} equipe={equipe} aoSalvar={guardarAtividade} aoFechar={() => setRegistrando(false)} />
       )}
 
       {empresaConvenio && (
         <FormConvenio
           empresa={empresaConvenio}
           aoFechar={() => setConvenioDe(null)}
-          aoSalvar={(cv) => { mutarEmpresas((base) => base.map((e) => e.id === empresaConvenio.id ? { ...e, convenio: cv } : e)); setConvenioDe(null); }}
+          aoSalvar={async (cv) => { const ok = await mutarEmpresas((base) => base.map((e) => e.id === empresaConvenio.id ? { ...e, convenio: cv } : e)); if (ok) setConvenioDe(null); return ok; }}
           aoEncerrar={() => { mutarEmpresas((base) => base.map((e) => e.id === empresaConvenio.id ? { ...e, convenio: null } : e)); setConvenioDe(null); }}
         />
       )}

@@ -16,6 +16,7 @@ import {
   salvarMeuEnderecoAction,
 } from "@/app/actions/route-preferences"
 import { UNIMETROCAMP_ORIGIN } from "@/lib/domain/route-origins"
+import { validateRouteSchedule } from "@/lib/domain/validation"
 
 /* ── tipos locais (evita importar módulos server-only no cliente) ── */
 type Tipo = "company" | "school"
@@ -36,6 +37,7 @@ interface Ponto {
 }
 interface PlanoResumo {
   id: string
+  route_name: string | null
   plan_date: string
   status: string
   total_distance_m: number | null
@@ -108,6 +110,7 @@ export function RoutePlanner({
 }) {
   const router = useRouter()
   const [planDate, setPlanDate] = useState(() => new Date().toISOString().slice(0, 10))
+  const [routeName, setRouteName] = useState("")
   const [meuEndereco, setMeuEndereco] = useState<MeuEndereco | null>(meuEnderecoInicial)
   const [origemModo, setOrigemModo] = useState<OrigemModo>("campus")
   const [origem, setOrigem] = useState<CoordRotulo>({ ...CAMPUS })
@@ -301,9 +304,16 @@ export function RoutePlanner({
       setAviso({ tipo: "erro", texto: "Nada para salvar." })
       return
     }
+    if (!routeName.trim()) {
+      setAviso({ tipo: "erro", texto: "Dê um nome para a rota antes de salvar." })
+      return
+    }
+    const invalid=validateRouteSchedule(planDate,departure,returnTime)
+    if (invalid) {setAviso({tipo:"erro",texto:invalid});return}
     iniciarSalvar(async () => {
       const r = await salvarPlanoAction({
         id: planoId,
+        route_name: routeName.trim(),
         plan_date: planDate,
         origin_label: origem.label,
         origin_lat: origem.lat,
@@ -409,6 +419,7 @@ export function RoutePlanner({
 
       setPlanoId(r.id)
       setPlanDate(r.plan_date)
+      setRouteName(r.route_name ?? "")
       setDeparture((r.departure_time ?? "08:00").slice(0, 5))
       setReturnTime((r.return_time ?? "").slice(0, 5))
       setAvgVisit(String(r.avg_visit_minutes ?? 45))
@@ -478,6 +489,17 @@ export function RoutePlanner({
         <div className="rounded-lg border border-border bg-card p-4">
           <h2 className="mb-3 text-sm font-semibold text-foreground">Parâmetros do dia</h2>
           <div className="grid grid-cols-2 gap-3 text-sm">
+            <label className="col-span-2 flex flex-col gap-1">
+              <span className="text-xs font-medium text-muted-foreground">Nome da rota</span>
+              <input
+                type="text"
+                maxLength={120}
+                value={routeName}
+                onChange={(e) => setRouteName(e.target.value)}
+                placeholder="Ex.: Rota Sumaré — Escolas"
+                className="rounded-md border border-border bg-background px-2 py-1.5"
+              />
+            </label>
             <label className="flex flex-col gap-1">
               <span className="text-xs text-muted-foreground">Data</span>
               <input type="date" value={planDate} onChange={(e) => setPlanDate(e.target.value)}
@@ -657,7 +679,7 @@ export function RoutePlanner({
 
         <div className="rounded-lg border border-border bg-card p-4">
           <div className="mb-3 flex flex-wrap items-center gap-2">
-            <h2 className="text-sm font-semibold">Rota ({selecionadas.length})</h2>
+            <h2 className="min-w-0 truncate text-sm font-semibold">{routeName.trim() || "Nova rota"} <span className="font-normal text-muted-foreground">({selecionadas.length} paradas)</span></h2>
             {planoId && <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">plano aberto</span>}
             {otimizado && (
               <span className="flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">
@@ -748,7 +770,7 @@ export function RoutePlanner({
           <div className="rounded-lg border border-border bg-card p-4">
             <div className="mb-2 flex items-center gap-2">
               <FolderOpen className="h-4 w-4 text-[#88005b]" />
-              <h2 className="text-sm font-semibold">Planos recentes</h2>
+              <h2 className="text-sm font-semibold">Rotas salvas</h2>
               <span className="text-xs text-muted-foreground">clique para reabrir</span>
             </div>
             <ul className="flex flex-col gap-1 text-sm">
@@ -761,7 +783,10 @@ export function RoutePlanner({
                       planoId === p.id ? "border-[#88005b]/40 bg-[#88005b]/5" : "border-transparent"
                     }`}
                   >
-                    <span className="font-medium text-foreground">{brData(p.plan_date)}</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium text-foreground">{p.route_name || "Rota sem nome"}</p>
+                      <p className="text-xs text-muted-foreground">{brData(p.plan_date)}</p>
+                    </div>
                     <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{p.status}</span>
                     {p.total_distance_m != null && (
                       <span className="ml-auto text-xs text-muted-foreground">

@@ -1,0 +1,38 @@
+{
+  "results": [
+    {
+      "id": "GOALS-01-BROWSER-b2b",
+      "layer": "Navegador local → aplicação Next.js → Auth/banco Supabase reais de homologação",
+      "details": "Login, acesso direto e recarga da Central de Metas concluídos"
+    },
+    {
+      "id": "METRIC-01-BROWSER",
+      "layer": "Navegador local → aplicação Next.js → Auth/banco Supabase reais de homologação",
+      "details": "Indicador sem origem transacional aparece como Não disponível, sem progresso inventado"
+    },
+    {
+      "id": "CONFIG-ACCESS-BROWSER",
+      "layer": "Navegador local → aplicação Next.js → Auth/banco Supabase reais de homologação",
+      "details": "Consultor redirecionado ao tentar configurações gerenciais"
+    },
+    {
+      "id": "SAVE-01-BROWSER-PERSISTENCE",
+      "layer": "Navegador local → aplicação Next.js → Auth/banco Supabase reais de homologação",
+      "details": "Cadastro, busca, edição e recarga pela interface; nova sessão Auth confirmou registro editado e proprietário no banco real"
+    },
+    {
+      "id": "SAVE-01-BROWSER-FAILURE",
+      "layer": "Navegador local → aplicação Next.js → Auth/banco Supabase reais de homologação",
+      "details": "Falha controlada do PostgreSQL manteve formulário aberto e preenchido; consulta real confirmou zero registros salvos"
+    }
+  ],
+  "errors": [],
+  "timings": [
+    {
+      "role": "b2b",
+      "step": "direct-goals",
+      "ms": 16918
+    }
+  ],
+  "transport": "Chamadas do navegador à homologação encaminhadas por HTTP sem simular respostas; servidor Next.js e Supabase reais"
+}

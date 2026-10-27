@@ -1,4 +1,5 @@
 import "server-only"
+import { cache } from "react"
 import { createClient } from "@/lib/supabase/server"
 import { type Role, type Permission, can, normalizeRole } from "@/lib/domain/roles"
 import { profileDisplayName } from "@/lib/domain/user-display"
@@ -19,7 +20,7 @@ export interface ActorProfile {
 }
 
 /** Perfil do usuário autenticado no request atual (ou null). */
-export async function getActor(): Promise<ActorProfile | null> {
+export const getActor = cache(async (): Promise<ActorProfile | null> => {
   const supabase = await createClient()
   const {
     data: { user },
@@ -41,7 +42,7 @@ export async function getActor(): Promise<ActorProfile | null> {
     display_name: displayName,
     role: normalizeRole(profile.role),
   } as ActorProfile
-}
+})
 
 /** Exige um ator autenticado e ativo (qualquer papel). */
 export async function requireActor(): Promise<ActorProfile> {

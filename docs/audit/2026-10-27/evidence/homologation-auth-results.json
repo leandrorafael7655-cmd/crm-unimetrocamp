@@ -1,0 +1,17 @@
+[
+  {
+    "id": "AUTH-LOGIN-INACTIVE",
+    "layer": "Supabase Auth/REST reais em homologação isolada",
+    "observed": "Auth confirmou senha fictícia; o perfil inativo continua sem acesso comercial"
+  },
+  {
+    "id": "SEC-01-METADATA",
+    "layer": "Supabase Auth/REST reais em homologação isolada",
+    "observed": "Metadados alterados no Auth real; RPC comercial recusada ao perfil inativo"
+  },
+  {
+    "id": "AUTH-LOGOUT",
+    "layer": "Supabase Auth/REST reais em homologação isolada",
+    "observed": "Logout real concluído"
+  }
+]

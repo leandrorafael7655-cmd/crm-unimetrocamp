@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { redirect } from "next/navigation"
 import {
   ArrowLeft,
   CheckCircle2,
@@ -11,7 +12,7 @@ import {
   ShieldCheck,
   Target,
 } from "lucide-react"
-import { requireManager } from "@/lib/auth/guards"
+import { requireActor } from "@/lib/auth/guards"
 import { createClient } from "@/lib/supabase/server"
 
 export const dynamic = "force-dynamic"
@@ -52,7 +53,8 @@ function Kpi({ label, value, detail }: { label: string; value: number | string; 
 }
 
 export default async function ConfiguracoesPage() {
-  const actor = await requireManager()
+  const actor = await requireActor()
+  if (actor.role!=="gerente" && actor.role!=="supervisor") redirect("/")
   const supabase = await createClient()
 
   const [companiesR, schoolsR, routesR, goalsR, supervestR, snapshotsR] = await Promise.all([

@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin"
 import { requireManager, requireRole } from "@/lib/auth/guards"
 import { normalizeRole, type Role } from "@/lib/domain/roles"
 import { authRedirectUrl, siteUrl } from "@/lib/auth/urls"
+import { profileDisplayName } from "@/lib/domain/user-display"
 import { recoveryRedirectUrl } from "@/lib/auth/recovery-email"
 import { sendUserRecovery } from "@/app/actions/user-access"
 
@@ -12,6 +13,7 @@ const ROLES: Role[] = ["gerente", "supervisor", "consultor_b2b", "high_school"]
 export interface ManagedUser {
   id: string
   full_name: string
+  display_name: string
   email: string
   role: Role
   active: boolean
@@ -85,9 +87,10 @@ export async function listManagedUsers(): Promise<ManagedUsersResult> {
       return {
         id: u.id,
         full_name: p?.full_name || meta.full_name || u.email?.split("@")[0] || "Sem nome",
+        display_name: profileDisplayName({ full_name: p?.full_name || meta.full_name, consultant_tag: p?.consultant_tag || meta.consultant_tag }, u.email?.split("@")[0] || "Sem nome"),
         email: p?.email || u.email || "",
-        role: normalizeRole(p?.role || meta.role),
-        active: p?.active !== false,
+        role: normalizeRole(p?.role),
+        active: p?.active === true,
         must_change_password: p?.must_change_password === true,
         consultant_tag: p?.consultant_tag || meta.consultant_tag || null,
         email_confirmed: Boolean(u.email_confirmed_at),
@@ -95,7 +98,7 @@ export async function listManagedUsers(): Promise<ManagedUsersResult> {
         attendance_enabled: attendanceById.get(u.id) ?? false,
       }
     })
-    .sort((a, b) => a.full_name.localeCompare(b.full_name, "pt-BR"))
+    .sort((a, b) => a.display_name.localeCompare(b.display_name, "pt-BR"))
 
   return { ok: true, users }
 }
@@ -121,7 +124,8 @@ export async function addUser(input: {
 
   const fullName = input.fullName.trim()
   const email = input.email.trim().toLowerCase()
-  const role: Role = ROLES.includes(input.role) ? input.role : "consultor_b2b"
+  const role = input.role
+  if (!ROLES.includes(role)) return { ok: false, message: "Perfil inválido." }
   const consultantTag = slugTag(input.consultantTag?.trim() || fullName)
 
   if (!fullName) return { ok: false, message: "Informe o nome completo." }
@@ -142,10 +146,10 @@ export async function addUser(input: {
 
   if (error || !data.user) return { ok: false, message: `Falha ao criar usuário: ${error?.message ?? "erro desconhecido"}` }
 
-  const { error: profileError } = await admin.from("profiles").upsert(
-    { id: data.user.id, full_name: fullName, email, role, consultant_tag: consultantTag, active: true },
-    { onConflict: "id" },
-  )
+  const { error: profileError } = await admin.rpc("admin_update_crm_profile", {
+    p_actor: actor.id, p_target: data.user.id,
+    p_changes: { full_name: fullName, email, role, consultant_tag: consultantTag, active: true },
+  })
   if (profileError) {
     await admin.auth.admin.deleteUser(data.user.id, true)
     return { ok: false, message: `Falha ao criar o perfil: ${profileError.message}` }
@@ -168,6 +172,137 @@ export async function addUser(input: {
   return {
     ok: true,
     message: `Usuário ${fullName} adicionado${input.includeInAttendance ? " e incluído no Atendimento" : ""}. O e-mail cadastrado (${email}) será usado para os convites de calendário. Enviamos também o fluxo para definir a senha.${attendanceWarning}`,
+  }
+}
+
+export async function updateManagedUser(input: {
+  userId: string
+  fullName: string
+  email: string
+  role: Role
+  consultantTag?: string
+  includeInAttendance: boolean
+}): Promise<UserAdminResult> {
+  let actor
+  try {
+    actor = await requireRole("gerente")
+  } catch (e) {
+    return { ok: false, message: (e as Error).message }
+  }
+
+  const userId = input.userId.trim()
+  const fullName = input.fullName.trim()
+  const email = input.email.trim().toLowerCase()
+  const role = input.role
+  if (!ROLES.includes(role)) return { ok: false, message: "Perfil inválido." }
+  const consultantTag = slugTag(input.consultantTag?.trim() || fullName)
+
+  if (!userId) return { ok: false, message: "Usuário inválido." }
+  if (!fullName) return { ok: false, message: "Informe o nome completo." }
+  if (!validEmail(email)) return { ok: false, message: "Informe um e-mail válido." }
+  if (!consultantTag) return { ok: false, message: "Informe um Nome no CRM (Tag) válido." }
+
+  const admin = createAdminClient()
+  const { data: profile, error: profileError } = await admin
+    .from("profiles")
+    .select("id,full_name,email,role,active,consultant_tag")
+    .eq("id", userId)
+    .maybeSingle()
+  if (profileError) return { ok: false, message: `Falha ao localizar usuário: ${profileError.message}` }
+  if (!profile) return { ok: false, message: "Usuário não encontrado." }
+
+  const currentRole = normalizeRole(profile.role)
+  if (actor.role !== "gerente" && (currentRole === "gerente" || role === "gerente")) {
+    return { ok: false, message: "Somente a gerência pode editar um gerente ou atribuir esse perfil." }
+  }
+  if (userId === actor.id && role !== actor.role) {
+    return { ok: false, message: "Você não pode alterar o próprio perfil de acesso." }
+  }
+
+  if (currentRole === "gerente" && role !== "gerente" && profile.active) {
+    const { count } = await admin
+      .from("profiles")
+      .select("id", { count: "exact", head: true })
+      .eq("role", "gerente")
+      .eq("active", true)
+      .neq("id", userId)
+    if ((count ?? 0) === 0) {
+      return { ok: false, message: "Não é possível remover o perfil do último gerente ativo." }
+    }
+  }
+
+  const { data: authData, error: authListError } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 })
+  if (authListError) return { ok: false, message: `Falha ao validar conta: ${authListError.message}` }
+  const authUsers = authData.users ?? []
+  const targetAuth = authUsers.find((u) => u.id === userId && !isDeletedAuthUser(u))
+  if (!targetAuth) return { ok: false, message: "Conta de autenticação não encontrada ou já excluída." }
+  const emailDuplicate = authUsers.find(
+    (u) => u.id !== userId && !isDeletedAuthUser(u) && u.email?.toLowerCase() === email,
+  )
+  if (emailDuplicate) return { ok: false, message: "Já existe outro usuário cadastrado com este e-mail." }
+
+  const { data: duplicateTags, error: tagError } = await admin
+    .from("profiles")
+    .select("id")
+    .eq("consultant_tag", consultantTag)
+    .neq("id", userId)
+    .limit(1)
+  if (tagError) return { ok: false, message: `Falha ao validar a Tag: ${tagError.message}` }
+  if ((duplicateTags ?? []).length > 0) {
+    return { ok: false, message: "Esse Nome no CRM (Tag) já está sendo usado por outro usuário." }
+  }
+
+  const previousMetadata = (targetAuth.user_metadata ?? {}) as Record<string, unknown>
+  const previousEmail = targetAuth.email || profile.email || ""
+  if (actor.role !== "gerente" && previousEmail.toLowerCase() !== email) {
+    return { ok: false, message: "Somente o Gerente Comercial pode alterar o e-mail de acesso." }
+  }
+  const nextMetadata = {
+    ...previousMetadata,
+    full_name: fullName,
+    role,
+    consultant_tag: consultantTag,
+  }
+
+  const { error: authUpdateError } = await admin.auth.admin.updateUserById(userId, {
+    email,
+    email_confirm: true,
+    user_metadata: nextMetadata,
+  })
+  if (authUpdateError) return { ok: false, message: `Falha ao atualizar acesso: ${authUpdateError.message}` }
+
+  const { error: profileUpdateError } = await admin.rpc("admin_update_crm_profile", {
+    p_actor: actor.id, p_target: userId,
+    p_changes: { full_name: fullName, email, role, consultant_tag: consultantTag },
+  })
+  if (profileUpdateError) {
+    await admin.auth.admin.updateUserById(userId, {
+      email: previousEmail || undefined,
+      email_confirm: true,
+      user_metadata: previousMetadata,
+    })
+    return { ok: false, message: `Falha ao atualizar perfil: ${profileUpdateError.message}` }
+  }
+
+  let attendanceWarning = ""
+  const { error: attendanceError } = await admin.from("attendance_members").upsert(
+    { user_id: userId, enabled: input.includeInAttendance, created_by: actor.id },
+    { onConflict: "user_id" },
+  )
+  if (attendanceError) {
+    attendanceWarning = ` Participação no Atendimento não pôde ser atualizada: ${attendanceError.message}`
+  } else if (!input.includeInAttendance) {
+    const { error: unlinkError } = await admin
+      .from("attendance_team_slots")
+      .update({ user_id: null, updated_by: actor.id })
+      .eq("user_id", userId)
+    if (unlinkError) attendanceWarning = ` O usuário saiu do Atendimento, mas o rodízio precisa ser revisado: ${unlinkError.message}`
+  }
+
+  const emailChanged = previousEmail.toLowerCase() !== email
+  return {
+    ok: true,
+    message: `Usuário atualizado com sucesso. Nome operacional: ${profileDisplayName({ full_name: fullName, consultant_tag: consultantTag })}.${emailChanged ? " O novo e-mail será usado nos próximos envios e convites." : ""}${attendanceWarning}`,
   }
 }
 
@@ -257,7 +392,7 @@ export async function deleteUser(userId: string): Promise<UserAdminResult> {
 
   // Lock out access before Auth deletion. The database guard serializes this
   // check with any concurrent company assignment and preserves historical names.
-  const { error: deactivateError } = await admin.from("profiles").update({ active: false }).eq("id", userId)
+  const { error: deactivateError } = await admin.rpc("admin_update_crm_profile", { p_actor: actor.id, p_target: userId, p_changes: { active: false } })
   if (deactivateError) return { ok: false, message: deactivateError.message }
 
   // Soft-delete é essencial: profiles.id referencia auth.users com ON DELETE CASCADE,
@@ -307,4 +442,34 @@ export async function deleteUser(userId: string): Promise<UserAdminResult> {
     ok: true,
     message: `Usuário ${label} excluído com sucesso. O acesso foi removido, atribuições futuras foram liberadas, convites futuros foram cancelados e o histórico comercial foi preservado.`,
   }
+}
+
+/** All legacy and current callers converge on the same guarded database command. */
+export async function changeManagedRole(userId: string, role: Role): Promise<UserAdminResult> {
+  try {
+    const actor = await requireRole("gerente")
+    if (!ROLES.includes(role)) return { ok: false, message: "Perfil inválido." }
+    const { error } = await createAdminClient().rpc("admin_update_crm_profile", {
+      p_actor: actor.id, p_target: userId, p_changes: { role },
+    })
+    return error ? { ok: false, message: error.message } : { ok: true, message: "Perfil atualizado." }
+  } catch { return { ok: false, message: "Operação restrita ao Gerente Comercial." } }
+}
+
+export async function setManagedActive(userId: string, active: boolean): Promise<UserAdminResult> {
+  try {
+    const actor = await requireRole("gerente")
+    const admin = createAdminClient()
+    if (active) {
+      const { error: unbanError } = await admin.auth.admin.updateUserById(userId, { ban_duration:"none" })
+      if (unbanError) return { ok:false,message:"Não foi possível reativar no provedor. O perfil continua bloqueado." }
+    }
+    const { error } = await admin.rpc("admin_update_crm_profile", {
+      p_actor: actor.id, p_target: userId, p_changes: { active },
+    })
+    if (error) return { ok: false, message: error.message }
+    const authError = active ? null : (await admin.auth.admin.updateUserById(userId,{ban_duration:"876000h"})).error
+    if (authError) return { ok: false, message: "Perfil atualizado; o bloqueio no provedor precisa de revisão. " + authError.message }
+    return { ok: true, message: active ? "Acesso ativado." : "Acesso desativado." }
+  } catch { return { ok: false, message: "Operação restrita ao Gerente Comercial." } }
 }

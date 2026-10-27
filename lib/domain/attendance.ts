@@ -1,4 +1,4 @@
-export type AttendanceActivity = "room" | "conversion" | "external"
+export type AttendanceActivity = "room" | "conversion" | "external" | "gdc" | "event"
 export type AttendanceStatus = "draft" | "published" | "cancelled"
 export type AttendanceLane =
   | "room_early"
@@ -11,12 +11,16 @@ export const ATTENDANCE_START_DATE = "2026-10-26"
 export const ATTENDANCE_TIMEZONE = "America/Sao_Paulo"
 
 export const ACTIVITY_LABEL: Record<AttendanceActivity, string> = {
+  gdc: "GDC",
+  event: "Evento",
   room: "Sala de matrícula",
   conversion: "Conversão",
   external: "Atividade externa",
 }
 
 export const ACTIVITY_STYLE: Record<AttendanceActivity, string> = {
+  gdc: "border-blue-200 bg-blue-50 text-blue-900",
+  event: "border-orange-200 bg-orange-50 text-orange-900",
   room: "border-violet-200 bg-violet-50 text-violet-800",
   conversion: "border-amber-200 bg-amber-50 text-amber-800",
   external: "border-sky-200 bg-sky-50 text-sky-800",
@@ -27,10 +31,13 @@ export const LANE_LABEL: Record<AttendanceLane, string> = {
   room_late: "Sala · 11h–20h",
   conversion_am_external_pm: "Manhã conversão · tarde externa",
   external_am_conversion_pm: "Manhã externa · tarde conversão",
-  saturday: "Sábado · 9h–12h",
+  saturday: "Sábado · 9h–13h",
 }
 
 export interface AttendanceSettings {
+  minSaturdayCoverage?: number
+  gdcStart?: string | null
+  gdcCoverageMode?: "pending" | "pause" | "backup"
   timezone: string
   scheduleStartDate: string
   weekdayRoomOpen: string

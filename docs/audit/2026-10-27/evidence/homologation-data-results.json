@@ -1,0 +1,60 @@
+{
+  "project": "ktmcksngmhxtdnxunntl",
+  "results": [
+    {
+      "id": "AUTH-PROFILES",
+      "layer": "Auth e banco Supabase reais em homologação isolada",
+      "details": "Seis identidades fictícias autenticadas: dois gerentes, supervisor, dois B2B e High School"
+    },
+    {
+      "id": "SAVE-01-REAL",
+      "layer": "Auth e banco Supabase reais em homologação isolada",
+      "details": "Cadastro, edição, responsável e contato persistiram em consulta nova pela API real"
+    },
+    {
+      "id": "SEC-01-ACCESS-REAL",
+      "layer": "Auth e banco Supabase reais em homologação isolada",
+      "details": "Elevação direta de perfil e RPC administrativa via JWT de navegador bloqueadas; edição de carteira alheia e escrita B2B pelo High School recusadas"
+    },
+    {
+      "id": "DUP-01-REAL",
+      "layer": "Auth e banco Supabase reais em homologação isolada",
+      "details": "Mesmo CNPJ com e sem pontuação recusado pelo banco real"
+    },
+    {
+      "id": "ROUTE-01-REAL",
+      "layer": "Auth e banco Supabase reais em homologação isolada",
+      "details": "Falha após alteração do plano preservou data, paradas e IDs; edição válida manteve ID; outro consultor bloqueado"
+    },
+    {
+      "id": "SCHOOL-02-REAL",
+      "layer": "Auth e banco Supabase reais em homologação isolada",
+      "details": "Falha em resultado, depois da alteração de data/participantes, preservou integralmente ação, participantes e resultados"
+    },
+    {
+      "id": "SCHOOL-AGENDA-REAL",
+      "layer": "Auth e banco Supabase reais em homologação isolada",
+      "details": "Principal e apoios atualizados pela API real; ID/UID mantidos e apoio removido recebeu estado de cancelamento na projeção"
+    },
+    {
+      "id": "SCHOOL-01-REAL",
+      "layer": "Auth e banco Supabase reais em homologação isolada",
+      "details": "Fim anterior ou igual ao início recusado pelo banco real"
+    },
+    {
+      "id": "AGENDA-02-CONCURRENCY-REAL",
+      "layer": "Auth e banco Supabase reais em homologação isolada",
+      "details": "Duas requisições simultâneas do mesmo principal/horário: uma confirmada e outra recusada pelo EXCLUDE do PostgreSQL"
+    },
+    {
+      "id": "GOALS-01-RLS-REAL",
+      "layer": "Auth e banco Supabase reais em homologação isolada",
+      "details": "Consultor lê meta individual própria e não recebe a de outro consultor"
+    },
+    {
+      "id": "PERSISTENCE-NEW-LOGIN",
+      "layer": "Auth e banco Supabase reais em homologação isolada",
+      "details": "Empresa persistida após encerrar contexto de cliente e autenticar em nova sessão real"
+    }
+  ]
+}

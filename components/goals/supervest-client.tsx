@@ -21,10 +21,10 @@ export interface CicloView {
   eventAt: string | null
 }
 export interface ApuracaoView {
-  oficial: number
-  hsAtribuidas: number
-  b2bAtribuidas: number
-  outrosCanais: number
+  oficial: number | null
+  hsAtribuidas: number | null
+  b2bAtribuidas: number | null
+  outrosCanais: number | null
   inconsistente: boolean
 }
 
@@ -149,10 +149,10 @@ export function SupervestClient({
           {/* Apuração anti-dupla-contagem */}
           {apuracao && (
             <div className="uni-kpi-grid gap-3">
-              <Stat rotulo="Inscrição oficial" valor={apuracao.oficial} destaque />
-              <Stat rotulo="Atribuídas a HS" valor={apuracao.hsAtribuidas} />
-              <Stat rotulo="Atribuídas a B2B" valor={apuracao.b2bAtribuidas} />
-              <Stat rotulo="Outros canais" valor={apuracao.outrosCanais} />
+              <Stat rotulo="Inscrição oficial" valor={apuracao.oficial ?? "Não disponível"} destaque />
+              <Stat rotulo="Atribuídas a HS" valor={apuracao.hsAtribuidas ?? "Não disponível"} />
+              <Stat rotulo="Atribuídas a B2B" valor={apuracao.b2bAtribuidas ?? "Não disponível"} />
+              <Stat rotulo="Outros canais" valor={apuracao.outrosCanais ?? "Não disponível"} />
             </div>
           )}
 

@@ -1,3 +1,6 @@
+import { readAllRows } from "./pagination"
+import { cnpjValido } from "@/lib/domain/utils"
+import { validateSchedule } from "@/lib/domain/validation"
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { StorageBackend } from "./storage-context"
 import { CHAVES, CONFIG_PADRAO } from "@/lib/domain/constants"
@@ -14,7 +17,6 @@ import {
   rowToContato,
   rowToEmpresa,
   rowToPessoa,
-  roleDePapel,
 } from "./mapping"
 
 const projContato = (c: Contato) =>
@@ -51,7 +53,7 @@ export function makeSupabaseStorage(supabase: SupabaseClient, perfil: Usuario): 
   let profiles: Pessoa[] = []
 
   const log = (ctx: string, error: unknown) => {
-    if (error) console.error(`[v0] supabase-storage ${ctx}:`, error)
+    if (error) throw new Error((error as {message?: string}).message || `Não foi possível concluir ${ctx}.`)
   }
 
   async function dispatchCalendarBestEffort() {
@@ -60,8 +62,7 @@ export function makeSupabaseStorage(supabase: SupabaseClient, perfil: Usuario): 
   }
 
   async function carregarProfiles(): Promise<Pessoa[]> {
-    const { data, error } = await supabase.from("profiles").select("*").order("created_at", { ascending: true })
-    log("profiles", error)
+    const data = await readAllRows((from,to) => supabase.from("profiles").select("*").order("created_at", { ascending: true }).order("id").range(from,to))
     profiles = (data || []).map(rowToPessoa)
     return profiles
   }
@@ -80,14 +81,11 @@ export function makeSupabaseStorage(supabase: SupabaseClient, perfil: Usuario): 
 
   async function carregarEmpresas(): Promise<Empresa[]> {
     if (!profiles.length) await carregarProfiles()
-    const [{ data: comp, error: e1 }, { data: cont, error: e2 }, { data: agr, error: e3 }] = await Promise.all([
-      supabase.from("b2b_company_portfolio").select("*").order("created_at", { ascending: true }),
-      supabase.from("company_contacts").select("*").order("position", { ascending: true }),
-      supabase.from("agreements").select("*"),
+    const [comp,cont,agr] = await Promise.all([
+      readAllRows((from,to) => supabase.from("b2b_company_portfolio").select("*").order("created_at").order("id").range(from,to)),
+      readAllRows((from,to) => supabase.from("company_contacts").select("*").order("position").order("id").range(from,to)),
+      readAllRows((from,to) => supabase.from("agreements").select("*").order("id").range(from,to)),
     ])
-    log("companies", e1)
-    log("company_contacts", e2)
-    log("agreements", e3)
     const contatosPor: Record<string, Contato[]> = {}
     for (const c of cont || []) (contatosPor[c.company_id] ||= []).push(rowToContato(c))
     const convPor: Record<string, Convenio> = {}
@@ -109,77 +107,34 @@ export function makeSupabaseStorage(supabase: SupabaseClient, perfil: Usuario): 
     const prevById = new Map(prev.map((e) => [e.id, e]))
     const nextById = new Map(novo.map((e) => [e.id, e]))
     let changed = false
-
     for (const e of prev) {
       if (!nextById.has(e.id)) {
-        const { error } = await supabase.from("companies").delete().eq("id", e.id)
-        log("delete company", error)
-        if (!error) changed = true
+        const { error } = await supabase.rpc("save_b2b_company_atomic", {
+          p_company: { id: e.id }, p_contacts: [], p_agreement: null, p_delete: true,
+        })
+        log("excluir empresa",error)
+        changed = true
       }
     }
-
     for (const e of novo) {
-      const antes = prevById.get(e.id)
-      if (!antes) {
-        const { error } = await supabase.from("companies").insert(empresaToRow(e, resolveOwner))
-        log("insert company", error)
-        if (!error) {
-          changed = true
-          if (e.contatos?.length) {
-            const rows = e.contatos.map((c, i) => contatoToRow(c, e.id, i))
-            log("insert contatos", (await supabase.from("company_contacts").insert(rows)).error)
-          }
-          if (e.convenio && e.convenio.ativo) {
-            log(
-              "insert convenio",
-              (await supabase.from("agreements").upsert(convenioToRow(e.convenio, e.id), { onConflict: "company_id" }))
-                .error,
-            )
-          }
-        }
-        continue
+      const before = prevById.get(e.id)
+      if (before && empresaScalarIgual(before,e) && contatosIguais(before.contatos,e.contatos) && projConvenio(before.convenio)===projConvenio(e.convenio)) continue
+      if (e.cnpj && !cnpjValido(e.cnpj)) throw new Error("CNPJ inválido.")
+      if (e.dataProximaAcao) {
+        const invalid = validateSchedule(e.dataProximaAcao,e.proximaAcaoInicio,e.proximaAcaoFim)
+        if (invalid) throw new Error(invalid)
       }
-      if (!empresaScalarIgual(antes, e)) {
-        const row = empresaToRow(e, resolveOwner)
-        delete (row as any).id
-        // Assignments use the audited manager RPC. An ordinary form cannot
-        // replace a newer owner or claim an unassigned company.
-        delete row.owner_id
-        delete row.consultor
-        const { error } = await supabase.from("companies").update(row).eq("id", e.id)
-        if (error) throw error
-        if (!error) changed = true
-      }
-      if (!contatosIguais(antes.contatos, e.contatos)) {
-        // Keep stable IDs: a scheduled meeting references the original contact.
-        const retained = new Set((e.contatos || []).map((c) => c.id).filter(Boolean))
-        for (const removed of (antes.contatos || []).filter((c) => c.id && !retained.has(c.id))) {
-          const { error } = await supabase.from("company_contacts").delete().eq("id", removed.id).eq("company_id",e.id)
-          if (error) throw error
-        }
-        for (const [i,c] of (e.contatos || []).entries()) {
-          const row=contatoToRow(c,e.id,i)
-          const existed=!!c.id&&(antes.contatos || []).some((old)=>old.id===c.id)
-          const {error}=existed
-            ?await supabase.from("company_contacts").update(row).eq("id",c.id).eq("company_id",e.id)
-            :await supabase.from("company_contacts").insert(row)
-          if(error)throw error
-        }
-      }
-      if (projConvenio(antes.convenio) !== projConvenio(e.convenio)) {
-        if (!e.convenio) {
-          log("delete convenio", (await supabase.from("agreements").delete().eq("company_id", e.id)).error)
-        } else {
-          log(
-            "upsert convenio",
-            (await supabase.from("agreements").upsert(convenioToRow(e.convenio, e.id), { onConflict: "company_id" }))
-              .error,
-          )
-        }
-      }
+      const { error } = await supabase.rpc("save_b2b_company_atomic", {
+        p_company: empresaToRow(e,resolveOwner),
+        p_contacts: (e.contatos || []).map((c,i) => contatoToRow(c,e.id,i)),
+        p_agreement: e.convenio ? convenioToRow(e.convenio,e.id) : null,
+        p_delete: false, p_create: !before,
+      })
+      log("salvar empresa",error)
+      changed = true
     }
     snapEmpresas = novo
-    if (changed) await dispatchCalendarBestEffort()
+    if (changed) { try { await dispatchCalendarBestEffort() } catch { /* Committed data is independent of email delivery. */ } }
   }
 
   async function salvarAtividades(novo: Atividade[]): Promise<void> {
@@ -191,7 +146,7 @@ export function makeSupabaseStorage(supabase: SupabaseClient, perfil: Usuario): 
       log("insert atividades", (await supabase.from("activities").insert(inserir.map(atividadeToRow))).error)
     }
     for (const id of remover) {
-      log("delete atividade", (await supabase.from("activities").delete().eq("id", id)).error)
+      log("delete atividade", (await supabase.from("activities").delete().eq("id", id).select("id").single()).error)
     }
     snapAtividades = novo
   }
@@ -205,14 +160,12 @@ export function makeSupabaseStorage(supabase: SupabaseClient, perfil: Usuario): 
       if (!antes) continue
       const mudou = antes.tag !== p.tag || antes.papel !== p.papel || antes.ativo !== p.ativo
       if (mudou) {
+        if (antes.papel !== p.papel || antes.ativo !== p.ativo) throw new Error("Altere perfil e status na Gestão de usuários.")
         const { error } = await supabase
           .from("profiles")
-          .update({
-            consultant_tag: p.tag || null,
-            role: roleDePapel(p.papel),
-            active: p.ativo !== false,
-          })
+          .update({ consultant_tag: p.tag || null })
           .eq("id", p.id)
+          .select("id").single()
         log("update profile", error)
       }
     }
@@ -264,13 +217,26 @@ export function makeSupabaseStorage(supabase: SupabaseClient, perfil: Usuario): 
   }
 
   return {
+    mode: "supabase",
+    async saveInteraction(activity: Atividade, company: Empresa) {
+      const invalid = validateSchedule(activity.data)
+      if (invalid) throw new Error(invalid)
+      if (company.dataProximaAcao) {
+        const scheduleError = validateSchedule(company.dataProximaAcao,company.proximaAcaoInicio,company.proximaAcaoFim)
+        if (scheduleError) throw new Error(scheduleError)
+      }
+      const { error } = await supabase.rpc("save_b2b_interaction_atomic", {
+        p_activity: atividadeToRow(activity), p_company: empresaToRow(company,resolveOwner),
+      })
+      log("registrar interação",error)
+      return true
+    },
     async get(chave: string) {
       try {
         if (chave === CHAVES.empresas) return { value: JSON.stringify(await carregarEmpresas()) }
         if (chave === CHAVES.atividades) {
           if (!profiles.length) await carregarProfiles()
-          const { data, error } = await supabase.from("b2b_activities_with_cycle").select("*").order("data", { ascending: false })
-          log("select activities", error)
+          const data = await readAllRows((from,to) => supabase.from("b2b_activities_with_cycle").select("*").order("data", { ascending: false }).order("id").range(from,to))
           snapAtividades = (data || []).map((row: any) => {
             const atividade = rowToAtividade(row)
             if (atividade.primaryOwnerId) atividade.consultor = operationalNameFor(atividade.primaryOwnerId, atividade.consultor)
@@ -286,8 +252,7 @@ export function makeSupabaseStorage(supabase: SupabaseClient, perfil: Usuario): 
         }
         return { value: null }
       } catch (e) {
-        log("get " + chave, e)
-        return { value: null }
+        throw e
       }
     },
     async set(chave: string, valorJSON: string) {
@@ -299,8 +264,7 @@ export function makeSupabaseStorage(supabase: SupabaseClient, perfil: Usuario): 
         else if (chave === CHAVES.config) await salvarConfig(valor as Config)
         return true
       } catch (e) {
-        log("set " + chave, e)
-        return false
+        throw e
       }
     },
   }

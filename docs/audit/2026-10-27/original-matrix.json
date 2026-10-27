@@ -1,0 +1,331 @@
+[
+  {
+    "modulo": "Acesso",
+    "funcionalidade": "Bloqueio sem sessão",
+    "estado": "Funcional",
+    "teste_e_limite": "HTTP real: páginas comerciais redirecionam ao login; API de mapa retorna 403. Não demonstra autorização depois do login.",
+    "evidencia": "E09; proxy.ts; lib/auth/guards.ts"
+  },
+  {
+    "modulo": "Acesso",
+    "funcionalidade": "Login e logout com conta real",
+    "estado": "Não testado",
+    "teste_e_limite": "Formulário publicado inspecionado; não foram fornecidas contas de teste. Sem login, renovação de sessão ou logout real no Auth.",
+    "evidencia": "/auth/login; E09"
+  },
+  {
+    "modulo": "Acesso",
+    "funcionalidade": "Microsoft 365 como provedor de login",
+    "estado": "Não testado",
+    "teste_e_limite": "Implementação encontrada usa e-mail/senha; Azure está desabilitado e as nove identidades são de e-mail. Obrigatoriedade de SSO precisa ser confirmada.",
+    "evidencia": "E02; app/auth/login/page.tsx"
+  },
+  {
+    "modulo": "Acesso",
+    "funcionalidade": "Recuperação: validações e callback",
+    "estado": "Funcional",
+    "teste_e_limite": "Testes automatizados com Auth simulado: PKCE, token_hash, fragmento, expiração, prova de recuperação e força da senha. Não prova recebimento de e-mail.",
+    "evidencia": "E03; lib/auth/password-flow.test.ts"
+  },
+  {
+    "modulo": "Acesso",
+    "funcionalidade": "Recuperação completa no provedor real",
+    "estado": "Não testado",
+    "teste_e_limite": "Não foram emitidos links nem alteradas senhas reais; faltam conta, caixa de teste e configuração Auth de redirecionamentos/templates/SMTP.",
+    "evidencia": "docs/password-recovery-validation.md"
+  },
+  {
+    "modulo": "Acesso",
+    "funcionalidade": "Provisionamento sem privilégios indevidos",
+    "estado": "Com erro",
+    "teste_e_limite": "Signup habilitado; função real cria supervisor ativo a partir de metadados controláveis pelo solicitante. Reprodução em PostgreSQL isolado.",
+    "evidencia": "SEC-01; E02; E10"
+  },
+  {
+    "modulo": "Usuários",
+    "funcionalidade": "Cadastro, edição, ativação e desativação pela interface",
+    "estado": "Não testado",
+    "teste_e_limite": "Código e políticas examinados; UI nova tem controles e bloqueios, mas nenhuma conta real foi criada ou desativada.",
+    "evidencia": "app/actions/user-admin.ts; app/actions/user-access.ts"
+  },
+  {
+    "modulo": "Usuários",
+    "funcionalidade": "Proteção do último gerente",
+    "estado": "Com erro",
+    "teste_e_limite": "Ação real com Auth/DB simulados aceita supervisor rebaixar o único gerente. Não foi aplicada a usuários reais.",
+    "evidencia": "ACCESS-01; E11"
+  },
+  {
+    "modulo": "Usuários",
+    "funcionalidade": "Redefinição administrativa uniforme",
+    "estado": "Com erro",
+    "teste_e_limite": "Fluxo novo tem controles e testes; função legada registrada no build permite supervisor e não solicita troca obrigatória. Teste com dependências simuladas.",
+    "evidencia": "ACCESS-02; E11"
+  },
+  {
+    "modulo": "Segurança",
+    "funcionalidade": "RLS e leitura anônima",
+    "estado": "Funcional",
+    "teste_e_limite": "50/50 tabelas públicas e 8/8 de Storage com RLS. HEAD anônimo em três tabelas retorna zero registros; views B2B com security_invoker. Escopo limitado às consultas descritas.",
+    "evidencia": "E02; E09"
+  },
+  {
+    "modulo": "Segurança",
+    "funcionalidade": "Isolamento entre usuários autenticados",
+    "estado": "Parcial",
+    "teste_e_limite": "Testes de migração em PGlite verificam RLS, transferências, saída e bloqueio de troca de senha. Não houve tentativa autenticada contra a base publicada.",
+    "evidencia": "E03; E10; F"
+  },
+  {
+    "modulo": "B2B",
+    "funcionalidade": "Criar, editar, consultar e persistir no demo",
+    "estado": "Funcional",
+    "teste_e_limite": "Navegador publicado: cadastro fictício, edição, busca e recarga preservaram o registro em localStorage. Não usa o banco do CRM.",
+    "evidencia": "E08; /demo"
+  },
+  {
+    "modulo": "B2B",
+    "funcionalidade": "CRUD completo no Supabase",
+    "estado": "Parcial",
+    "teste_e_limite": "Persistência existe, mas falha de insert foi ocultada pelo adaptador real em teste com banco simulado. Exclusão real e novo login não executados.",
+    "evidencia": "SAVE-01; E11"
+  },
+  {
+    "modulo": "B2B",
+    "funcionalidade": "CNPJ inválido e prevenção de duplicidade",
+    "estado": "Parcial",
+    "teste_e_limite": "UI recusou CNPJ 123. Índice textual aceita o mesmo CNPJ com e sem pontuação em PostgreSQL isolado. Não foram encontrados duplicados reais nesta auditoria.",
+    "evidencia": "DUP-01; E08; E12"
+  },
+  {
+    "modulo": "B2B",
+    "funcionalidade": "Múltiplos contatos e principal",
+    "estado": "Parcial",
+    "teste_e_limite": "IDs estáveis, índice de principal e ações encontrados; testes de reuniões passam. Alternância de principal no banco real não testada.",
+    "evidencia": "components/b2b/company-meetings.tsx; E03"
+  },
+  {
+    "modulo": "B2B",
+    "funcionalidade": "Histórico, próximos passos, convênios e follow-ups",
+    "estado": "Parcial",
+    "teste_e_limite": "Implementação e vínculos existem. Busca no demo passou; falhas de gravação legadas podem afetar convênios/atividades. Sem teste autenticado completo.",
+    "evidencia": "SAVE-01; E01; E11"
+  },
+  {
+    "modulo": "B2B",
+    "funcionalidade": "Transferência e solicitações de carteira",
+    "estado": "Funcional",
+    "teste_e_limite": "Testes em PostgreSQL isolado: individual/lote, solicitação duplicada e obsoleta, rollback, preservação de histórico e bloqueio de consultor/supervisor. Não foi executada transferência real.",
+    "evidencia": "E03; lib/b2b-portfolio/migration.test.ts"
+  },
+  {
+    "modulo": "B2B",
+    "funcionalidade": "Inatividade por ciclo e alertas",
+    "estado": "Funcional",
+    "teste_e_limite": "Regra documentada e testes de migração aprovados: ação válida, preservação por ciclo seguinte e expiração idempotente. Não equivale a simples prazo fixo de 180 dias.",
+    "evidencia": "docs/b2b-portfolio.md; E03"
+  },
+  {
+    "modulo": "B2B",
+    "funcionalidade": "Pesquisa e filtros com produção autenticada",
+    "estado": "Não testado",
+    "teste_e_limite": "Busca real validada apenas no demo. Filtros/abas renderizados em fixtures; sem sessão e sem volume representativo no banco.",
+    "evidencia": "E07; E08"
+  },
+  {
+    "modulo": "High School",
+    "funcionalidade": "Cadastro, edição e exclusão de escola",
+    "estado": "Não testado",
+    "teste_e_limite": "Ações e RLS examinados; nenhuma escola real foi gravada ou excluída. B2B não tem hs.write, embora tenha hs.capture.write.",
+    "evidencia": "app/actions/high-school.ts; lib/domain/roles.ts"
+  },
+  {
+    "modulo": "High School",
+    "funcionalidade": "Lista, Kanban e filtros por edição",
+    "estado": "Parcial",
+    "teste_e_limite": "Renderização responsiva e testes de domínio/migração passam. Drag-and-drop e filtros não foram comprovados de ponta a ponta com Supabase real.",
+    "evidencia": "E03; E07; components/high-school/school-capture-kanban.tsx"
+  },
+  {
+    "modulo": "High School",
+    "funcionalidade": "Persistência por escola/edição e histórico",
+    "estado": "Funcional",
+    "teste_e_limite": "Migração de Captação testada em PostgreSQL isolado, com validações de série, edição e permissões. Limite: banco mínimo de testes.",
+    "evidencia": "lib/school-capture/migration.test.ts; E03"
+  },
+  {
+    "modulo": "High School",
+    "funcionalidade": "Validação de horários na ação antiga",
+    "estado": "Com erro",
+    "teste_e_limite": "Ação legada aceita 15h–14h; gatilho real também aceita quando não há edição. Novo fluxo por edição tem validação e não compartilha esta lacuna.",
+    "evidencia": "SCHOOL-01; E11; E12"
+  },
+  {
+    "modulo": "High School",
+    "funcionalidade": "Edição de ação e participantes sob falha",
+    "estado": "Com erro",
+    "teste_e_limite": "Falha simulada ao reinserir participantes deixa zero participantes e data alterada. O fluxo novo por RPC é transacional.",
+    "evidencia": "SCHOOL-02; E11"
+  },
+  {
+    "modulo": "Agenda",
+    "funcionalidade": "Ação escolar → agenda do principal e apoio",
+    "estado": "Funcional",
+    "teste_e_limite": "Query real inspecionada e testes isolados aprovados para principal/apoio, reagendamento, cancelamento, UID e filtros. Não comprovado no navegador autenticado.",
+    "evidencia": "lib/calendar/school-agenda-query.test.ts; E03"
+  },
+  {
+    "modulo": "Agenda",
+    "funcionalidade": "Agendamento escolar → consultor no CRM publicado",
+    "estado": "Não testado",
+    "teste_e_limite": "Não foi reproduzida a queixa histórica em produção; faltam contas de teste. Datas, participação, período e filtros precisam ser verificados no caso concreto.",
+    "evidencia": "F; /atendimento/minha-agenda"
+  },
+  {
+    "modulo": "Atendimento",
+    "funcionalidade": "Horários e fuso configurados",
+    "estado": "Funcional",
+    "teste_e_limite": "Banco real: São Paulo; segunda a sexta 9h–20h, sábado 9h–12h; turnos 9h–18h/11h–20h, conversão/externo 9h–13h e 14h–18h, cobertura mínima 2.",
+    "evidencia": "E02"
+  },
+  {
+    "modulo": "Atendimento",
+    "funcionalidade": "Escala disponível aos consultores",
+    "estado": "Parcial",
+    "teste_e_limite": "Banco real: 246 rascunhos, nenhum publicado, 61 sem usuário; oito posições ativas, seis vinculadas. Consultor lê apenas published/cancelled. Publicação não executada.",
+    "evidencia": "OPS-01; E02"
+  },
+  {
+    "modulo": "Atendimento",
+    "funcionalidade": "Criar, editar, cancelar e concluir compromissos",
+    "estado": "Não testado",
+    "teste_e_limite": "Criação/edição/cancelamento existem e foram renderizados em fixtures. Conclusão da escala não foi confirmada: seus estados são draft/published/cancelled; ações escolares têm realizada. Sem gravação real nem verificação após novo login.",
+    "evidencia": "app/actions/attendance.ts; E07"
+  },
+  {
+    "modulo": "Agenda",
+    "funcionalidade": "Prevenção de conflitos e duplicidade",
+    "estado": "Parcial",
+    "teste_e_limite": "Preview da escala detecta alguns conflitos, vários como aviso. Gatilho escolar aceita dois compromissos iguais no teste isolado. Sem garantia uniforme no servidor.",
+    "evidencia": "AGENDA-02; E12"
+  },
+  {
+    "modulo": "Agenda",
+    "funcionalidade": "Visão única com reuniões B2B",
+    "estado": "Parcial",
+    "teste_e_limite": "Minha Agenda agrega escala e ações escolares; não agrega atividades/reuniões B2B. Escopo de unificação precisa de decisão comercial.",
+    "evidencia": "AGENDA-01; app/actions/attendance.ts"
+  },
+  {
+    "modulo": "Integrações",
+    "funcionalidade": "Fila e geração de convites iCalendar",
+    "estado": "Funcional",
+    "teste_e_limite": "Testes com SMTP/banco simulados passam para TLS, UID, atualização/cancelamento e falhas. Função Edge publicada; não comprova entrega ou aceite.",
+    "evidencia": "E03; E02; supabase/functions/send-calendar-invites/index.ts"
+  },
+  {
+    "modulo": "Integrações",
+    "funcionalidade": "Entrega de convite no Outlook",
+    "estado": "Não testado",
+    "teste_e_limite": "Nenhum destinatário real ou caixa de teste foi acionado. Três jobs de teste adiados a 2099 não são evidência de fila operacional travada.",
+    "evidencia": "E02; docs/calendar-email.md"
+  },
+  {
+    "modulo": "Integrações",
+    "funcionalidade": "Conta Microsoft e Teams automático",
+    "estado": "Parcial",
+    "teste_e_limite": "Código Graph existe; nenhuma conta vinculada e cinco variáveis Microsoft necessárias não cadastradas na Vercel. Não houve OAuth ou chamada Graph real.",
+    "evidencia": "INT-01; E02; docs/b2b-outlook-teams.md"
+  },
+  {
+    "modulo": "Rotas",
+    "funcionalidade": "Mapa, geocodificação e otimização",
+    "estado": "Parcial",
+    "teste_e_limite": "Código e fallback manual encontrados; testes da otimização passam com respostas simuladas. Token real e geolocalização não utilizados.",
+    "evidencia": "lib/data/mapbox-optimize.test.ts; E03; E07"
+  },
+  {
+    "modulo": "Rotas",
+    "funcionalidade": "Salvar plano e paradas sob falha",
+    "estado": "Com erro",
+    "teste_e_limite": "Ação real com falha simulada de inserção altera a data e remove todas as paradas anteriores.",
+    "evidencia": "ROUTE-01; E11"
+  },
+  {
+    "modulo": "Rotas",
+    "funcionalidade": "Visitas e vínculos com empresas/escolas",
+    "estado": "Não testado",
+    "teste_e_limite": "Há paradas por entidade e planejamento; conclusão de visita gerando atividade comercial não foi confirmada como escopo nem testada em produção.",
+    "evidencia": "lib/data/route-queries.ts; F"
+  },
+  {
+    "modulo": "Gestão",
+    "funcionalidade": "Central de Metas para consultores",
+    "estado": "Com erro",
+    "teste_e_limite": "Menu e permissão permitem metas próprias, mas layout exige leitura de todas. Layout real redirecionou B2B e High School para / em teste com ator simulado.",
+    "evidencia": "GOALS-01; E11"
+  },
+  {
+    "modulo": "Gestão",
+    "funcionalidade": "Indicador B2B de inscrições SuperVest",
+    "estado": "Parcial",
+    "teste_e_limite": "Tipo de meta existe; cálculo retorna 0 fixo, com comentário de ausência de origem transacional. Não há meta deste tipo entre as duas existentes.",
+    "evidencia": "METRIC-01; lib/data/goals-queries.ts; E02"
+  },
+  {
+    "modulo": "Gestão",
+    "funcionalidade": "Indicadores reconciliados com dados oficiais",
+    "estado": "Não testado",
+    "teste_e_limite": "Não há snapshot oficial e o conjunto consultado é pequeno e marcado TESTE. Não há base confiável para conciliar a operação real.",
+    "evidencia": "E02; F"
+  },
+  {
+    "modulo": "Gestão",
+    "funcionalidade": "Equipe, links e configurações",
+    "estado": "Parcial",
+    "teste_e_limite": "Menu compartilhado e componentes existentes; permissões inspecionadas. CRUD e links externos por usuário não testados com sessão real.",
+    "evidencia": "E01; E07; app/gestao/configuracoes/page.tsx"
+  },
+  {
+    "modulo": "Ciclos",
+    "funcionalidade": "Virada de ano e limites dos semestres",
+    "estado": "Funcional",
+    "teste_e_limite": "Função da produção consultada em seis datas de fronteira; retorno correto 26.2/27.1/27.2/28.1. Testes locais cobrem anos futuros.",
+    "evidencia": "E02; E03"
+  },
+  {
+    "modulo": "Interface",
+    "funcionalidade": "Menu atualizado por perfil/rota/recarga",
+    "estado": "Funcional",
+    "teste_e_limite": "1205 verificações Chromium com backends simulados: cinco papéis, rotas diretas, recarga e menus; demo real usa os cinco grupos atuais. Sem comparação pixel a pixel dos prints indisponíveis.",
+    "evidencia": "E07; E08; components/navigation/system-sidebar.tsx"
+  },
+  {
+    "modulo": "Interface",
+    "funcionalidade": "Responsividade a 100%",
+    "estado": "Funcional",
+    "teste_e_limite": "Fixtures a 320, 375, 768, 1024, 1280, 1366, 1440 e 1920 px; zero falhas detectadas pela suíte. Não substitui aparelho físico, teclado completo ou leitor de tela.",
+    "evidencia": "E07"
+  },
+  {
+    "modulo": "Interface",
+    "funcionalidade": "Mensagens de erro e preservação de formulário",
+    "estado": "Parcial",
+    "teste_e_limite": "Validação de CNPJ e estados simulados aprovados; SAVE-01 comprova erro de gravação sem retorno adequado. Sem teste offline real autenticado.",
+    "evidencia": "E08; E11"
+  },
+  {
+    "modulo": "Qualidade",
+    "funcionalidade": "Build, tipos e testes existentes",
+    "estado": "Funcional",
+    "teste_e_limite": "Build normal, tsc e 189 testes aprovados. Lint: zero erros e 19 avisos. Isso não certifica todos os fluxos de negócio.",
+    "evidencia": "E03–E06"
+  },
+  {
+    "modulo": "Segurança",
+    "funcionalidade": "Dependências atualizadas",
+    "estado": "Parcial",
+    "teste_e_limite": "Scanner encontrou 81 ocorrências/80 advisories; Next 16.3.0 em faixa afetada. Aplicabilidade verificada; sem exploração ou teste de carga na produção.",
+    "evidencia": "SEC-DEP; E13"
+  }
+]

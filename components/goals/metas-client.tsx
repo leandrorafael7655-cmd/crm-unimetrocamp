@@ -28,9 +28,9 @@ export interface MetaView {
   userId: string | null
   userName: string | null
   targetValue: number
-  realizado: number
-  atingimentoPct: number
-  faltante: number
+  realizado: number | null
+  atingimentoPct: number | null
+  faltante: number | null
   startAt: string
   endAt: string
   status: string
@@ -224,17 +224,18 @@ function MetasTabela({
                   {m.targetValue.toLocaleString("pt-BR")}
                 </td>
                 <td className="px-4 py-3 text-right tabular-nums font-medium text-slate-900">
-                  {m.realizado.toLocaleString("pt-BR")}
+                  {m.realizado===null ? "Não disponível" : m.realizado.toLocaleString("pt-BR")}
                 </td>
                 <td className="px-4 py-3">
                   <div className="w-32">
-                    <BarraProgresso pct={m.atingimentoPct} />
+                    {m.realizado===null ? <span className="text-xs text-amber-700">Sem apuração disponível</span> : <>
+                    <BarraProgresso pct={m.atingimentoPct ?? 0} />
                     <div className="mt-1 flex justify-between text-[11px] text-slate-400">
                       <span className="tabular-nums">{m.atingimentoPct}%</span>
                       <span className="tabular-nums">
-                        {m.faltante > 0 ? `faltam ${m.faltante.toLocaleString("pt-BR")}` : "ok"}
+                        {(m.faltante ?? 0) > 0 ? `faltam ${(m.faltante ?? 0).toLocaleString("pt-BR")}` : "ok"}
                       </span>
-                    </div>
+                    </div></>}
                   </div>
                 </td>
                 <td className="px-4 py-3">{statusChip(m.status)}</td>

@@ -1,8 +1,12 @@
 "use server"
 
-import { headers } from "next/headers"
+import { timingSafeEqual } from "node:crypto"
+import { siteUrl } from "@/lib/auth/urls"
+import { passwordValidation } from "@/lib/auth/password-policy"
+import { addUser, changeManagedRole, setManagedActive } from "@/app/actions/user-admin"
+import { createTemporaryPassword } from "@/app/actions/user-access"
 import { createAdminClient } from "@/lib/supabase/admin"
-import { requireManager, type Role } from "@/lib/auth/guards"
+import { requireRole, type Role } from "@/lib/auth/guards"
 
 export interface Credenciais {
   email: string
@@ -21,33 +25,6 @@ export interface ActionResult {
   credenciais?: Credenciais
 }
 
-const ROLES: Role[] = ["gerente", "supervisor", "consultor_b2b", "high_school"]
-
-/**
- * Senha temporária legível e forte (maiúscula, minúsculas, dígitos, símbolo).
- * Ex.: "Metro-7Q4K-92". Fácil de repassar, difícil de adivinhar.
- */
-function senhaTemporaria(): string {
-  const bytes = crypto.getRandomValues(new Uint8Array(6))
-  const alfabeto = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789" // sem I/O/0/1
-  const bloco = Array.from(bytes, (b) => alfabeto[b % alfabeto.length]).join("")
-  const num = (crypto.getRandomValues(new Uint32Array(1))[0] % 90) + 10
-  return `Metro-${bloco.slice(0, 4)}-${bloco.slice(4)}-${num}`
-}
-
-/** URL absoluta da tela de login, derivada do request (com fallback). */
-async function loginUrl(): Promise<string> {
-  try {
-    const h = await headers()
-    const host = h.get("x-forwarded-host") ?? h.get("host")
-    const proto = h.get("x-forwarded-proto") ?? "https"
-    if (host) return `${proto}://${host}/auth/login`
-  } catch {
-    /* fora de request */
-  }
-  const runtime = process.env.V0_RUNTIME_URL?.replace(/\/+$/, "")
-  return runtime ? `${runtime}/auth/login` : "/auth/login"
-}
 
 function slugTag(input: string): string {
   return input
@@ -66,14 +43,15 @@ function validEmail(email: string): boolean {
 export async function managerExists(): Promise<boolean> {
   try {
     const admin = createAdminClient()
-    const { count } = await admin
+    const { count, error } = await admin
       .from("profiles")
       .select("id", { count: "exact", head: true })
       .eq("role", "gerente")
       .eq("active", true)
+    if (error) throw error
     return (count ?? 0) > 0
   } catch {
-    return false
+    return true
   }
 }
 
@@ -86,14 +64,15 @@ export async function bootstrapAdmin(input: {
   fullName: string
   email: string
   password: string
+  setupToken?: string
 }): Promise<ActionResult> {
   const email = input.email.trim().toLowerCase()
   const fullName = input.fullName.trim()
 
   if (!fullName) return { ok: false, message: "Informe o nome completo." }
   if (!validEmail(email)) return { ok: false, message: "Informe um e-mail válido." }
-  if (input.password.length < 8)
-    return { ok: false, message: "A senha deve ter ao menos 8 caracteres." }
+  const passwordError = passwordValidation(input.password, input.password)
+  if (passwordError) return { ok: false, message: passwordError }
 
   if (await managerExists()) {
     return {
@@ -103,7 +82,10 @@ export async function bootstrapAdmin(input: {
   }
 
   const required = process.env.INITIAL_ADMIN_EMAIL?.trim().toLowerCase()
-  if (required && required !== email) {
+  const expectedToken = process.env.INITIAL_ADMIN_SETUP_TOKEN || ""
+  const providedToken = input.setupToken || ""
+  const tokenValid = expectedToken.length >= 32 && providedToken.length === expectedToken.length && timingSafeEqual(Buffer.from(expectedToken), Buffer.from(providedToken))
+  if (!required || required !== email || !tokenValid) {
     return {
       ok: false,
       message: "Este e-mail não está autorizado como administrador inicial.",
@@ -138,184 +120,41 @@ export async function bootstrapAdmin(input: {
     userId = data.user.id
   }
 
-  const { error: upErr } = await admin.from("profiles").upsert(
-    {
-      id: userId,
-      full_name: fullName,
-      email,
-      role: "gerente",
-      consultant_tag: tag,
-      active: true,
-    },
-    { onConflict: "id" },
-  )
+  const { error: upErr } = await admin.rpc("bootstrap_crm_profile", {
+    p_target: userId, p_name: fullName, p_email: email, p_tag: tag,
+  })
   if (upErr) return { ok: false, message: `Falha ao criar perfil: ${upErr.message}` }
 
   return { ok: true, message: "Administrador criado. Faça login para continuar." }
 }
 
-/** Convida um novo usuário (gerente/supervisor apenas). */
-export async function inviteUser(input: {
-  fullName: string
-  email: string
-  role: Role
-  consultantTag?: string
-}): Promise<ActionResult> {
-  let actor
-  try {
-    actor = await requireManager()
-  } catch (e) {
-    return { ok: false, message: (e as Error).message }
-  }
-
-  const email = input.email.trim().toLowerCase()
-  const fullName = input.fullName.trim()
-  const role: Role = ROLES.includes(input.role) ? input.role : "consultor_b2b"
-
-  if (!fullName) return { ok: false, message: "Informe o nome completo." }
-  if (!validEmail(email)) return { ok: false, message: "Informe um e-mail válido." }
-  if (role === "gerente" && actor.role !== "gerente") {
-    return { ok: false, message: "Somente a gerência pode criar outro gerente." }
-  }
-
-  const admin = createAdminClient()
-  const tag = slugTag(input.consultantTag?.trim() || fullName)
-  const senha = senhaTemporaria()
-
-  // Reaproveita conta existente para o mesmo e-mail, senão cria uma nova.
-  const { data: list } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 })
-  const existing = list?.users.find((u) => u.email?.toLowerCase() === email)
-
-  let userId: string
-  if (existing) {
-    userId = existing.id
-    const { error } = await admin.auth.admin.updateUserById(userId, {
-      password: senha,
-      email_confirm: true,
-      user_metadata: { full_name: fullName, role, consultant_tag: tag },
-    })
-    if (error) return { ok: false, message: `Falha ao atualizar conta: ${error.message}` }
-  } else {
-    const { data, error } = await admin.auth.admin.createUser({
-      email,
-      password: senha,
-      email_confirm: true,
-      user_metadata: { full_name: fullName, role, consultant_tag: tag },
-    })
-    if (error || !data.user) {
-      return { ok: false, message: `Falha ao criar conta: ${error?.message ?? "desconhecido"}` }
-    }
-    userId = data.user.id
-  }
-
-  const { error: upErr } = await admin.from("profiles").upsert(
-    { id: userId, full_name: fullName, email, role, consultant_tag: tag, active: true },
-    { onConflict: "id" },
-  )
-  if (upErr) return { ok: false, message: `Falha ao criar perfil: ${upErr.message}` }
-
-  return {
-    ok: true,
-    message: `Conta de ${fullName} criada. Compartilhe as credenciais abaixo — a senha deve ser trocada no primeiro acesso.`,
-    credenciais: { email, senha, loginUrl: await loginUrl() },
-  }
+/** Compatibility exports share the current server authorization and access audit. */
+export async function inviteUser(input: { fullName: string; email: string; role: Role; consultantTag?: string }): Promise<ActionResult> {
+  return addUser(input)
 }
 
-/** Regera uma senha provisória para reenviar o acesso. */
-export async function resendInvite(email: string): Promise<ActionResult> {
-  try {
-    await requireManager()
-  } catch (e) {
-    return { ok: false, message: (e as Error).message }
-  }
-  const admin = createAdminClient()
-  const clean = email.trim().toLowerCase()
-  const { data: list } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 })
-  const u = list?.users.find((x) => x.email?.toLowerCase() === clean)
-  if (!u) return { ok: false, message: "Usuário não encontrado." }
-
-  const senha = senhaTemporaria()
-  const { error } = await admin.auth.admin.updateUserById(u.id, {
-    password: senha,
-    email_confirm: true,
-  })
-  if (error) return { ok: false, message: `Falha ao regenerar acesso: ${error.message}` }
-
-  return {
-    ok: true,
-    message: `Novo acesso provisório para ${clean}:`,
-    credenciais: { email: clean, senha, loginUrl: await loginUrl() },
-  }
-}
-
-/** Altera o papel de um usuário. */
 export async function changeRole(userId: string, role: Role): Promise<ActionResult> {
-  let actor
-  try {
-    actor = await requireManager()
-  } catch (e) {
-    return { ok: false, message: (e as Error).message }
-  }
-  if (!ROLES.includes(role)) return { ok: false, message: "Papel inválido." }
-  if (role === "gerente" && actor.role !== "gerente") {
-    return { ok: false, message: "Somente a gerência pode promover a gerente." }
-  }
-
-  const admin = createAdminClient()
-  const { error } = await admin.from("profiles").update({ role }).eq("id", userId)
-  if (error) return { ok: false, message: `Falha ao alterar papel: ${error.message}` }
-  await admin.auth.admin.updateUserById(userId, { user_metadata: { role } })
-  return { ok: true, message: "Papel atualizado." }
+  return changeManagedRole(userId, role)
 }
 
-/** Ativa ou desativa um usuário (preserva histórico comercial). */
 export async function setActive(userId: string, active: boolean): Promise<ActionResult> {
-  let actor
-  try {
-    actor = await requireManager()
-  } catch (e) {
-    return { ok: false, message: (e as Error).message }
-  }
-  if (userId === actor.id && !active) {
-    return { ok: false, message: "Você não pode desativar a própria conta." }
-  }
-
-  const admin = createAdminClient()
-  const { error } = await admin.from("profiles").update({ active }).eq("id", userId)
-  if (error) return { ok: false, message: `Falha ao atualizar status: ${error.message}` }
-  // Bloqueia/reativa o login sem apagar dados.
-  await admin.auth.admin.updateUserById(userId, {
-    ban_duration: active ? "none" : "876000h",
-  })
-  return { ok: true, message: active ? "Usuário ativado." : "Usuário desativado." }
+  return setManagedActive(userId, active)
 }
 
-/** Redefine a senha para uma nova provisória (compartilhável, sem e-mail). */
-export async function resetPassword(email: string): Promise<ActionResult> {
+async function temporaryAccess(email: string): Promise<ActionResult> {
   try {
-    await requireManager()
-  } catch (e) {
-    return { ok: false, message: (e as Error).message }
-  }
-  const admin = createAdminClient()
-  const clean = email.trim().toLowerCase()
-  const { data: list } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 })
-  const u = list?.users.find((x) => x.email?.toLowerCase() === clean)
-  if (!u) return { ok: false, message: "Usuário não encontrado." }
-
-  const senha = senhaTemporaria()
-  const { error } = await admin.auth.admin.updateUserById(u.id, {
-    password: senha,
-    email_confirm: true,
-  })
-  if (error) return { ok: false, message: `Falha ao redefinir senha: ${error.message}` }
-
-  return {
-    ok: true,
-    message: `Senha provisória de ${clean} redefinida:`,
-    credenciais: { email: clean, senha, loginUrl: await loginUrl() },
-  }
+    await requireRole("gerente")
+    const clean = email.trim().toLowerCase()
+    const { data, error } = await createAdminClient().from("profiles").select("id,email").eq("email", clean).maybeSingle()
+    if (error || !data) return { ok: false, message: "Colaborador não encontrado." }
+    const result = await createTemporaryPassword(data.id)
+    return { ok: result.ok, message: result.message,
+      ...(result.ok && result.temporaryPassword ? { credenciais: { email: data.email, senha: result.temporaryPassword, loginUrl: `${siteUrl() || "https://uniconecta-crm.vercel.app"}/auth/login` } } : {}) }
+  } catch { return { ok: false, message: "Operação restrita ao Gerente Comercial." } }
 }
+
+export async function resendInvite(email: string): Promise<ActionResult> { return temporaryAccess(email) }
+export async function resetPassword(email: string): Promise<ActionResult> { return temporaryAccess(email) }
 
 export interface Diagnostic {
   kind:
@@ -339,7 +178,7 @@ export async function runDiagnostics(): Promise<
   { ok: false; message: string } | { ok: true; items: Diagnostic[] }
 > {
   try {
-    await requireManager()
+    await requireRole("gerente")
   } catch (e) {
     return { ok: false, message: (e as Error).message }
   }
@@ -434,7 +273,7 @@ export async function runDiagnostics(): Promise<
 /** Cria o perfil ausente para um usuário do Auth (correção segura). */
 export async function fixMissingProfile(userId: string): Promise<ActionResult> {
   try {
-    await requireManager()
+    await requireRole("gerente")
   } catch (e) {
     return { ok: false, message: (e as Error).message }
   }
@@ -446,21 +285,13 @@ export async function fixMissingProfile(userId: string): Promise<ActionResult> {
   const u = data.user
   const meta = (u.user_metadata ?? {}) as Record<string, string>
   const fullName = meta.full_name || u.email?.split("@")[0] || "Sem nome"
-  const role: Role = ROLES.includes(meta.role as Role) && meta.role !== "gerente"
-    ? (meta.role as Role)
-    : "consultor_b2b"
+  const role: Role = "consultor_b2b"
 
-  const { error: upErr } = await admin.from("profiles").upsert(
-    {
-      id: u.id,
-      full_name: fullName,
-      email: u.email,
-      role,
-      consultant_tag: meta.consultant_tag || slugTag(fullName),
-      active: true,
-    },
-    { onConflict: "id" },
-  )
+  const { data: existingProfile, error: lookupError } = await admin.from("profiles").select("id").eq("id",u.id).maybeSingle()
+  if (lookupError || existingProfile) return { ok:false,message:"O perfil já existe ou não pôde ser verificado. Use a gestão de usuários." }
+  const { error: upErr } = await admin.from("profiles").insert({
+    id:u.id,full_name:fullName,email:u.email,role,consultant_tag:null,active:false,
+  })
   if (upErr) return { ok: false, message: `Falha ao criar perfil: ${upErr.message}` }
   return { ok: true, message: "Perfil criado com sucesso." }
 }

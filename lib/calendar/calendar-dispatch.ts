@@ -18,6 +18,10 @@ export async function flushCalendarQueue(
   supabase: SupabaseClient,
   options: { batches?: number; limit?: number } = {},
 ): Promise<CalendarDispatchResult> {
+  // Homologação pode validar a fila persistida sem contatar provedores ou destinatários.
+  if (process.env.UNICONECTA_DISABLE_EXTERNAL_COMMUNICATIONS === "true") {
+    return { configured: false, processed: 0, sent: 0, failed: 0, superseded: 0 }
+  }
   const batches = Math.max(1, Math.min(4, options.batches ?? 2))
   const limit = Math.max(1, Math.min(50, options.limit ?? 25))
 

@@ -1,0 +1,21 @@
+{
+  "layer": "Auth/REST reais em homologação isolada",
+  "results": [
+    {
+      "id": "ANON-REAL",
+      "details": "Leitura sem sessão não expôs nenhuma linha em cinco tabelas protegidas"
+    },
+    {
+      "id": "CONTACTS-REAL",
+      "details": "Dois contatos, troca do principal com IDs estáveis e convênio salvos e consultados no banco real"
+    },
+    {
+      "id": "INTERACTION-REAL",
+      "details": "Interação, histórico e próximo passo confirmados por consultas novas no banco real"
+    },
+    {
+      "id": "B2B-DELETE-RESTRICTION",
+      "details": "Exclusão física recusada pela FK existente do histórico; empresa e contatos preservados. Decisão de arquivamento/exclusão permanece pendente, sem apagar histórico para fazer um teste passar."
+    }
+  ]
+}

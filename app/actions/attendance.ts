@@ -1,10 +1,14 @@
 "use server"
 
+import { inspectAttendancePlan } from "@/lib/domain/attendance-planning"
+import { isCivilDate, validateSchedule } from "@/lib/domain/validation"
+
 import { revalidatePath } from "next/cache"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { createClient } from "@/lib/supabase/server"
 import { requireCan, requireActor } from "@/lib/auth/guards"
 import { can } from "@/lib/domain/roles"
+import { profileDisplayName } from "@/lib/domain/user-display"
 import {
   ACTIVITY_LABEL,
   ATTENDANCE_START_DATE,
@@ -58,8 +62,11 @@ function mapSettings(row: any): AttendanceSettings {
     afternoonStart: stripTime(row?.afternoon_start || "14:00"),
     afternoonEnd: stripTime(row?.afternoon_end || "18:00"),
     saturdayStart: stripTime(row?.saturday_start || "09:00"),
-    saturdayEnd: stripTime(row?.saturday_end || "12:00"),
-    minRoomCoverage: Number(row?.min_room_coverage || 2),
+    saturdayEnd: stripTime(row?.saturday_end || "13:00"),
+    minRoomCoverage: Math.max(3,Number(row?.min_room_coverage || 3)),
+    minSaturdayCoverage: Number(row?.min_saturday_coverage || 2),
+    gdcStart: row?.gdc_start ? stripTime(row.gdc_start) : null,
+    gdcCoverageMode: row?.gdc_coverage_mode || "pending",
     roomLocation: row?.room_location || "Sala de Matrícula · UniMetrocamp Wyden",
     conversionLocation: row?.conversion_location || "UniMetrocamp Wyden · Conversão",
     externalLocation: row?.external_location || "Atividade externa",
@@ -74,7 +81,7 @@ async function loadSchedulingBase() {
     admin.from("attendance_settings").select("*").eq("id", 1).single(),
     admin.from("attendance_team_slots").select("*").eq("active", true).order("sort_order"),
     admin.from("attendance_rotation_template").select("*").order("week_index").order("lane").order("position"),
-    admin.from("profiles").select("id,full_name,email,role,active").eq("active", true).order("full_name"),
+    admin.from("profiles").select("id,full_name,consultant_tag,email,role,active").eq("active", true).order("full_name"),
     admin.from("attendance_members").select("user_id,enabled"),
   ])
   if (settingsRes.error) throw new Error(settingsRes.error.message)
@@ -83,7 +90,7 @@ async function loadSchedulingBase() {
   if (profilesRes.error) throw new Error(profilesRes.error.message)
   if (membersRes.error) throw new Error(membersRes.error.message)
 
-  const profiles = profilesRes.data ?? []
+  const profiles = (profilesRes.data ?? []).map((p: any) => ({ ...p, legal_full_name: p.full_name, full_name: profileDisplayName(p) }))
   const profileById = new Map(profiles.map((p: any) => [p.id, p]))
   const memberById = new Map((membersRes.data ?? []).map((m: any) => [m.user_id, Boolean(m.enabled)]))
   const slots: AttendanceSlot[] = (slotsRes.data ?? []).map((row: any) => ({
@@ -101,6 +108,7 @@ async function loadSchedulingBase() {
   }))
 
   return {
+    settingsVersion: settingsRes.data?.updated_at,
     settings: mapSettings(settingsRes.data),
     slots,
     rotation,
@@ -112,7 +120,7 @@ async function loadSchedulingBase() {
 
 function validateDates(input: AttendancePreviewInput, settings: AttendanceSettings): AttendanceIssue[] {
   const issues: AttendanceIssue[] = []
-  if (!input.cycleStart || !input.periodStart || !input.periodEnd) {
+  if (![input.cycleStart,input.periodStart,input.periodEnd].every(isCivilDate) || input.periodEnd > addDays(input.periodStart,366)) {
     issues.push({ severity: "error", code: "dates_missing", message: "Informe início do ciclo e período." })
     return issues
   }
@@ -252,31 +260,11 @@ async function validateOccurrences(occurrences: GeneratedOccurrence[], settings:
     }
   }
 
-  // Cobertura da sala em blocos de 15 minutos, descontando intervalo.
-  const dates = Array.from(new Set(occurrences.filter((o) => o.activity === "room").map((o) => o.date)))
-  for (const date of dates) {
-    const weekday = weekdayOf(date)
-    const room = occurrences.filter((o) => o.date === date && o.activity === "room")
-    if (weekday === 6) {
-      if (room.length < 2) issues.push({ severity: "error", code: "saturday_coverage", date, message: "Sábado precisa de dois responsáveis na sala das 9h às 12h." })
-      continue
-    }
-    const startM = timeToMinutes(settings.weekdayRoomOpen)
-    const endM = timeToMinutes(settings.weekdayRoomClose)
-    for (let minute = startM; minute < endM; minute += 15) {
-      const active = room.filter((o) => {
-        const inShift = timeToMinutes(o.startTime) <= minute && timeToMinutes(o.endTime) > minute
-        if (!inShift) return false
-        if (!o.breakStart || !o.breakEnd) return true
-        return !(timeToMinutes(o.breakStart) <= minute && timeToMinutes(o.breakEnd) > minute)
-      }).length
-      if (active < settings.minRoomCoverage) {
-        const hh = `${String(Math.floor(minute / 60)).padStart(2, "0")}:${String(minute % 60).padStart(2, "0")}`
-        issues.push({ severity: "error", code: "room_coverage", date, message: `Cobertura da sala abaixo de ${settings.minRoomCoverage} pessoas em ${date.split("-").reverse().join("/")} às ${hh}.` })
-        break
-      }
-    }
-  }
+  const planningBase = await loadSchedulingBase()
+  const { data: closedRows } = await admin.from("attendance_exceptions").select("exception_date").eq("closed",true).gte("exception_date",start).lte("exception_date",end)
+  const people = planningBase.slots.filter(slot => slot.enabled && slot.userId).map(slot => ({id:slot.userId!,name:planningBase.profileById.get(slot.userId!)?.full_name || slot.label}))
+  const planning = inspectAttendancePlan({occurrences,settings,people,from:start,to:end,closedDates:(closedRows??[]).map(r=>r.exception_date)})
+  issues.push(...planning.issues)
 
   const userIds = Array.from(new Set(occurrences.map((o) => o.userId).filter(Boolean))) as string[]
   if (userIds.length) {
@@ -284,11 +272,12 @@ async function validateOccurrences(occurrences: GeneratedOccurrence[], settings:
       admin.from("attendance_occurrences").select("id,user_id,occurrence_date,start_time,end_time,status").in("user_id", userIds).gte("occurrence_date", start).lte("occurrence_date", end).neq("status", "cancelled"),
       admin.from("attendance_absences").select("user_id,absence_date,start_time,end_time,reason").in("user_id", userIds).gte("absence_date", start).lte("absence_date", end).eq("active", true),
       admin.from("school_actions").select("id,action_date,start_time,end_time,primary_owner_id,action_type,status").in("primary_owner_id", userIds).gte("action_date", start).lte("action_date", end).neq("status", "cancelada"),
-      admin.from("activities").select("id,data,primary_owner_id,tipo,status").in("primary_owner_id", userIds).gte("data", start).lte("data", end),
+      admin.from("companies").select("id,nome_fantasia,razao_social,proxima_acao,data_proxima_acao,next_action_owner_id,next_action_start_time,next_action_end_time").in("next_action_owner_id", userIds).gte("data_proxima_acao", start).lte("data_proxima_acao", end),
     ])
 
     for (const occ of occurrences.filter((o) => o.userId)) {
       for (const ex of existingRes.data ?? []) {
+        if (occurrences.some(o => o.id===ex.id)) continue;
         if (ex.user_id === occ.userId && ex.occurrence_date === occ.date && overlaps(occ.startTime, occ.endTime, padTime(ex.start_time), padTime(ex.end_time))) {
           issues.push({ severity: "warning", code: "existing_schedule", date: occ.date, message: `${occ.responsibleName} já possui compromisso da escala nesse horário.` })
           break
@@ -305,8 +294,13 @@ async function validateOccurrences(occurrences: GeneratedOccurrence[], settings:
           issues.push({ severity: "warning", code: "school_action", date: occ.date, message: `${occ.responsibleName} tem ação de escola no mesmo horário.` })
         }
       }
-      if ((b2bRes.data ?? []).some((a: any) => a.primary_owner_id === occ.userId && a.data === occ.date)) {
-        issues.push({ severity: "warning", code: "b2b_activity", date: occ.date, message: `${occ.responsibleName} possui atividade B2B registrada neste dia; confira o horário manualmente.` })
+      for (const company of b2bRes.data ?? []) {
+        if (company.next_action_owner_id !== occ.userId || company.data_proxima_acao !== occ.date) continue
+        if (!company.next_action_start_time || !company.next_action_end_time) continue
+        if (overlaps(occ.startTime, occ.endTime, padTime(company.next_action_start_time), padTime(company.next_action_end_time))) {
+          const companyName = company.nome_fantasia || company.razao_social || "empresa"
+          issues.push({ severity: "warning", code: "b2b_activity", date: occ.date, message: `${occ.responsibleName} tem compromisso B2B com ${companyName} no mesmo horário.` })
+        }
       }
     }
   }
@@ -464,7 +458,10 @@ export async function getAttendanceData(input?: { start?: string; end?: string; 
   const schoolCycleOptions = [...new Map(schoolOccurrences.filter((o) => o.schoolCycleId).map((o) => [o.schoolCycleId, { id: o.schoolCycleId, name: o.schoolCycleName }])).values()]
   const allOccurrences = [...occurrences, ...schoolOccurrences.filter((o) => matchesAgendaFilters(o, { ...input, userId: scopedUserId }))]
     .sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime))
-  return { actor, manager, start, end, ...base, occurrences: allOccurrences, schoolOptions, schoolCycleOptions, providerStatus }
+  const planning = manager && !input?.userId && !input?.activity && !input?.status ? inspectAttendancePlan({occurrences,settings:base.settings,
+    people:base.slots.filter(slot=>slot.enabled&&slot.userId).map(slot=>({id:slot.userId!,name:profileById.get(slot.userId!)?.full_name || slot.label})),
+    from:start,to:end}) : null
+  return { actor, manager, start, end, ...base, planning, occurrences: allOccurrences, schoolOptions, schoolCycleOptions, providerStatus }
 }
 
 export async function updateTeamSlot(slotKey: string, userId: string | null): Promise<AttendanceActionResult> {
@@ -489,8 +486,20 @@ export async function setAttendanceMember(userId: string, enabled: boolean): Pro
     const admin = createAdminClient()
     const { error } = await admin.from("attendance_members").upsert({ user_id: userId, enabled, created_by: actor.id }, { onConflict: "user_id" })
     if (error) return { ok: false, message: error.message }
+    if (!enabled) {
+      const { error: unlinkError } = await admin
+        .from("attendance_team_slots")
+        .update({ user_id: null, updated_by: actor.id })
+        .eq("user_id", userId)
+      if (unlinkError) return { ok: false, message: "Usuário removido do Atendimento, mas não foi possível desvinculá-lo do rodízio: " + unlinkError.message }
+    }
     revalidatePath("/atendimento")
-    return { ok: true, message: enabled ? "Usuário incluído no Atendimento." : "Usuário removido da lista de Atendimento." }
+    return {
+      ok: true,
+      message: enabled
+        ? "Usuário incluído no Atendimento."
+        : "Usuário removido do Atendimento e desvinculado das posições futuras do rodízio.",
+    }
   } catch (e) { return { ok: false, message: e instanceof Error ? e.message : "Falha ao atualizar usuário." } }
 }
 
@@ -509,6 +518,8 @@ export async function saveOccurrence(input: {
 }): Promise<AttendanceActionResult> {
   try {
     const actor = await requireCan("attendance.manage")
+    const invalid = validateSchedule(input.date,input.startTime,input.endTime,true)
+    if (invalid) return { ok:false,message:invalid }
     const base = await loadSchedulingBase()
     if (input.date < base.settings.scheduleStartDate) return { ok: false, message: `A agenda começa em ${base.settings.scheduleStartDate.split("-").reverse().join("/")}.` }
     if (timeToMinutes(input.endTime) <= timeToMinutes(input.startTime)) return { ok: false, message: "O horário final deve ser posterior ao inicial." }
@@ -598,25 +609,13 @@ export async function publishCycle(cycleId: string): Promise<AttendanceActionRes
     // Ao validar um ciclo já salvo, seus próprios rascunhos aparecem como existing_schedule; isso não bloqueia.
     if (errors.length) return { ok: false, message: "A escala possui pendências que impedem a publicação.", issues: errors }
 
-    const now = new Date().toISOString()
-    for (const row of rows ?? []) {
-      const p: any = row.user_id ? profileById.get(row.user_id) : null
-      if (!p || !validEmail(p.email)) return { ok: false, message: "Todos os compromissos precisam de usuário real com e-mail válido antes da publicação." }
-      await admin.from("attendance_occurrences").update({ status: "published", published_by: actor.id, published_at: now, updated_by: actor.id }).eq("id", row.id)
-      await syncCalendarEvent({
-        sourceType: "attendance",
-        sourceId: row.id,
-        recipientUserId: row.user_id,
-        title: `UniConecta · ${ACTIVITY_LABEL[row.activity as AttendanceActivity]}`,
-        startAt: saoPauloIso(row.occurrence_date, padTime(row.start_time)),
-        endAt: saoPauloIso(row.occurrence_date, padTime(row.end_time)),
-        location: row.location,
-        description: [row.break_start && row.break_end ? `Intervalo: ${padTime(row.break_start)}–${padTime(row.break_end)}` : null, row.notes].filter(Boolean).join("\n"),
-        crmPath: "/atendimento/minha-agenda",
-        actorId: actor.id,
-      })
-    }
-    await admin.from("attendance_cycles").update({ status: "published", published_by: actor.id, published_at: now }).eq("id", cycleId)
+    const { error: publishError } = await admin.rpc("publish_attendance_cycle_atomic", {
+      p_actor: actor.id, p_cycle: cycleId, p_settings_version: base.settingsVersion,
+      p_versions: (rows ?? []).map(row=>({id:row.id,updated_at:row.updated_at})),
+    })
+    if (publishError) return { ok:false,message:publishError.message }
+    revalidatePath("/atendimento")
+    revalidatePath("/atendimento/minha-agenda")
     const dispatch = await processCalendarQueue()
     revalidatePath("/atendimento")
     revalidatePath("/atendimento/minha-agenda")
@@ -689,13 +688,15 @@ export async function saveAttendanceSettings(input: Partial<AttendanceSettings>)
   try {
     const actor = await requireCan("attendance.manage")
     const admin = createAdminClient()
+    if (input.gdcStart && (validateSchedule("2026-10-26",input.gdcStart,"20:00",true) || input.gdcStart<"09:00" || input.gdcStart>"19:00")) return {ok:false,message:"GDC de 1h deve começar entre 9h e 19h."}
+    if (input.minRoomCoverage!==undefined && input.minRoomCoverage<3 || input.minSaturdayCoverage!==undefined && input.minSaturdayCoverage<2) return {ok:false,message:"Cobertura mínima: 3 na semana e 2 no sábado."}
     const patch: any = { updated_by: actor.id }
     const map: Record<string, string> = {
       scheduleStartDate: "schedule_start_date", weekdayRoomOpen: "weekday_room_open", weekdayRoomClose: "weekday_room_close",
       roomEarlyStart: "room_early_start", roomEarlyEnd: "room_early_end", roomLateStart: "room_late_start", roomLateEnd: "room_late_end",
       morningStart: "morning_start", morningEnd: "morning_end", afternoonStart: "afternoon_start", afternoonEnd: "afternoon_end",
       saturdayStart: "saturday_start", saturdayEnd: "saturday_end", minRoomCoverage: "min_room_coverage", roomLocation: "room_location",
-      conversionLocation: "conversion_location", externalLocation: "external_location", roomEarlyBreaks: "room_early_breaks", roomLateBreaks: "room_late_breaks",
+      conversionLocation: "conversion_location", externalLocation: "external_location", roomEarlyBreaks: "room_early_breaks", roomLateBreaks: "room_late_breaks", gdcStart:"gdc_start",gdcCoverageMode:"gdc_coverage_mode",minSaturdayCoverage:"min_saturday_coverage",
     }
     for (const [key, column] of Object.entries(map)) if ((input as any)[key] !== undefined) patch[column] = (input as any)[key]
     const { error } = await admin.from("attendance_settings").update(patch).eq("id", 1)

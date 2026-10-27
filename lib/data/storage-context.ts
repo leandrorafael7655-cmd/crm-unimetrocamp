@@ -4,7 +4,11 @@
    Aqui trocamos a implementação por trás dessas primitivas: Supabase quando há
    sessão autenticada, ou localStorage no modo demonstração. */
 
+import type { Empresa, Atividade } from "@/lib/domain/types"
+
 export interface StorageBackend {
+  readonly mode?: "demo" | "supabase"
+  saveInteraction?(activity: Atividade, company: Empresa): Promise<boolean>
   get(chave: string, compartilhado: boolean): Promise<{ value: string | null } | null>
   set(chave: string, valorJSON: string, compartilhado: boolean): Promise<boolean>
 }

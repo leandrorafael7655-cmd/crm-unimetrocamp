@@ -1,5 +1,6 @@
 "use client"
 
+import { validateSchedule } from "@/lib/domain/validation"
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { X, Plus, Trash2, Star } from "lucide-react"
@@ -304,6 +305,7 @@ export function AcoesPanel({
   const [tipo, setTipo] = useState<string>(TIPOS_ACAO_HS[0])
   const [status, setStatus] = useState<string>("agendada")
   const [inicio, setInicio] = useState("")
+  const [fim, setFim] = useState("")
   const [objetivo, setObjetivo] = useState("")
   const [ownerId, setOwnerId] = useState("")
   const [obs, setObs] = useState("")
@@ -315,6 +317,7 @@ export function AcoesPanel({
     setTipo(TIPOS_ACAO_HS[0])
     setStatus("agendada")
     setInicio("")
+    setFim("")
     setObjetivo("")
     setOwnerId("")
     setObs("")
@@ -337,11 +340,15 @@ export function AcoesPanel({
 
   function salvar() {
     setErro("")
-    if (!data) return setErro("Informe a data da ação.")
+    const scheduled = ["agendada","confirmada","reagendada"].includes(status)
+    const invalid = validateSchedule(data,inicio,fim,scheduled)
+    if (invalid) return setErro(invalid)
+    if (scheduled && !ownerId) return setErro("Selecione o consultor responsável para incluir o compromisso na agenda.")
     const input: AcaoInput = {
       escolaId,
       data,
       inicio: inicio || null,
+      fim: fim || null,
       tipo,
       objetivo,
       status,
@@ -364,14 +371,18 @@ export function AcoesPanel({
   }
 
   function mudarStatus(id: string, novo: string) {
+    setErro("")
     start(async () => {
-      await setActionStatus(id, novo, escolaId)
+      const result=await setActionStatus(id, novo, escolaId)
+      if (!result.ok) return setErro(result.message)
       router.refresh()
     })
   }
   function remover(id: string) {
+    setErro("")
     start(async () => {
-      await deleteAction(id, escolaId)
+      const result=await deleteAction(id, escolaId)
+      if (!result.ok) return setErro(result.message)
       router.refresh()
     })
   }
@@ -453,6 +464,7 @@ export function AcoesPanel({
         </div>
       )}
 
+      {erro && !aberto && <p role="alert" className="mt-3 rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-700">{erro}</p>}
       {aberto && (
         <Modal titulo="Nova ação" onClose={() => setAberto(false)}>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -461,8 +473,12 @@ export function AcoesPanel({
               <input type="date" value={data} onChange={(e) => setData(e.target.value)} className={inputCls} />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Horário</label>
+              <label className="mb-1 block text-xs font-medium text-slate-600">Horário inicial</label>
               <input type="time" value={inicio} onChange={(e) => setInicio(e.target.value)} className={inputCls} />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-slate-600">Horário final</label>
+              <input type="time" value={fim} onChange={e=>setFim(e.target.value)} className={inputCls} />
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-600">Tipo</label>

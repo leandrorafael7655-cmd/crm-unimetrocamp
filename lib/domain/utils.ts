@@ -7,7 +7,8 @@
 /* data de hoje no fuso local, em ISO curto (sem hora) */
 export const hojeISO = (): string => {
   const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" }).format(d)
+
 }
 
 /* diferença em dias inteiros entre duas datas ISO; null se faltar alguma */
@@ -62,26 +63,28 @@ export const slug = (t: string): string =>
 
 export const soDigitos = (v: string): string => (v || "").replace(/\D/g, "")
 
+export const canonicalCnpj = (value: string): string => (value || "").toUpperCase().replace(/[.\/\s-]/g, "")
+
 export const mascaraCNPJ = (v: string): string => {
-  const d = soDigitos(v).slice(0, 14)
+  const d = canonicalCnpj(v).replace(/[^A-Z0-9]/g, "").slice(0,14)
   return d
-    .replace(/^(\d{2})(\d)/, "$1.$2")
-    .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
-    .replace(/\.(\d{3})(\d)/, ".$1/$2")
-    .replace(/(\d{4})(\d)/, "$1-$2")
+    .replace(/^([A-Z0-9]{2})([A-Z0-9])/, "$1.$2")
+    .replace(/^([A-Z0-9]{2})\.([A-Z0-9]{3})([A-Z0-9])/, "$1.$2.$3")
+    .replace(/\.([A-Z0-9]{3})([A-Z0-9])/, ".$1/$2")
+    .replace(/([A-Z0-9]{4})([A-Z0-9])/, "$1-$2")
 }
 
 const dvCNPJ = (base: string, pesos: number[]): number =>
   ((s: number) => (s % 11 < 2 ? 0 : 11 - (s % 11)))(
-    base.split("").reduce((a, n, i) => a + Number(n) * pesos[i], 0),
+    base.split("").reduce((a, n, i) => a + (n.charCodeAt(0) - 48) * pesos[i], 0),
   )
 
 const P1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
 const P2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
 
 export const cnpjValido = (v: string): boolean => {
-  const c = soDigitos(v)
-  if (c.length !== 14 || /^(\d)\1+$/.test(c)) return false
+  const c = canonicalCnpj(v)
+  if (!/^[A-Z0-9]{12}[0-9]{2}$/.test(c) || /^(\d)\1+$/.test(c)) return false
   const d1 = dvCNPJ(c.slice(0, 12), P1)
   return c === c.slice(0, 12) + String(d1) + String(dvCNPJ(c.slice(0, 12) + String(d1), P2))
 }
