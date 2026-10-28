@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useState, useTransition, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { X, Plus, History, CalendarOff } from "lucide-react"
@@ -116,6 +117,7 @@ export function MetasClient({
         }
       />
 
+      <Link href="/gestao/metas/b2b" className="mb-4 inline-block text-sm font-medium text-brand underline">Metas e inscrições B2B por empresa</Link>
       <div className="mb-4 flex gap-1 border-b border-slate-200">
         {(
           [

@@ -21,7 +21,7 @@ function grants(acl: string | null, object: string, kind: "table" | "function", 
 export function auditedPublicSql() {
   const sql=["set check_function_bodies=off; create schema if not exists private; create schema if not exists extensions;"]
   for (const t of schema.tables.filter((t: any)=>!schema.views.some((v:any)=>v.schema===t.schema&&v.name===t.name))) {
-    const fields=schema.columns.filter((c:any)=>c.schema===t.schema&&c.name===t.name).map((c:any)=>`${quote(c.column_name)} ${c.type}${c.default_expr ? ' default '+c.default_expr : ''}${c.not_null ? ' not null' : ''}`)
+    const fields=schema.columns.filter((c:any)=>c.schema===t.schema&&c.name===t.name).map((c:any)=>`${quote(c.column_name)} ${c.type}${c.identity_kind ? ` generated ${c.identity_kind==='a' ? 'always' : 'by default'} as identity` : c.default_expr ? ' default '+c.default_expr : ''}${c.not_null ? ' not null' : ''}`)
     sql.push(`create table ${quote(t.schema)}.${quote(t.name)} (${fields.join(',')});`)
   }
   for (const f of schema.functions) sql.push(f.definition+';')
@@ -64,6 +64,8 @@ export async function createAuditedDatabase(applyFixes=true) {
     await db.query(`update profiles set role=$2 where id=$1`,[id,role==='gerente2'?'gerente':role==='b2b'||role==='outro'?'consultor_b2b':role==='hs'?'high_school':role])
   }
   await db.exec(`insert into grade_levels(code,label,sort_order,active,supervest_eligible) values('em3','3ª série',3,true,true),('em2','2ª série',2,true,false);`)
+  // Exercise permissive provider defaults; migrations must revoke broad grants explicitly.
+  await db.exec(`alter default privileges in schema public grant all on tables to anon,authenticated,service_role;`)
   if(applyFixes) for(const f of readdirSync(new URL('../../supabase/migrations/',import.meta.url)).filter(f=>f.includes('_audit_')).sort()) {
     try {await db.exec(readFileSync(new URL('../../supabase/migrations/'+f,import.meta.url),'utf8'))}
     catch(error) {await db.close(); throw new Error('Migração '+f+': '+(error as Error).message)}

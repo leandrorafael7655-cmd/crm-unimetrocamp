@@ -1,3 +1,5 @@
+> Decisões finais de 28/10 implementadas no PR: [mudanças e configuração](../2026-10-28/final-decisions.md) e [12 migrações com recuperação](../2026-10-28/migration-recovery.md). Entrega em rascunho; sem publicação nesta etapa.
+
 # Correções da auditoria UniConecta — 27/10/2026
 
 A entrega corrige a origem dos problemas de autorização, perda parcial de dados e persistência no código e no banco isolado. Produção não foi alterada, publicada ou migrada. Merge e liberação definitiva continuam para revisão do responsável.

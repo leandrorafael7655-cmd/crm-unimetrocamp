@@ -32,7 +32,10 @@ import {
 } from "@/lib/domain/attendance"
 import { mapSchoolAgendaOccurrence, matchesAgendaFilters, saoPauloToday } from "@/lib/domain/school-agenda"
 import { isUuid } from "@/lib/school-capture/domain"
-import { saoPauloIso, syncCalendarEvent } from "@/lib/calendar/calendar-sync"
+import { companyAgendaItem, companyActionAgendaItem } from "@/lib/domain/company-agenda"
+import { readAllRows } from "@/lib/data/pagination"
+import { calendarEmailStatus } from "@/lib/calendar/smtp-config"
+import { processSmtpQueue } from "@/lib/calendar/smtp-worker"
 
 export type AttendanceActionResult =
   | { ok: true; message: string; [key: string]: unknown }
@@ -453,15 +456,39 @@ export async function getAttendanceData(input?: { start?: string; end?: string; 
     }
   })
 
+  const [companyRows, meetingRows, actionRows, failedInvites] = await Promise.all([
+    readAllRows<any>((from, to) => {
+      let q = admin.from("companies").select("id,razao_social,nome_fantasia,proxima_acao,data_proxima_acao,next_action_owner_id,next_action_start_time,next_action_end_time,next_action_location,next_action_kind").is("archived_at", null).not("data_proxima_acao", "is", null).not("proxima_acao", "is", null).gte("data_proxima_acao", start).lte("data_proxima_acao", end)
+      if (scopedUserId) q = q.eq("next_action_owner_id", scopedUserId)
+      return q.order("id").range(from, to)
+    }),
+    readAllRows<any>((from, to) => {
+      let q = admin.from("activities").select("id,company_id,organizer_user_id,title,start_at,end_at,location,meeting_url,description,status,sync_error,company:companies(razao_social,nome_fantasia)").not("meeting_type", "is", null).gte("start_at", `${start}T00:00:00-03:00`).lt("start_at", `${addDays(end, 1)}T00:00:00-03:00`)
+      if (scopedUserId) q = q.eq("organizer_user_id", scopedUserId)
+      return q.order("id").range(from, to)
+    }),
+    readAllRows<any>((from, to) => {
+      let q = admin.from("company_actions").select("id,company_id,title,occurred_at,responsible_user_id,responsible_name,location,description,company:companies(razao_social,nome_fantasia)")
+        .gte("occurred_at", `${start}T00:00:00-03:00`).lt("occurred_at", `${addDays(end, 1)}T00:00:00-03:00`)
+      if (scopedUserId) q = q.eq("responsible_user_id", scopedUserId)
+      return q.order("id").range(from, to)
+    }),
+    manager ? admin.from("calendar_invite_jobs").select("id,last_error,updated_at,operation").eq("status", "failed").order("updated_at", { ascending: false }).limit(50) : Promise.resolve({ data: [] }),
+  ])
+  const commercialOccurrences = [
+    ...companyRows.filter(row => !!row.proxima_acao).map(row => companyAgendaItem({ ...row, responsible_name: profileById.get(row.next_action_owner_id)?.full_name }, false)),
+    ...meetingRows.map(row => companyAgendaItem({ ...row, responsible_name: profileById.get(row.organizer_user_id)?.full_name }, true)),
+    ...actionRows.map(row => companyActionAgendaItem(row)),
+  ].filter(row => matchesAgendaFilters(row, { ...input, userId: scopedUserId }))
   const providerStatus = await getCalendarProviderStatus(false)
   const schoolOptions = [...new Map(schoolOccurrences.map((o) => [o.schoolId, { id: o.schoolId, name: o.schoolName }])).values()]
   const schoolCycleOptions = [...new Map(schoolOccurrences.filter((o) => o.schoolCycleId).map((o) => [o.schoolCycleId, { id: o.schoolCycleId, name: o.schoolCycleName }])).values()]
-  const allOccurrences = [...occurrences, ...schoolOccurrences.filter((o) => matchesAgendaFilters(o, { ...input, userId: scopedUserId }))]
+  const allOccurrences = [...occurrences, ...commercialOccurrences, ...schoolOccurrences.filter((o) => matchesAgendaFilters(o, { ...input, userId: scopedUserId }))]
     .sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime))
   const planning = manager && !input?.userId && !input?.activity && !input?.status ? inspectAttendancePlan({occurrences,settings:base.settings,
     people:base.slots.filter(slot=>slot.enabled&&slot.userId).map(slot=>({id:slot.userId!,name:profileById.get(slot.userId!)?.full_name || slot.label})),
     from:start,to:end}) : null
-  return { actor, manager, start, end, ...base, planning, occurrences: allOccurrences, schoolOptions, schoolCycleOptions, providerStatus }
+  return { actor, manager, start, end, ...base, planning, occurrences: allOccurrences, schoolOptions, schoolCycleOptions, providerStatus, failedInvites: failedInvites.data || [] }
 }
 
 export async function updateTeamSlot(slotKey: string, userId: string | null): Promise<AttendanceActionResult> {
@@ -520,6 +547,7 @@ export async function saveOccurrence(input: {
     const actor = await requireCan("attendance.manage")
     const invalid = validateSchedule(input.date,input.startTime,input.endTime,true)
     if (invalid) return { ok:false,message:invalid }
+    if (!input.userId || !isUuid(input.userId)) return { ok: false, message: "Selecione o responsável pelo compromisso." }
     const base = await loadSchedulingBase()
     if (input.date < base.settings.scheduleStartDate) return { ok: false, message: `A agenda começa em ${base.settings.scheduleStartDate.split("-").reverse().join("/")}.` }
     if (timeToMinutes(input.endTime) <= timeToMinutes(input.startTime)) return { ok: false, message: "O horário final deve ser posterior ao inicial." }
@@ -541,10 +569,12 @@ export async function saveOccurrence(input: {
     }
 
     if (!input.id) {
-      const { data, error } = await admin.from("attendance_occurrences").insert({ ...payload, status: "draft", created_by: actor.id, series_key: `manual:${crypto.randomUUID()}` }).select("id").single()
+      const { data, error } = await admin.from("attendance_occurrences").insert({ ...payload, status: "published", created_by: actor.id, published_by: actor.id, published_at: new Date().toISOString(), series_key: `manual:${crypto.randomUUID()}` }).select("id").single()
       if (error || !data) return { ok: false, message: error?.message || "Falha ao criar compromisso." }
+      await processCalendarQueue()
       revalidatePath("/atendimento")
-      return { ok: true, message: "Compromisso criado como rascunho.", id: data.id }
+      revalidatePath("/atendimento/minha-agenda")
+      return { ok: true, message: "Compromisso salvo. Confira o envio do convite na agenda.", id: data.id }
     }
 
     const { data: current, error: readError } = await admin.from("attendance_occurrences").select("*").eq("id", input.id).single()
@@ -565,22 +595,8 @@ export async function saveOccurrence(input: {
       if (row.status === "published") update.sequence = Number(row.sequence || 0) + 1
       const { error } = await admin.from("attendance_occurrences").update(update).eq("id", row.id)
       if (error) return { ok: false, message: error.message }
-      if (row.status === "published") {
-        const effectiveDate = scope === "occurrence" ? input.date : row.occurrence_date
-        await syncCalendarEvent({
-          sourceType: "attendance",
-          sourceId: row.id,
-          recipientUserId: input.userId || null,
-          title: `UniConecta · ${ACTIVITY_LABEL[input.activity]}`,
-          startAt: saoPauloIso(effectiveDate, input.startTime),
-          endAt: saoPauloIso(effectiveDate, input.endTime),
-          location: input.location,
-          description: [input.breakStart && input.breakEnd ? `Intervalo: ${input.breakStart}–${input.breakEnd}` : null, input.notes].filter(Boolean).join("\n"),
-          crmPath: "/atendimento/minha-agenda",
-          actorId: actor.id,
-        })
-      }
     }
+    await processCalendarQueue()
     revalidatePath("/atendimento")
     revalidatePath("/atendimento/minha-agenda")
     return { ok: true, message: `${targetRows.length} ocorrência(s) atualizada(s).`, count: targetRows.length }
@@ -642,7 +658,6 @@ export async function cancelOccurrence(id: string): Promise<AttendanceActionResu
     if (!row) return { ok: false, message: "Compromisso não encontrado." }
     await admin.from("attendance_occurrences").update({ status: "cancelled", cancelled_at: new Date().toISOString(), updated_by: actor.id, sequence: Number(row.sequence || 0) + 1 }).eq("id", id)
     if (row.status === "published") {
-      await syncCalendarEvent({ sourceType: "attendance", sourceId: row.id, recipientUserId: row.user_id, title: `UniConecta · ${ACTIVITY_LABEL[row.activity as AttendanceActivity]}`, startAt: saoPauloIso(row.occurrence_date, padTime(row.start_time)), endAt: saoPauloIso(row.occurrence_date, padTime(row.end_time)), actorId: actor.id, cancel: true })
       await processCalendarQueue()
     }
     revalidatePath("/atendimento")
@@ -652,11 +667,10 @@ export async function cancelOccurrence(id: string): Promise<AttendanceActionResu
 
 export async function getCalendarProviderStatus(requirePermission = true): Promise<any> {
   try {
-    if (requirePermission) await requireCan("attendance.read")
-    const supabase = await createClient()
-    const { data, error } = await supabase.functions.invoke("send-calendar-invites", { body: { action: "status" } })
-    if (error || !data?.ok) return { configured: false, error: "Não foi possível consultar o provedor de e-mail.", message: "Não foi possível consultar o provedor de e-mail." }
-    return data
+    // Public Server Actions must never accept an argument that skips authorization.
+    void requirePermission
+    await requireCan("attendance.read")
+    return calendarEmailStatus()
   } catch {
     return { configured: false, error: "Não foi possível consultar o provedor de e-mail.", message: "Não foi possível consultar o provedor de e-mail." }
   }
@@ -665,20 +679,9 @@ export async function getCalendarProviderStatus(requirePermission = true): Promi
 export async function processCalendarQueue(): Promise<any> {
   try {
     await requireCan("attendance.manage")
-    const supabase = await createClient()
-    const status = await getCalendarProviderStatus(false)
-    if (status?.error) return { configured: false, error: status.error, status }
-    if (!status?.configured) return { configured: false, status }
-    let totalSent = 0, totalFailed = 0, totalProcessed = 0
-    for (let i = 0; i < 4; i++) {
-      const { data, error } = await supabase.functions.invoke("send-calendar-invites", { body: { action: "process", limit: 50 } })
-      if (error) return { configured: true, error: error.message, sent: totalSent, failed: totalFailed }
-      if (!data?.ok) return { configured: true, error: "O provedor não confirmou o processamento dos convites.", sent: totalSent, failed: totalFailed }
-      totalSent += Number(data?.sent || 0); totalFailed += Number(data?.failed || 0); totalProcessed += Number(data?.processed || 0)
-      if (Number(data?.processed || 0) < 50) break
-    }
+    const result = await processSmtpQueue()
     revalidatePath("/atendimento")
-    return { configured: true, sent: totalSent, failed: totalFailed, processed: totalProcessed }
+    return result
   } catch (e) {
     return { configured: false, error: e instanceof Error ? e.message : "Falha ao processar fila." }
   }

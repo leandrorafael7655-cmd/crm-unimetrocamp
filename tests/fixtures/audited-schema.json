@@ -1677,6 +1677,7 @@
       "not_null": true,
       "position": 1,
       "column_name": "id",
+      "identity_kind": "d",
       "default_expr": null
     },
     {

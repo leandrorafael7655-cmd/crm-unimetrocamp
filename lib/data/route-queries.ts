@@ -77,7 +77,7 @@ export async function pontosDisponiveis(busca?: string): Promise<PontoDisponivel
    
   let qc: any = supabase
     .from("companies")
-    .select("id, razao_social, nome_fantasia, cidade, bairro, latitude, longitude, etapa, classificacao, owner_id")
+    .select("id, razao_social, nome_fantasia, cidade, bairro, latitude, longitude, etapa, classificacao, owner_id").is("archived_at", null)
     .not("latitude", "is", null)
     .order("id")
   if (!gestor) qc = qc.eq("owner_id", actor.id)
@@ -86,7 +86,7 @@ export async function pontosDisponiveis(busca?: string): Promise<PontoDisponivel
    
   let qs: any = supabase
     .from("schools")
-    .select("id, name, cidade, bairro, latitude, longitude, relationship_stage, classification, primary_owner_id")
+    .select("id, name, cidade, bairro, latitude, longitude, relationship_stage, classification, primary_owner_id").is("archived_at", null)
     .not("latitude", "is", null)
     .order("id")
   if (!gestor) qs = qs.eq("primary_owner_id", actor.id)
@@ -200,7 +200,7 @@ export async function sugerirProximidade(params: {
    
   let qc: any = supabase
     .from("companies")
-    .select("id, razao_social, nome_fantasia, cidade, latitude, longitude, etapa, classificacao, proxima_acao, data_proxima_acao, ultimo_contato, possui_beneficio, owner_id")
+    .select("id, razao_social, nome_fantasia, cidade, latitude, longitude, etapa, classificacao, proxima_acao, data_proxima_acao, ultimo_contato, possui_beneficio, owner_id").is("archived_at", null)
     .not("latitude", "is", null)
     .limit(400)
   if (!gestor) qc = qc.eq("owner_id", actor.id)
@@ -208,7 +208,7 @@ export async function sugerirProximidade(params: {
    
   let qs: any = supabase
     .from("schools")
-    .select("id, name, cidade, latitude, longitude, relationship_stage, classification, next_action, next_action_at, last_action_at, primary_owner_id")
+    .select("id, name, cidade, latitude, longitude, relationship_stage, classification, next_action, next_action_at, last_action_at, primary_owner_id").is("archived_at", null)
     .not("latitude", "is", null)
     .limit(400)
   if (!gestor) qs = qs.eq("primary_owner_id", actor.id)

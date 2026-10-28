@@ -76,7 +76,7 @@ await fs.mkdir("responsive-results",{recursive:true})
 const results = []
 const errors = []
 const sizes = [[320,640],[375,812],[768,1024],[1024,768],[1280,720],[1366,768],[1440,900],[1920,1080]]
-const names = process.env.RESPONSIVE_SCENARIOS?.split(",") || ["dashboard","b2b","hs","escolas","escola","captacao-escolas","pipeline","agenda","atendimento","minha-agenda","metas","supervest","rotas","mapa","mapa-interativo","usuarios","reunioes","acoes-empresa","configuracoes","login","senha","setup"]
+const names = process.env.RESPONSIVE_SCENARIOS?.split(",") || ["dashboard","b2b","hs","escolas","escola","captacao-escolas","pipeline","agenda","atendimento","minha-agenda","metas","metas-b2b","supervest","rotas","mapa","mapa-interativo","usuarios","reunioes","acoes-empresa","configuracoes","login","senha","setup"]
 let browser, page
 async function settle() { await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))) }
 async function check(label) {
@@ -362,6 +362,18 @@ try {
             await clickText(text); await dialogCheck("Attendance "+text+" "+width)
           }
         }
+        if(name==="metas-b2b") {
+          await page.getByRole("button",{name:"Editar lançamento",exact:true}).click()
+          await page.getByLabel("Meta de inscrições",{exact:true}).fill("15")
+          await page.getByLabel("Inscrições realizadas",{exact:true}).fill("3")
+          await page.getByRole("button",{name:"Salvar lançamento",exact:true}).click()
+          await page.getByText("Falha controlada no lançamento.",{exact:true}).waitFor()
+          assert.equal(await page.getByLabel("Meta de inscrições",{exact:true}).inputValue(),"15")
+          assert.equal(await page.getByLabel("Inscrições realizadas",{exact:true}).inputValue(),"3")
+          await check("Manual B2B result form after rejected save "+width)
+          await page.getByText("Ver histórico",{exact:true}).click()
+          await check("Manual B2B result history "+width)
+        }
         if(name==="metas") {
           await clickText("Nova meta"); await dialogCheck("Goal form "+width)
           await clickText("B2B · Ações semanais"); await check("Weekly goals "+width)
@@ -374,7 +386,7 @@ try {
         }
         if(name==="reunioes") {
           await clickText("Agendar reunião")
-          await clickText("Adicionar participante +")
+          assert.equal(await page.getByRole("button", { name: "Adicionar participante +", exact: true }).count(), 0, "Only the responsible CRM user receives the automatic invitation")
           await check("Company meeting form "+width)
         }
         if(name==="acoes-empresa") {

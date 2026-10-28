@@ -1,17 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
-const state = vi.hoisted(() => ({ actor: { id: "10000000-0000-0000-0000-000000000001", role: "high_school" }, queries: [] as any[] }))
+const state = vi.hoisted(() => ({ actor: { id: "10000000-0000-0000-0000-000000000001", role: "high_school" }, deny: false, queries: [] as any[] }))
 const other = "10000000-0000-0000-0000-000000000002"
 const action = "40000000-0000-0000-0000-000000000001"
+vi.mock("@/lib/calendar/smtp-worker", () => ({ processSmtpQueue: vi.fn() }))
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }))
-vi.mock("@/lib/auth/guards", () => ({ requireCan: vi.fn(async () => state.actor), requireActor: vi.fn(async () => state.actor) }))
+vi.mock("@/lib/auth/guards", () => ({ requireCan: vi.fn(async () => { if (state.deny) throw new Error("Não autenticado"); return state.actor }), requireActor: vi.fn(async () => state.actor) }))
 vi.mock("@/lib/calendar/calendar-sync", () => ({ saoPauloIso: vi.fn(), syncCalendarEvent: vi.fn() }))
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ functions: { invoke: async () => ({ data: { ok: true, configured: false }, error: null }) } }) }))
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({ from: (table: string) => {
   const filters: any[] = []
   let single = false
   const query: any = {
-    select: () => query, order: () => query,
+    select: () => query, order: () => query, is: () => query, not: () => query, lt: () => query, range: () => query, limit: () => query,
     eq: (column: string, value: any) => { filters.push(["eq", column, value]); return query },
     in: (column: string, value: any) => { filters.push(["in", column, value]); return query },
     gte: (column: string, value: any) => { filters.push(["gte", column, value]); return query },
@@ -43,16 +44,18 @@ vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({ from: (tabl
   return query
 } }) }))
 
-import { getAttendanceData } from "@/app/actions/attendance"
+import { getAttendanceData, getCalendarProviderStatus } from "@/app/actions/attendance"
 
 describe("escopo da consulta das agendas", () => {
-  beforeEach(() => { state.actor.role = "high_school"; state.queries = [] })
+  beforeEach(() => { state.actor.role = "high_school"; state.queries = []; state.deny = false })
   it("um consultor lê suas ações de apoio sem poder pedir a agenda de outro usuário", async () => {
     const result = await getAttendanceData({ start: "2026-10-05", end: "2026-10-11", userId: other })
     expect(result.occurrences.filter((o) => o.sourceType === "school_action").map((o) => o.id)).toEqual([action])
     expect(result.occurrences.filter((o) => o.sourceType === "attendance").map((o) => o.userId)).toEqual([state.actor.id])
     expect(state.queries.find((q) => q.table === "school_action_participants").filters).toContainEqual(["eq", "user_id", state.actor.id])
     expect(result.schoolOptions).toEqual([{ id: "school", name: "Escola compartilhada" }])
+    for (const [table, column] of [["companies", "next_action_owner_id"], ["activities", "organizer_user_id"], ["company_actions", "responsible_user_id"]])
+      expect(state.queries.find(q => q.table === table).filters).toContainEqual(["eq", column, state.actor.id])
   })
   it("a gestão filtra pelo participante e mantém cada ação uma única vez", async () => {
     state.actor.role = "gerente"
@@ -60,5 +63,10 @@ describe("escopo da consulta das agendas", () => {
     expect(result.occurrences.map((o) => o.id)).toEqual([action])
     expect(result.occurrences[0]).toMatchObject({ sourceType: "school_action", schoolStatus: "reagendada", startTime: "14:30" })
     await expect(getAttendanceData({ userId: "invalid,input" })).rejects.toThrow("Consultor inválido")
+  })
+  it("a caller cannot bypass provider authorization by submitting false", async () => {
+    state.deny = true
+    const status = await getCalendarProviderStatus(false)
+    expect(status.configured).toBe(false); expect(status.organizerEmail).toBeUndefined()
   })
 })

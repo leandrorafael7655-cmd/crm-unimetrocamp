@@ -33,6 +33,8 @@ export interface Convenio {
 }
 
 export interface Empresa {
+  arquivada?: boolean
+  proximaAcaoTipo?: "internal" | "external"
   portfolio?: import("@/lib/b2b-portfolio/domain").PortfolioCompany
   id: string
   razaoSocial: string

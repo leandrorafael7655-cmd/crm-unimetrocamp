@@ -69,6 +69,8 @@ export async function saveCompanyAction(input: CompanyActionInput) {
     revalidatePath("/")
     revalidatePath("/b2b/carteira")
     revalidatePath("/dashboard")
+    revalidatePath("/atendimento")
+    revalidatePath("/atendimento/minha-agenda")
     return { ok: true as const, action: saved, message: "Ação registrada no histórico da empresa." }
   } catch (error) { return { ok: false as const, message: message(error) } }
 }

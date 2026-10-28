@@ -59,6 +59,7 @@ export async function listOwners(): Promise<OwnerOption[]> {
 }
 
 export interface SchoolFilters {
+  arquivadas?: boolean
   busca?: string
   cidade?: string
   etapa?: string
@@ -70,6 +71,7 @@ export async function listSchools(filtros: SchoolFilters = {}): Promise<Escola[]
   await requireCan("hs.read")
   const supabase = await createClient()
   let q = supabase.from("schools").select("*").order("name", { ascending: true })
+  q = filtros.arquivadas ? q.not("archived_at", "is", null) : q.is("archived_at", null)
 
   if (filtros.cidade) q = q.eq("cidade", filtros.cidade)
   if (filtros.etapa) q = q.eq("relationship_stage", filtros.etapa)

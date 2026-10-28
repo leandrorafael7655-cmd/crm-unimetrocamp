@@ -169,6 +169,7 @@ export interface AcaoEscola {
 }
 
 export interface Escola {
+  arquivada?: boolean
   id: string
   nome: string
   seriesOferecidas?: string[] | null
@@ -214,6 +215,7 @@ export function mapGradeRow(r: Record<string, unknown>): GradeLevel {
 
 export function mapEscolaRow(r: Record<string, unknown>): Escola {
   return {
+    arquivada: !!r.archived_at,
     id: String(r.id),
     nome: String(r.name ?? ""),
     seriesOferecidas: Array.isArray(r.offered_grades) ? r.offered_grades.map(String) : null,
@@ -381,6 +383,7 @@ export function construirFilaHS({
   }
 
   for (const e of escolas) {
+    if (e.arquivada) continue
     if (e.etapa === "Sem potencial") continue
     if (["Sem retorno", "Relacionamento pausado"].includes(e.etapa || "")) continue
 

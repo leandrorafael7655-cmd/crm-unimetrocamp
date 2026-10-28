@@ -1,3 +1,5 @@
+> Substituído para a próxima publicação pelo [plano de 12 migrações e recuperação](../2026-10-28/migration-recovery.md), conforme decisão do responsável em 28/10. O texto abaixo preserva a evidência da preparação anterior.
+
 # Implantação e recuperação
 
 Esta entrega não autoriza merge, migração em produção nem publicação. As oito migrações abaixo foram aplicadas somente à branch Supabase `audit-fixes-20261027` (`ktmcksngmhxtdnxunntl`), sem copiar dados de produção. O projeto oficial é `snixwajvzaxldglcwnig`.

@@ -94,6 +94,7 @@ export function construirFila(empresas: Empresa[], hoje: string): ItemFila[] {
     }
   }
   empresas.forEach((e) => {
+    if (e.arquivada) return
     if (["Sem potencial", "Inativa"].includes(e.classificacao || "")) return
     if (ETAPAS_ENCERRADAS.includes(e.etapa || "")) return
 

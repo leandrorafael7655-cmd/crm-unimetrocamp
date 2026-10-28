@@ -1,3 +1,5 @@
+> Atualização: as decisões e a implementação de 28/10 estão em [final-decisions.md](../2026-10-28/final-decisions.md). As dependências de homologação, fonte B2B, agenda e arquivamento abaixo descrevem o estado anterior a essas decisões. A validação final em produção continua pendente de aprovação.
+
 # Encerramento da execução disponível — 28/10/2026
 
 O PR #27 permanece em rascunho. Não houve merge, publicação, alteração de dados oficiais nem aplicação de migrações nesta etapa. Os 17 achados originais continuam em `execution.json`; as observações novas não foram acrescentadas como achados supostamente pertencentes à auditoria original.

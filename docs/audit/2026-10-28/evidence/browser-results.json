@@ -1,0 +1,3121 @@
+{
+  "checks": 445,
+  "failures": 0,
+  "results": [
+    {
+      "engine": "chromium",
+      "label": "Navigation gerente carteira 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation gerente carteira 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload gerente carteira 375",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation gerente consulta 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation gerente consulta 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload gerente consulta 375",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation gerente agenda 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation gerente agenda 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload gerente agenda 375",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation gerente funil 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation gerente funil 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload gerente funil 375",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation gerente convenios 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation gerente convenios 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload gerente convenios 375",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation gerente equipe 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation gerente equipe 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload gerente equipe 375",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation gerente empresas 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation gerente empresas 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload gerente empresas 375",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module gerente hs 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module gerente hs 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module gerente atendimento 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module gerente atendimento 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module gerente mapa 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module gerente mapa 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation gerente carteira 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation gerente carteira 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload gerente carteira 1366",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation gerente consulta 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation gerente consulta 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload gerente consulta 1366",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation gerente agenda 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation gerente agenda 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload gerente agenda 1366",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation gerente funil 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation gerente funil 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload gerente funil 1366",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation gerente convenios 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation gerente convenios 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload gerente convenios 1366",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation gerente equipe 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation gerente equipe 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload gerente equipe 1366",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation gerente empresas 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation gerente empresas 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload gerente empresas 1366",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module gerente hs 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module gerente hs 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module gerente atendimento 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module gerente atendimento 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module gerente mapa 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module gerente mapa 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation supervisor carteira 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation supervisor carteira 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload supervisor carteira 375",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation supervisor consulta 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation supervisor consulta 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload supervisor consulta 375",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation supervisor agenda 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation supervisor agenda 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload supervisor agenda 375",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation supervisor funil 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation supervisor funil 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload supervisor funil 375",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation supervisor convenios 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation supervisor convenios 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload supervisor convenios 375",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation supervisor equipe 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation supervisor equipe 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload supervisor equipe 375",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation supervisor empresas 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation supervisor empresas 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload supervisor empresas 375",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module supervisor hs 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module supervisor hs 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module supervisor atendimento 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module supervisor atendimento 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module supervisor mapa 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module supervisor mapa 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation supervisor carteira 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation supervisor carteira 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload supervisor carteira 1366",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation supervisor consulta 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation supervisor consulta 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload supervisor consulta 1366",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation supervisor agenda 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation supervisor agenda 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload supervisor agenda 1366",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation supervisor funil 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation supervisor funil 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload supervisor funil 1366",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation supervisor convenios 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation supervisor convenios 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload supervisor convenios 1366",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation supervisor equipe 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation supervisor equipe 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload supervisor equipe 1366",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation supervisor empresas 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation supervisor empresas 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload supervisor empresas 1366",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module supervisor hs 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module supervisor hs 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module supervisor atendimento 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module supervisor atendimento 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module supervisor mapa 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module supervisor mapa 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor_b2b carteira 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor_b2b carteira 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload consultor_b2b carteira 375",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor_b2b consulta 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor_b2b consulta 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload consultor_b2b consulta 375",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor_b2b agenda 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor_b2b agenda 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload consultor_b2b agenda 375",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor_b2b funil 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor_b2b funil 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload consultor_b2b funil 375",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor_b2b convenios 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor_b2b convenios 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload consultor_b2b convenios 375",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor_b2b equipe 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor_b2b equipe 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload consultor_b2b equipe 375",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor_b2b empresas 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor_b2b empresas 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload consultor_b2b empresas 375",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module consultor_b2b hs 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module consultor_b2b hs 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module consultor_b2b atendimento 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module consultor_b2b atendimento 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module consultor_b2b mapa 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module consultor_b2b mapa 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor_b2b carteira 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor_b2b carteira 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload consultor_b2b carteira 1366",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor_b2b consulta 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor_b2b consulta 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload consultor_b2b consulta 1366",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor_b2b agenda 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor_b2b agenda 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload consultor_b2b agenda 1366",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor_b2b funil 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor_b2b funil 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload consultor_b2b funil 1366",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor_b2b convenios 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor_b2b convenios 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload consultor_b2b convenios 1366",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor_b2b equipe 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor_b2b equipe 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload consultor_b2b equipe 1366",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor_b2b empresas 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor_b2b empresas 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload consultor_b2b empresas 1366",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module consultor_b2b hs 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module consultor_b2b hs 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module consultor_b2b atendimento 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module consultor_b2b atendimento 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module consultor_b2b mapa 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module consultor_b2b mapa 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation high_school carteira 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation high_school carteira 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload high_school carteira 375",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation high_school consulta 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation high_school consulta 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload high_school consulta 375",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation high_school agenda 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation high_school agenda 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload high_school agenda 375",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation high_school funil 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation high_school funil 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload high_school funil 375",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation high_school convenios 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation high_school convenios 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload high_school convenios 375",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation high_school equipe 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation high_school equipe 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload high_school equipe 375",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation high_school empresas 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation high_school empresas 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload high_school empresas 375",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module high_school hs 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module high_school hs 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module high_school atendimento 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module high_school atendimento 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module high_school mapa 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module high_school mapa 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation high_school carteira 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation high_school carteira 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload high_school carteira 1366",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation high_school consulta 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation high_school consulta 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload high_school consulta 1366",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation high_school agenda 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation high_school agenda 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload high_school agenda 1366",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation high_school funil 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation high_school funil 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload high_school funil 1366",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation high_school convenios 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation high_school convenios 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload high_school convenios 1366",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation high_school equipe 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation high_school equipe 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload high_school equipe 1366",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation high_school empresas 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation high_school empresas 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload high_school empresas 1366",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module high_school hs 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module high_school hs 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module high_school atendimento 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module high_school atendimento 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module high_school mapa 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module high_school mapa 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor carteira 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor carteira 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload consultor carteira 375",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor consulta 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor consulta 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload consultor consulta 375",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor agenda 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor agenda 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload consultor agenda 375",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor funil 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor funil 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload consultor funil 375",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor convenios 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor convenios 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload consultor convenios 375",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor equipe 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor equipe 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload consultor equipe 375",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor empresas 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor empresas 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload consultor empresas 375",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module consultor hs 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module consultor hs 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module consultor atendimento 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module consultor atendimento 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module consultor mapa 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module consultor mapa 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor carteira 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor carteira 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload consultor carteira 1366",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor consulta 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor consulta 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload consultor consulta 1366",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor agenda 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor agenda 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload consultor agenda 1366",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor funil 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor funil 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload consultor funil 1366",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor convenios 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor convenios 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload consultor convenios 1366",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor equipe 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor equipe 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload consultor equipe 1366",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor empresas 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Navigation consultor empresas 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Reload consultor empresas 1366",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module consultor hs 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module consultor hs 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module consultor atendimento 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module consultor atendimento 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module consultor mapa 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Module consultor mapa 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "metas-b2b 320x640 menu open",
+      "width": 320,
+      "documentWidth": 320,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "metas-b2b 320x640 menu collapsed",
+      "width": 320,
+      "documentWidth": 320,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Manual B2B result form after rejected save 320",
+      "width": 320,
+      "documentWidth": 320,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Manual B2B result history 320",
+      "width": 320,
+      "documentWidth": 320,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "atendimento 320x640 menu open",
+      "width": 320,
+      "documentWidth": 320,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "atendimento 320x640 menu collapsed",
+      "width": 320,
+      "documentWidth": 320,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Mês 320",
+      "width": 320,
+      "documentWidth": 320,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Lista 320",
+      "width": 320,
+      "documentWidth": 320,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Semana 320",
+      "width": 320,
+      "documentWidth": 320,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Novo compromisso 320",
+      "width": 320,
+      "documentWidth": 320,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Novo compromisso 320 footer",
+      "width": 320,
+      "documentWidth": 320,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Configurar 320",
+      "width": 320,
+      "documentWidth": 320,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Configurar 320 footer",
+      "width": 320,
+      "documentWidth": 320,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Aplicar escala sugerida 320",
+      "width": 320,
+      "documentWidth": 320,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Aplicar escala sugerida 320 footer",
+      "width": 320,
+      "documentWidth": 320,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "minha-agenda 320x640 menu open",
+      "width": 320,
+      "documentWidth": 320,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "minha-agenda 320x640 menu collapsed",
+      "width": 320,
+      "documentWidth": 320,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "reunioes 320x640 menu open",
+      "width": 320,
+      "documentWidth": 320,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "reunioes 320x640 menu collapsed",
+      "width": 320,
+      "documentWidth": 320,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Company meeting form 320",
+      "width": 320,
+      "documentWidth": 320,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "metas-b2b 375x812 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "metas-b2b 375x812 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Manual B2B result form after rejected save 375",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Manual B2B result history 375",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "atendimento 375x812 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "atendimento 375x812 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Mês 375",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Lista 375",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Semana 375",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Novo compromisso 375",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Novo compromisso 375 footer",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Configurar 375",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Configurar 375 footer",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Aplicar escala sugerida 375",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Aplicar escala sugerida 375 footer",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "minha-agenda 375x812 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "minha-agenda 375x812 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "reunioes 375x812 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "reunioes 375x812 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Company meeting form 375",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "metas-b2b 768x1024 menu open",
+      "width": 768,
+      "documentWidth": 768,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "metas-b2b 768x1024 menu collapsed",
+      "width": 768,
+      "documentWidth": 768,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Manual B2B result form after rejected save 768",
+      "width": 768,
+      "documentWidth": 768,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Manual B2B result history 768",
+      "width": 768,
+      "documentWidth": 768,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "atendimento 768x1024 menu open",
+      "width": 768,
+      "documentWidth": 768,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "atendimento 768x1024 menu collapsed",
+      "width": 768,
+      "documentWidth": 768,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Mês 768",
+      "width": 768,
+      "documentWidth": 768,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Lista 768",
+      "width": 768,
+      "documentWidth": 768,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Semana 768",
+      "width": 768,
+      "documentWidth": 768,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Novo compromisso 768",
+      "width": 768,
+      "documentWidth": 768,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Novo compromisso 768 footer",
+      "width": 768,
+      "documentWidth": 768,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Configurar 768",
+      "width": 768,
+      "documentWidth": 768,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Configurar 768 footer",
+      "width": 768,
+      "documentWidth": 768,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Aplicar escala sugerida 768",
+      "width": 768,
+      "documentWidth": 768,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Aplicar escala sugerida 768 footer",
+      "width": 768,
+      "documentWidth": 768,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "minha-agenda 768x1024 menu open",
+      "width": 768,
+      "documentWidth": 768,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "minha-agenda 768x1024 menu collapsed",
+      "width": 768,
+      "documentWidth": 768,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "reunioes 768x1024 menu open",
+      "width": 768,
+      "documentWidth": 768,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "reunioes 768x1024 menu collapsed",
+      "width": 768,
+      "documentWidth": 768,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Company meeting form 768",
+      "width": 768,
+      "documentWidth": 768,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "metas-b2b 1024x768 menu open",
+      "width": 1024,
+      "documentWidth": 1024,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "metas-b2b 1024x768 menu collapsed",
+      "width": 1024,
+      "documentWidth": 1024,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Manual B2B result form after rejected save 1024",
+      "width": 1024,
+      "documentWidth": 1024,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Manual B2B result history 1024",
+      "width": 1024,
+      "documentWidth": 1024,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "atendimento 1024x768 menu open",
+      "width": 1024,
+      "documentWidth": 1024,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "atendimento 1024x768 menu collapsed",
+      "width": 1024,
+      "documentWidth": 1024,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Mês 1024",
+      "width": 1024,
+      "documentWidth": 1024,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Lista 1024",
+      "width": 1024,
+      "documentWidth": 1024,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Semana 1024",
+      "width": 1024,
+      "documentWidth": 1024,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Novo compromisso 1024",
+      "width": 1024,
+      "documentWidth": 1024,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Novo compromisso 1024 footer",
+      "width": 1024,
+      "documentWidth": 1024,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Configurar 1024",
+      "width": 1024,
+      "documentWidth": 1024,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Configurar 1024 footer",
+      "width": 1024,
+      "documentWidth": 1024,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Aplicar escala sugerida 1024",
+      "width": 1024,
+      "documentWidth": 1024,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Aplicar escala sugerida 1024 footer",
+      "width": 1024,
+      "documentWidth": 1024,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "minha-agenda 1024x768 menu open",
+      "width": 1024,
+      "documentWidth": 1024,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "minha-agenda 1024x768 menu collapsed",
+      "width": 1024,
+      "documentWidth": 1024,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "reunioes 1024x768 menu open",
+      "width": 1024,
+      "documentWidth": 1024,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "reunioes 1024x768 menu collapsed",
+      "width": 1024,
+      "documentWidth": 1024,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Company meeting form 1024",
+      "width": 1024,
+      "documentWidth": 1024,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "metas-b2b 1280x720 menu open",
+      "width": 1280,
+      "documentWidth": 1280,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "metas-b2b 1280x720 menu collapsed",
+      "width": 1280,
+      "documentWidth": 1280,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Manual B2B result form after rejected save 1280",
+      "width": 1280,
+      "documentWidth": 1280,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Manual B2B result history 1280",
+      "width": 1280,
+      "documentWidth": 1280,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "atendimento 1280x720 menu open",
+      "width": 1280,
+      "documentWidth": 1280,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "atendimento 1280x720 menu collapsed",
+      "width": 1280,
+      "documentWidth": 1280,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Mês 1280",
+      "width": 1280,
+      "documentWidth": 1280,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Lista 1280",
+      "width": 1280,
+      "documentWidth": 1280,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Semana 1280",
+      "width": 1280,
+      "documentWidth": 1280,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Novo compromisso 1280",
+      "width": 1280,
+      "documentWidth": 1280,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Novo compromisso 1280 footer",
+      "width": 1280,
+      "documentWidth": 1280,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Configurar 1280",
+      "width": 1280,
+      "documentWidth": 1280,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Configurar 1280 footer",
+      "width": 1280,
+      "documentWidth": 1280,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Aplicar escala sugerida 1280",
+      "width": 1280,
+      "documentWidth": 1280,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Aplicar escala sugerida 1280 footer",
+      "width": 1280,
+      "documentWidth": 1280,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "minha-agenda 1280x720 menu open",
+      "width": 1280,
+      "documentWidth": 1280,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "minha-agenda 1280x720 menu collapsed",
+      "width": 1280,
+      "documentWidth": 1280,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "reunioes 1280x720 menu open",
+      "width": 1280,
+      "documentWidth": 1280,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "reunioes 1280x720 menu collapsed",
+      "width": 1280,
+      "documentWidth": 1280,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Company meeting form 1280",
+      "width": 1280,
+      "documentWidth": 1280,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "metas-b2b 1366x768 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "metas-b2b 1366x768 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Manual B2B result form after rejected save 1366",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Manual B2B result history 1366",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "atendimento 1366x768 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "atendimento 1366x768 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Mês 1366",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Lista 1366",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Semana 1366",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Novo compromisso 1366",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Novo compromisso 1366 footer",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Configurar 1366",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Configurar 1366 footer",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Aplicar escala sugerida 1366",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Aplicar escala sugerida 1366 footer",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "minha-agenda 1366x768 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "minha-agenda 1366x768 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "reunioes 1366x768 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "reunioes 1366x768 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Company meeting form 1366",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "metas-b2b 1440x900 menu open",
+      "width": 1440,
+      "documentWidth": 1440,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "metas-b2b 1440x900 menu collapsed",
+      "width": 1440,
+      "documentWidth": 1440,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Manual B2B result form after rejected save 1440",
+      "width": 1440,
+      "documentWidth": 1440,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Manual B2B result history 1440",
+      "width": 1440,
+      "documentWidth": 1440,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "atendimento 1440x900 menu open",
+      "width": 1440,
+      "documentWidth": 1440,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "atendimento 1440x900 menu collapsed",
+      "width": 1440,
+      "documentWidth": 1440,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Mês 1440",
+      "width": 1440,
+      "documentWidth": 1440,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Lista 1440",
+      "width": 1440,
+      "documentWidth": 1440,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Semana 1440",
+      "width": 1440,
+      "documentWidth": 1440,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Novo compromisso 1440",
+      "width": 1440,
+      "documentWidth": 1440,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Novo compromisso 1440 footer",
+      "width": 1440,
+      "documentWidth": 1440,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Configurar 1440",
+      "width": 1440,
+      "documentWidth": 1440,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Configurar 1440 footer",
+      "width": 1440,
+      "documentWidth": 1440,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Aplicar escala sugerida 1440",
+      "width": 1440,
+      "documentWidth": 1440,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Aplicar escala sugerida 1440 footer",
+      "width": 1440,
+      "documentWidth": 1440,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "minha-agenda 1440x900 menu open",
+      "width": 1440,
+      "documentWidth": 1440,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "minha-agenda 1440x900 menu collapsed",
+      "width": 1440,
+      "documentWidth": 1440,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "reunioes 1440x900 menu open",
+      "width": 1440,
+      "documentWidth": 1440,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "reunioes 1440x900 menu collapsed",
+      "width": 1440,
+      "documentWidth": 1440,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Company meeting form 1440",
+      "width": 1440,
+      "documentWidth": 1440,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "metas-b2b 1920x1080 menu open",
+      "width": 1920,
+      "documentWidth": 1920,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "metas-b2b 1920x1080 menu collapsed",
+      "width": 1920,
+      "documentWidth": 1920,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Manual B2B result form after rejected save 1920",
+      "width": 1920,
+      "documentWidth": 1920,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Manual B2B result history 1920",
+      "width": 1920,
+      "documentWidth": 1920,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "atendimento 1920x1080 menu open",
+      "width": 1920,
+      "documentWidth": 1920,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "atendimento 1920x1080 menu collapsed",
+      "width": 1920,
+      "documentWidth": 1920,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Mês 1920",
+      "width": 1920,
+      "documentWidth": 1920,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Lista 1920",
+      "width": 1920,
+      "documentWidth": 1920,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Semana 1920",
+      "width": 1920,
+      "documentWidth": 1920,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Novo compromisso 1920",
+      "width": 1920,
+      "documentWidth": 1920,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Novo compromisso 1920 footer",
+      "width": 1920,
+      "documentWidth": 1920,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Configurar 1920",
+      "width": 1920,
+      "documentWidth": 1920,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Configurar 1920 footer",
+      "width": 1920,
+      "documentWidth": 1920,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Aplicar escala sugerida 1920",
+      "width": 1920,
+      "documentWidth": 1920,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Attendance Aplicar escala sugerida 1920 footer",
+      "width": 1920,
+      "documentWidth": 1920,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "minha-agenda 1920x1080 menu open",
+      "width": 1920,
+      "documentWidth": 1920,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "minha-agenda 1920x1080 menu collapsed",
+      "width": 1920,
+      "documentWidth": 1920,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "reunioes 1920x1080 menu open",
+      "width": 1920,
+      "documentWidth": 1920,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "reunioes 1920x1080 menu collapsed",
+      "width": 1920,
+      "documentWidth": 1920,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Company meeting form 1920",
+      "width": 1920,
+      "documentWidth": 1920,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Live resize 1920",
+      "width": 1920,
+      "documentWidth": 1920,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Live resize 1440 menu open",
+      "width": 1440,
+      "documentWidth": 1440,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Live resize 1440 menu collapsed",
+      "width": 1440,
+      "documentWidth": 1440,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Live resize 1366 menu open",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Live resize 1366 menu collapsed",
+      "width": 1366,
+      "documentWidth": 1366,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Live resize 1280 menu open",
+      "width": 1280,
+      "documentWidth": 1280,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Live resize 1280 menu collapsed",
+      "width": 1280,
+      "documentWidth": 1280,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Live resize 1024 menu open",
+      "width": 1024,
+      "documentWidth": 1024,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Live resize 1024 menu collapsed",
+      "width": 1024,
+      "documentWidth": 1024,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Live resize 768 menu open",
+      "width": 768,
+      "documentWidth": 768,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Live resize 768 menu collapsed",
+      "width": 768,
+      "documentWidth": 768,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Live resize 375 menu open",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Live resize 375 menu collapsed",
+      "width": 375,
+      "documentWidth": 375,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Live resize 320 menu open",
+      "width": 320,
+      "documentWidth": 320,
+      "issues": []
+    },
+    {
+      "engine": "chromium",
+      "label": "Live resize 320 menu collapsed",
+      "width": 320,
+      "documentWidth": 320,
+      "issues": []
+    }
+  ]
+}

@@ -56,6 +56,8 @@ export function rowToConvenio(row: any): Convenio {
 export function rowToEmpresa(row: any, contatos: Contato[], convenio: Convenio | null): Empresa {
   return {
     id: row.id,
+    arquivada: !!row.archived_at,
+    proximaAcaoTipo: row.next_action_kind || "internal",
     razaoSocial: s(row.razao_social),
     nomeFantasia: s(row.nome_fantasia),
     cnpj: s(row.cnpj),
@@ -180,6 +182,7 @@ export function empresaToRow(e: Empresa, resolveOwner: (e: Empresa) => string | 
     next_action_end_time: tOrNull(e.proximaAcaoFim),
     next_action_location: tOrNull(e.proximaAcaoLocal),
     next_action_owner_id: e.proximaAcaoOwnerId ?? null,
+    next_action_kind: e.proximaAcaoTipo || "internal",
     data_entrada: dOrNull(e.dataEntrada),
     link_inscricao: e.linkInscricao || null,
     link_consultor: e.linkConsultor || null,
@@ -269,6 +272,8 @@ export const CAMPOS_EMPRESA: (keyof Empresa)[] = [
   "proximaAcaoFim",
   "proximaAcaoLocal",
   "proximaAcaoOwnerId",
+  "proximaAcaoTipo",
+  "arquivada",
   "linkInscricao",
   "linkConsultor",
 ]

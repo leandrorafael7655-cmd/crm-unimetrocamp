@@ -116,11 +116,10 @@ export async function deleteSchool(id: string): Promise<ActionResult> {
     await requireCan("hs.write")
     if (!id) return { ok: false, message: "Escola não informada." }
     const supabase = await createClient()
-    // RLS permite DELETE apenas para gerência; se não for, o banco recusa.
-    const { error } = await supabase.from("schools").delete().eq("id", id)
+    const { error } = await supabase.rpc("set_commercial_archive", { p_type: "school", p_id: id, p_archived: true, p_reason: "Encerramento comercial" })
     if (error) return { ok: false, message: `Sem permissão para excluir ou falha: ${error.message}` }
     revalidarHS()
-    return { ok: true, message: "Escola removida." }
+    return { ok: true, message: "Escola arquivada; histórico preservado." }
   } catch (e) {
     return { ok: false, message: e instanceof Error ? e.message : "Erro inesperado." }
   }

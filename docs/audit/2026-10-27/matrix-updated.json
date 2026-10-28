@@ -138,9 +138,9 @@
     "estado_auditado": "Parcial",
     "estado_execucao": "Parcial",
     "retestado": true,
-    "camada": "real",
-    "teste_e_limite": "Cadastro/edição, contatos, convênio e próximo passo persistiram. Navegador verificou busca/recarga/falha. Exclusão física é recusada pelo histórico existente; arquivamento/remoção precisa de regra confirmada.",
-    "evidencia": "SAVE-01; homologation-additional-results.json"
+    "camada": "local; aceite oficial pendente",
+    "teste_e_limite": "Arquivamento reversível e bloqueio de exclusão física implementados e testados em PostgreSQL local, mantendo convênio e histórico. CRUD autenticado da nova versão em produção ainda pendente.",
+    "evidencia": "../2026-10-28/final-decisions.md; lib/testing/final-decisions.test.ts"
   },
   {
     "id": "F14",
@@ -211,13 +211,13 @@
   {
     "id": "F20",
     "modulo": "High School",
-    "funcionalidade": "Cadastro, edição e exclusão de escola",
+    "funcionalidade": "Cadastro, edição e arquivamento de escola",
     "estado_auditado": "Não testado",
     "estado_execucao": "Parcial",
     "retestado": true,
-    "camada": "real",
-    "teste_e_limite": "Cadastro e edição pela interface High School, busca/classificação, nova consulta ao banco e recarga passaram. CNPJ inválido preserva os valores após a correção. Exclusão de escola pela interface não foi executada.",
-    "evidencia": "browser-remaining-results.json; before-remaining-browser.json"
+    "camada": "local; aceite oficial pendente",
+    "teste_e_limite": "Arquivamento/reativação substitui exclusão física por decisão de 28/10; teste local preserva contatos e IDs. Tela responsiva testada com backend simulado; persistência oficial pendente.",
+    "evidencia": "../2026-10-28/final-decisions.md; lib/testing/final-decisions.test.ts"
   },
   {
     "id": "F21",
@@ -303,9 +303,9 @@
     "estado_auditado": "Parcial",
     "estado_execucao": "Parcial",
     "retestado": false,
-    "camada": "decisão comercial",
-    "teste_e_limite": "246 rascunhos/61 sem vínculo atuais; zero publicados. Prévia entregue, sem distribuição pessoal ou publicação automática.",
-    "evidencia": "scale-preview.md"
+    "camada": "local; aceite oficial pendente",
+    "teste_e_limite": "Escala anterior apagada com autorização em 28/10 e backup. Nova distribuição depende das preferências e GDC; não bloqueia o PR. Não publicar rascunhos por suposição.",
+    "evidencia": "../2026-10-28/final-decisions.md; lib/testing/final-decisions.test.ts"
   },
   {
     "id": "F29",
@@ -314,9 +314,9 @@
     "estado_auditado": "Não testado",
     "estado_execucao": "Parcial",
     "retestado": true,
-    "camada": "real + simulado",
-    "teste_e_limite": "Ações escolares editadas/canceladas na API com efeito persistido. Escala completa por UI exige cliente administrativo e aprovação operacional; estados da escala não incluem conclusão.",
-    "evidencia": "homologation-data-results.json; deployment.md"
+    "camada": "local; aceite oficial pendente",
+    "teste_e_limite": "Compromisso avulso gera REQUEST, remarcação e CANCEL na mesma transação da fonte. Teste local do banco, sem publicar ciclo de escala. Auth oficial e recebimento pendentes.",
+    "evidencia": "../2026-10-28/final-decisions.md; lib/testing/final-decisions.test.ts"
   },
   {
     "id": "F30",
@@ -325,9 +325,9 @@
     "estado_auditado": "Parcial",
     "estado_execucao": "Parcial",
     "retestado": true,
-    "camada": "real + decisão",
-    "teste_e_limite": "Exclusão PostgreSQL recusou corrida de dois agendamentos escolares, inclusive apoio. Unificação de conflitos entre blocos de trabalho, B2B e ausências depende da regra comercial.",
-    "evidencia": "AGENDA-02"
+    "camada": "local; aceite oficial pendente",
+    "teste_e_limite": "Regra confirmada e implementada: conflito externo entre módulos bloqueado no banco; tarefas internas e adjacência permitidas; mudança só do tipo também revalida. Testes locais; concorrência real da nova projeção pendente.",
+    "evidencia": "../2026-10-28/final-decisions.md; lib/testing/final-decisions.test.ts"
   },
   {
     "id": "F31",
@@ -335,10 +335,10 @@
     "funcionalidade": "Visão única com reuniões B2B",
     "estado_auditado": "Parcial",
     "estado_execucao": "Parcial",
-    "retestado": false,
-    "camada": "decisão comercial",
-    "teste_e_limite": "Inspeção confirmou escola + atendimento; inclusão universal de B2B não foi assumida.",
-    "evidencia": "AGENDA-01"
+    "retestado": true,
+    "camada": "local; aceite oficial pendente",
+    "teste_e_limite": "Reuniões, próximos passos com data e ações B2B realizadas acrescentados à agenda compartilhada, filtrada no servidor pelo responsável. Mapeamento em São Paulo testado localmente. Fluxo oficial pendente.",
+    "evidencia": "../2026-10-28/final-decisions.md; lib/testing/final-decisions.test.ts"
   },
   {
     "id": "F32",
@@ -347,20 +347,20 @@
     "estado_auditado": "Funcional",
     "estado_execucao": "Funcional",
     "retestado": true,
-    "camada": "real + simulado",
-    "teste_e_limite": "Eventos/jobs reais persistidos em homologação; UID/atualização/cancelamento e falhas de SMTP/TLS testados com provedor simulado. Nenhum recebimento foi inferido.",
-    "evidencia": "homologation-data-results.json; tests.log"
+    "camada": "local; aceite oficial pendente",
+    "teste_e_limite": "Processador Vercel Gmail SMTP, geração MIME real sem conexão e testes de REQUEST/CANCEL, UID, SEQUENCE e erro sanitizado. Não comprova recebimento; consumidor Edge aposentado no código.",
+    "evidencia": "../2026-10-28/final-decisions.md; lib/testing/final-decisions.test.ts"
   },
   {
     "id": "F33",
     "modulo": "Integrações",
-    "funcionalidade": "Entrega de convite no Outlook",
+    "funcionalidade": "Entrega de convite Gmail/Outlook e inclusão no calendário",
     "estado_auditado": "Não testado",
     "estado_execucao": "Não testado",
     "retestado": false,
-    "camada": "externa",
-    "teste_e_limite": "Não houve envio/recebimento em Outlook nem caixa coletora disponível.",
-    "evidencia": "INT-01"
+    "camada": "local; aceite oficial pendente",
+    "teste_e_limite": "Recebimento Gmail/Outlook e inclusão no calendário do perfil Rafael aguardam variáveis, publicação aprovada e teste real. Nenhum envio real nesta etapa.",
+    "evidencia": "../2026-10-28/final-decisions.md; lib/testing/final-decisions.test.ts"
   },
   {
     "id": "F34",
@@ -369,9 +369,9 @@
     "estado_auditado": "Parcial",
     "estado_execucao": "Parcial",
     "retestado": false,
-    "camada": "externa",
-    "teste_e_limite": "Código/contratos existentes e testes simulados reexecutados; OAuth, Graph e Teams reais ainda sem configuração/conta.",
-    "evidencia": "INT-01"
+    "camada": "local; aceite oficial pendente",
+    "teste_e_limite": "Microsoft Graph/Teams não participa do aceite por decisão expressa de 28/10. Código legado é histórico; novo agendamento usa e-mail. Não foi declarada integração Microsoft concluída.",
+    "evidencia": "../2026-10-28/final-decisions.md; lib/testing/final-decisions.test.ts"
   },
   {
     "id": "F35",
@@ -424,9 +424,9 @@
     "estado_auditado": "Parcial",
     "estado_execucao": "Parcial",
     "retestado": true,
-    "camada": "real + decisão",
-    "teste_e_limite": "Interface exibe indisponível em vez de zero; cálculo transacional B2B SuperVest depende da origem e atribuição aprovadas.",
-    "evidencia": "METRIC-01"
+    "camada": "local; aceite oficial pendente",
+    "teste_e_limite": "Fonte definida: lançamento manual de gerente por consultor/empresa/ciclo. Tela, histórico, zero/ausência, isolamento e revisão testados localmente. Aceite e reconciliação com banco oficial pendentes.",
+    "evidencia": "../2026-10-28/final-decisions.md; lib/testing/final-decisions.test.ts"
   },
   {
     "id": "F40",
@@ -435,9 +435,9 @@
     "estado_auditado": "Não testado",
     "estado_execucao": "Não testado",
     "retestado": false,
-    "camada": "externa",
-    "teste_e_limite": "Não há snapshot oficial confiável fornecido para conciliar a operação. Contagens fictícias e fronteiras de semana foram testadas separadamente.",
-    "evidencia": "tests.log"
+    "camada": "local; aceite oficial pendente",
+    "teste_e_limite": "A fonte B2B será o lançamento do gestor. A reconciliação oficial depende dos lançamentos conhecidos e do aceite após publicação; não se exige importação ou integração B2B.",
+    "evidencia": "../2026-10-28/final-decisions.md; lib/testing/final-decisions.test.ts"
   },
   {
     "id": "F41",

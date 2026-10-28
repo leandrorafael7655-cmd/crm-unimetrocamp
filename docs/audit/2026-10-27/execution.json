@@ -110,7 +110,7 @@
       "evidence/homologation-password-results.json",
       "evidence/tests.log"
     ],
-    "conclusion": "Entradas legadas delegam ao fluxo atual, exigem gerente, mantêm auditoria e troca obrigatória. Supervisor/B2B/HS bloqueados antes de abrir cliente administrativo. Troca efetiva da própria senha validada no Auth real; geração administrativa e endpoints legítimos completos aguardam a chave administrativa da homologação, sem solicitá-la no chat.",
+    "conclusion": "Entradas legadas delegam ao fluxo atual, exigem gerente, mantêm auditoria e troca obrigatória. Supervisor/B2B/HS bloqueados antes de abrir cliente administrativo. Troca efetiva da própria senha validada no Auth real; geração administrativa e endpoints legítimos completos aguardam a chave administrativa da homologação, sem solicitá-la no chat. Decisão de 28/10: a validação final será em produção, durante manutenção com backup completo e usuário de teste, após aprovação; não exige nova homologação.",
     "production": "Não aplicado; depende de revisão e implantação."
   },
   {
@@ -241,23 +241,26 @@
     "id": "AGENDA-02",
     "priority": "P1",
     "title": "Conflitos de agenda não têm garantia uniforme",
-    "status": "decisão comercial pendente",
+    "status": "implementado com validação pendente",
     "acceptance": "Testar principal e apoio, duas sessões simultâneas, intervalos adjacentes, cancelamento e ausência; conflito bloqueia ou exige exceção conforme regra aprovada.",
     "files": [
       "lib/domain/validation.ts",
       "lib/domain/attendance-planning.ts",
-      "supabase/migrations/20261027204658_audit_business_validation.sql"
+      "supabase/migrations/20261027204658_audit_business_validation.sql",
+      "supabase/migrations/20261028183718_audit_unified_external_agenda.sql"
     ],
     "tests": [
       "AGENDA-02-CONCURRENCY-REAL",
       "lib/testing/audit-remediation.test.ts",
-      "lib/domain/attendance-planning.test.ts"
+      "lib/domain/attendance-planning.test.ts",
+      "lib/testing/final-decisions.test.ts"
     ],
     "evidence": [
       "evidence/homologation-data-results.json",
-      "evidence/tests.log"
+      "evidence/tests.log",
+      "../2026-10-28/final-decisions.md"
     ],
-    "conclusion": "Conflito escolar de principal/apoio agora tem reserva privada e EXCLUDE no PostgreSQL. Duas requisições reais simultâneas deram um sucesso e uma recusa; adjacência e cancelamento foram testados. Escala bloqueia sobreposição/cobertura insuficiente. Bloqueio global entre escola, reunião B2B, ausência e bloco externo exige definir o que é compromisso exclusivo e o que é bloco que contém uma visita; não foi inventada essa regra.",
+    "conclusion": "Bloqueio de compromissos externos e permissão de sobreposição interna confirmados em 28/10. A projeção no PostgreSQL cruza módulos, inclusive troca de tipo sem alterar horário. Testes locais PGlite passam; concorrência e uso autenticado da nova versão oficial aguardam publicação aprovada.",
     "production": "Não aplicado; depende de revisão e implantação."
   },
   {
@@ -280,14 +283,14 @@
       "evidence/scale-preview.json",
       "evidence/tests.log"
     ],
-    "conclusion": "246 rascunhos e 61 sem usuário reconfirmados. Os 61 são das posições 7 (30) e 8 (31); os demais 185 já têm vínculo correto com os seis nomes confirmados. Prévia por responsável e capacidade 6/7 pessoas entregue. Regras 42h, almoço, 3/2, sábado 13h, GDC e eventos implementadas; nenhuma atribuição ou publicação automática. Preferências, rodízio e GDC continuam decisões operacionais.",
+    "conclusion": "O responsável solicitou apagar a escala existente; 249 ocorrências e um ciclo foram removidos em 28/10, com backup privado e verificação independente, antes desta etapa. A nova distribuição aguarda preferências, restrições, sábados e GDC. Decisão expressa: não bloqueia a conclusão do PR; não houve nova publicação de escala.",
     "production": "Não aplicado; depende de revisão e implantação."
   },
   {
     "id": "METRIC-01",
     "priority": "P2",
     "title": "Meta B2B SuperVest retorna zero sem cálculo",
-    "status": "decisão comercial pendente",
+    "status": "implementado com validação pendente",
     "acceptance": "Dados oficiais fictícios conhecidos produzem total correto; sem integração mostra indisponível; alterações mantêm histórico e não duplicam atribuição.",
     "files": [
       "lib/data/goals-queries.ts",
@@ -295,19 +298,22 @@
       "components/goals/goal-cards.tsx",
       "components/goals/metas-client.tsx",
       "components/goals/supervest-client.tsx",
-      "app/dashboard/page.tsx"
+      "app/dashboard/page.tsx",
+      "supabase/migrations/20261028183704_audit_manual_b2b_goals.sql"
     ],
     "tests": [
       "METRIC-01-BROWSER",
       "lib/data/goals-availability.test.ts",
       "lib/data/goals-batching.test.ts",
-      "lib/domain/goals.test.ts"
+      "lib/domain/goals.test.ts",
+      "lib/testing/final-decisions.test.ts"
     ],
     "evidence": [
       "evidence/browser-homologation-results.json",
-      "evidence/tests.log"
+      "evidence/tests.log",
+      "../2026-10-28/final-decisions.md"
     ],
-    "conclusion": "Zero fixo de B2B SuperVest substituído por indisponível, inclusive no residual Outros canais e na ausência de snapshot oficial. Zero medido continua zero; falha de consulta não vira zero. Corrigida semana civil de segunda-feira que incluía semana anterior e eliminada consulta de atividades por semana, com leitura paginada única da janela. A fonte/atribuição comercial de inscrições B2B ainda precisa ser confirmada antes de implementar um resultado oficial.",
+    "conclusion": "Origem definida em 28/10: lançamento manual de gerente por empresa, consultor e ciclo comercial. Tela, RPC, RLS, histórico e revisão implementados; zero distingue ausência. Validação local de banco, permissão e interface; reconciliação no ambiente oficial aguarda aprovação/publicação.",
     "production": "Não aplicado; depende de revisão e implantação."
   },
   {
@@ -329,27 +335,30 @@
       "evidence/tests.log",
       "evidence/homologation-data-results.json"
     ],
-    "conclusion": "Não há tenant/conta Microsoft/variáveis necessárias disponíveis para validação real. Código e testes não comprovam autorização, envio, recebimento ou Teams. Entrega, atualização e cancelamento no Outlook permanecem pendentes de conta/caixa de teste e configuração segura. O dispatcher pode ser desabilitado em homologação sem fingir entrega.",
+    "conclusion": "Decisão de 28/10: convites Gmail SMTP na Vercel, sem Microsoft Graph/Teams. Processador, MIME/ICS, REQUEST/CANCEL, UID/SEQUENCE e erros visíveis têm validação local. Credenciais serão cadastradas pelo responsável diretamente no Vercel. Recebimento e inclusão no calendário do perfil Rafael ainda dependem da publicação aprovada e do teste real. Microsoft fica fora do escopo de aceite.",
     "production": "Não aplicado; depende de revisão e implantação."
   },
   {
     "id": "AGENDA-01",
     "priority": "P2",
     "title": "Minha Agenda não consolida compromissos B2B",
-    "status": "decisão comercial pendente",
+    "status": "implementado com validação pendente",
     "acceptance": "Cenário fictício com escola, atendimento e B2B aparece conforme escopo aprovado, sem duplicação e sem dados de outros consultores.",
     "files": [
       "app/actions/attendance.ts",
-      "docs/audit/2026-10-27/README.md"
+      "docs/audit/2026-10-27/README.md",
+      "lib/domain/company-agenda.ts"
     ],
     "tests": [
       "Inspeção da composição atual",
-      "SCHOOL-AGENDA-REAL"
+      "SCHOOL-AGENDA-REAL",
+      "lib/testing/final-decisions.test.ts"
     ],
     "evidence": [
-      "evidence/homologation-data-results.json"
+      "evidence/homologation-data-results.json",
+      "../2026-10-28/final-decisions.md"
     ],
-    "conclusion": "Confirmado: Minha Agenda agrega escola e atendimento; reuniões B2B têm seu fluxo próprio. Não foi confirmado que toda interação/follow-up B2B deva virar compromisso da agenda única. Integração escolar e seus participantes foram corrigidos/testados; a unificação B2B aguarda escopo, sem duplicar eventos ou conceder leitura gerencial.",
+    "conclusion": "Inclusão de reuniões, próximos passos datados e ações B2B na agenda compartilhada implementada conforme decisão de 28/10. Consulta por usuário no servidor e testes locais; aceite com banco oficial ainda pendente.",
     "production": "Não aplicado; depende de revisão e implantação."
   },
   {
@@ -429,7 +438,7 @@
       "evidence/mapbox-real-browser.png",
       "evidence/ci-run-27.json"
     ],
-    "conclusion": "CI #26 reproduziu instalação, tipos, lint, build, 245 testes e 2410 verificações Chromium/WebKit sem falhas, no SHA registrado em ci-run-26.json. Os 12 cenários anteriores com Auth/banco reais foram preservados. Novos testes concluíram bloqueio sem sessão, CRUD do demo, criação/edição de escola com validação e preservação do formulário, Kanban/lista por edição e ação na Agenda High School após recarga. A regressão encontrou e corrigiu a limpeza indevida do formulário escolar em erro; controles de CRUD legítimo Admin SDK, recuperação recebida e Microsoft continuam dependentes de configuração/contas de teste. CI #27 também aprovou a nova regressão do formulário. Mapbox teve geocodificação/otimização por API real e renderização autenticada com captura conferida, sem gravações no CRM.",
+    "conclusion": "CI #26 reproduziu instalação, tipos, lint, build, 245 testes e 2410 verificações Chromium/WebKit sem falhas, no SHA registrado em ci-run-26.json. Os 12 cenários anteriores com Auth/banco reais foram preservados. Novos testes concluíram bloqueio sem sessão, CRUD do demo, criação/edição de escola com validação e preservação do formulário, Kanban/lista por edição e ação na Agenda High School após recarga. A regressão encontrou e corrigiu a limpeza indevida do formulário escolar em erro; controles de CRUD legítimo Admin SDK, recuperação recebida e Microsoft continuam dependentes de configuração/contas de teste. CI #27 também aprovou a nova regressão do formulário. Mapbox teve geocodificação/otimização por API real e renderização autenticada com captura conferida, sem gravações no CRM. Decisão de 28/10: a validação final será em produção, durante manutenção com backup completo e usuário de teste, após aprovação; não exige nova homologação.",
     "production": "Não aplicado; depende de revisão e implantação."
   }
 ]

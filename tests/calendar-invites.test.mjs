@@ -3,143 +3,20 @@ import { stripTypeScriptTypes } from 'node:module';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
 import test from 'node:test';
-
-const source = readFileSync(new URL('../supabase/functions/send-calendar-invites/index.ts', import.meta.url), 'utf8').replace(/^import .*;\n/gm, '');
-const meetingSource = readFileSync(new URL('../supabase/functions/send-calendar-invites/email-meetings.ts', import.meta.url), 'utf8').replace(/^export /gm, '');
-const code = stripTypeScriptTypes(meetingSource + '\n' + source);
-const smtp = { CALENDAR_SMTP_HOST: 'smtp.example.com', CALENDAR_SMTP_USER: 'test-user', CALENDAR_SMTP_PASS: 'fake-test-credential', CALENDAR_FROM_EMAIL: 'agenda@example.com' };
-function runtime(settings = {}, accepted = true) {
-  let handler, transportOptions;
-  const messages = [], updates = [];
-  const event = { id: 'event-1', event_uid: 'stable-event@example.com', sequence: 0, status: 'active', recipient_user_id: 'user-1', title: 'Teste de agenda', start_at: '2026-10-26T12:00:00Z', end_at: '2026-10-26T13:00:00Z' };
-  const recipient = { id: 'user-1', email: 'recipient@example.com', full_name: 'Consultor Teste', active: true };
-  const job = { id: 'job-1', calendar_event_id: event.id, operation: 'REQUEST', event_sequence: 0, attempts: 0 };
-  const auth = {
-    admin: { listUsers: async () => (settings.__adminProbeOk ? { data: { users: [] }, error: null } : { data: null, error: { message: 'not admin' } }) },
-    getUser: async () => ({ data: { user: null }, error: { message: 'invalid' } }),
-  };
-  const client = { auth, rpc: async () => ({error:null}), from(table) {
-    let patch;
-    const chain = {
-      select() { return chain; }, in() { return chain; }, eq() { return chain; }, or() { return chain; }, order() { return chain; }, limit() { return chain; }, single() { return chain; }, not() { return chain; }, lt() { return chain; }, is() { return chain; },
-      update(value) { patch = value; updates.push(value); return chain; },
-      then(resolve, reject) { return Promise.resolve({ error: null, data: table === 'calendar_events' ? event : table === 'profiles' ? recipient : patch ? [{ id: job.id }] : [job] }).then(resolve, reject); },
-    }; return chain;
-  } };
-  const values = { SUPABASE_URL: 'https://example.invalid', SUPABASE_SERVICE_ROLE_KEY: 'test-key', ...settings };
-  const context = vm.createContext({
-    Deno: { env: { get: key => values[key] }, serve: fn => { handler = fn; } },
-    createClient: () => client,
-    nodemailer: { createTransport(options) { transportOptions = options; return { verify: async () => true, sendMail: async message => { messages.push(message); return { accepted: accepted ? [recipient.email] : [], messageId: 'test-message' }; } }; } },
-    Response, Request, URLSearchParams, Intl, Date, atob, TextEncoder,
-    fetch: () => { throw new Error('Unexpected Microsoft OAuth/network request'); },
-  });
-  vm.runInContext(code, context);
-  return { context, event, job, recipient, messages, updates, options: () => transportOptions, invoke: (body, token = 'test-key') => handler(new Request('https://example.invalid', { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) })) };
-}
-test('new installation asks for SMTP credentials, not Microsoft administration', () => {
-  const r = runtime();
-  const s = vm.runInContext('configurationStatus()', r.context);
-  assert.equal(s.configured, false);
-  assert.deepEqual(Array.from(s.missing).sort(), Object.keys(smtp).sort());
+const code=stripTypeScriptTypes(readFileSync(new URL('../supabase/functions/send-calendar-invites/email-meetings.ts',import.meta.url),'utf8').replace(/^export /gm,''));
+const context=vm.createContext({Intl,Date,TextEncoder});vm.runInContext(code,context);
+const cfg={from:'sender@example.invalid',organizer:'sender@example.invalid'};
+const job={id:'job',created_at:'2026-10-28T12:00:00Z',operation:'REQUEST',event_sequence:1,payload:{event_uid:'event-1@uniconecta',organizer:cfg.organizer,recipient:{name:'Teste',email:'test@example.invalid'},attendees:[{name:'Teste',email:'test@example.invalid'}],title:'Teste',description:'Fictício',start_at:'2026-10-29T12:00:00Z',end_at:'2026-10-29T13:00:00Z'}};
+const build=(value)=>{context.job=value;context.cfg=cfg;return vm.runInContext('meetingEmail(job,cfg)',context)};
+test('Vercel message uses REQUEST, recipient acceptance and São Paulo timezone',()=>{
+ const m=build(job); assert.equal(m.to.address,'test@example.invalid');assert.match(m.icalEvent.content,/METHOD:REQUEST/);assert.match(m.icalEvent.content,/DTSTART;TZID=America\/Sao_Paulo:20261029T090000/);assert.match(m.icalEvent.content,/RSVP=TRUE/);
 });
-test('SMTP config needs no OAuth and organizer defaults to sender', () => {
-  const r = runtime(smtp);
-  assert.equal(vm.runInContext('configurationStatus().configured', r.context), true);
-  assert.equal(vm.runInContext('requiredConfig().organizer', r.context), smtp.CALENDAR_FROM_EMAIL);
+test('reschedule and cancel retain UID and increment sequence',()=>{
+ const m=build({...job,operation:'CANCEL',event_sequence:2});assert.match(m.icalEvent.content,/UID:event-1@uniconecta/);assert.match(m.icalEvent.content,/METHOD:CANCEL/);assert.match(m.icalEvent.content,/SEQUENCE:2/);
 });
-test('legacy OAuth setup retains its provider', () => {
-  const r = runtime({ CALENDAR_OAUTH_CLIENT_ID: 'existing-app' });
-  assert.equal(vm.runInContext('requiredConfig().provider', r.context), 'microsoft365-smtp-oauth2');
+test('date-only follow-ups use a transparent all-day event',()=>{
+ const m=build({...job,payload:{...job.payload,all_day:true,start_at:'2026-10-29T03:00:00Z',end_at:'2026-10-30T03:00:00Z'}});assert.match(m.icalEvent.content,/DTSTART;VALUE=DATE:20261029/);assert.match(m.icalEvent.content,/TRANSP:TRANSPARENT/);
 });
-test('unknown provider, bad port and malformed sender are rejected', () => {
-  for (const extra of [{ CALENDAR_EMAIL_PROVIDER: 'unknown' }, { CALENDAR_SMTP_PORT: 'bad' }, { CALENDAR_FROM_EMAIL: 'invalid' }]) {
-    assert.equal(vm.runInContext('configurationStatus().configured', runtime({ ...smtp, ...extra }).context), false);
-  }
-});
-test('status does not send email or expose secrets', async () => {
-  const r = runtime(smtp);
-  const response = await (await r.invoke({ action: 'status' })).json();
-  assert.equal(response.provider, 'smtp');
-  assert.equal(response.configured, true);
-  assert.equal(JSON.stringify(response).includes(smtp.CALENDAR_SMTP_PASS), false);
-  assert.equal(r.messages.length, 0);
-});
-test('missing settings keep queue untouched', async () => {
-  const r = runtime();
-  assert.equal((await r.invoke({ action: 'process' })).status, 503);
-  assert.equal(r.updates.length, 0);
-  assert.equal(r.messages.length, 0);
-});
-test('SMTP sends meeting request, retains recipient acceptance and records provider acknowledgment', async () => {
-  const r = runtime(smtp);
-  const result = await (await r.invoke({ action: 'process' })).json();
-  assert.equal(result.sent, 1);
-  assert.equal(r.options().auth.pass, smtp.CALENDAR_SMTP_PASS);
-  assert.equal(r.options().requireTLS, true);
-  assert.match(r.messages[0].icalEvent.content, /PARTSTAT=NEEDS-ACTION;RSVP=TRUE/);
-  assert.match(r.messages[0].icalEvent.content, /DTSTART;TZID=America\/Sao_Paulo:20261026T090000/);
-  assert.equal(r.updates.at(-1).status, 'sent_provider');
-  assert.equal(r.updates.at(-1).provider, 'smtp');
-});
-test('server rejection is recorded as failure, not successful delivery', async () => {
-  const r = runtime(smtp, false);
-  const result = await (await r.invoke({ action: 'process' })).json();
-  assert.equal(result.sent, 0);
-  assert.equal(result.failed, 1);
-  assert.equal(r.updates.at(-1).status, 'failed');
-});
-test('465 uses implicit TLS', async () => {
-  const r = runtime({ ...smtp, CALENDAR_SMTP_PORT: '465' });
-  await r.invoke({ action: 'process' });
-  assert.equal(r.options().secure, true);
-});
-test('updates and cancellations retain event identity', () => {
-  const r = runtime(smtp);
-  r.context.testEvent = r.event;
-  r.context.testRecipient = r.recipient;
-  const request = vm.runInContext('buildIcs(testEvent, testRecipient, "REQUEST", "agenda@example.com", "https://example.com")', r.context);
-  r.event.sequence = 1;
-  const cancel = vm.runInContext('buildIcs(testEvent, testRecipient, "CANCEL", "agenda@example.com", "https://example.com")', r.context);
-  assert.match(request, /UID:stable-event@example.com/);
-  assert.match(cancel, /UID:stable-event@example.com/);
-  assert.match(cancel, /METHOD:CANCEL/);
-  assert.match(cancel, /SEQUENCE:1/);
-});
-
-const fakeJwt = (payload) => ['eyJhbGciOiJIUzI1NiJ9', Buffer.from(JSON.stringify(payload)).toString('base64url'), 'sig'].join('.');
-test('system caller with a service_role JWT different from the injected key is accepted after admin probe', async () => {
-  const r = runtime({ ...smtp, __adminProbeOk: true });
-  const response = await r.invoke({ action: 'status' }, fakeJwt({ role: 'service_role' }));
-  assert.equal(response.status, 200);
-  assert.equal((await response.json()).configured, true);
-});
-test('forged service_role claim without admin privilege is rejected', async () => {
-  const r = runtime({ ...smtp, __adminProbeOk: false });
-  const response = await r.invoke({ action: 'process' }, fakeJwt({ role: 'service_role' }));
-  assert.equal(response.status, 401);
-  assert.equal(r.messages.length, 0);
-});
-test('new-format secret key is accepted as system caller', async () => {
-  const r = runtime({ ...smtp, SUPABASE_SECRET_KEYS: JSON.stringify({ default: 'sb_secret_test' }) });
-  const response = await r.invoke({ action: 'status' }, 'sb_secret_test');
-  assert.equal(response.status, 200);
-});
-
-test('B2B job uses the central sender and includes the consultant as an attendee without OAuth', async () => {
-  const r=runtime(smtp);
-  r.job.meeting_activity_id='10000000-0000-0000-0000-000000000001';
-  r.job.calendar_event_id=null;
-  r.job.created_at='2026-09-29T12:00:00Z';
-  r.job.payload={event_uid:'meeting-1@uniconecta',organizer:smtp.CALENDAR_FROM_EMAIL,
-    recipient:{name:'Rafa',email:'rafa@example.com'}, attendees:[{name:'Rafa',email:'rafa@example.com',role:'REQ-PARTICIPANT'},{name:'Contato',email:'contact@example.com',role:'REQ-PARTICIPANT'}],
-    title:'Reunião',description:'Pauta',start_at:'2026-10-01T12:00:00Z',end_at:'2026-10-01T13:00:00Z'};
-  const response=await r.invoke({action:'process',meetingId:r.job.meeting_activity_id});
-  assert.equal(response.status,200);
-  assert.equal((await response.json()).sent,1);
-  assert.equal(r.messages[0].to.address,'rafa@example.com');
-  const ics=r.messages[0].icalEvent.content.replace(/\r\n /g,'');
-  assert.match(ics,/mailto:contact@example.com/);
-  assert.match(ics,/mailto:rafa@example.com/);
-  assert.equal(r.updates.at(-1).status,'sent_provider');
+test('retired Supabase sender cannot become a parallel consumer',()=>{
+ const source=readFileSync(new URL('../supabase/functions/send-calendar-invites/index.ts',import.meta.url),'utf8');assert.match(source,/status: 410/);assert.doesNotMatch(source,/sendMail|createTransport|CALENDAR_SMTP_PASS/);
 });

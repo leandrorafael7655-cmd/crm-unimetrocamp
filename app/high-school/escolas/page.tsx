@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic"
 export default async function EscolasPage({
   searchParams,
 }: {
-  searchParams: Promise<{ busca?: string; etapa?: string; classificacao?: string }>
+  searchParams: Promise<{ busca?: string; etapa?: string; classificacao?: string; arquivadas?: string }>
 }) {
   const sp = await searchParams
   const actor = await getActor()
@@ -24,7 +24,7 @@ export default async function EscolasPage({
   const filtroAtivo = Boolean(sp.busca || sp.etapa || sp.classificacao)
 
   const [escolasBase, owners] = await Promise.all([
-    listSchools({ busca: sp.busca, etapa: sp.etapa }),
+    listSchools({ busca: sp.busca, etapa: sp.etapa, arquivadas: sp.arquivadas === "1" }),
     listOwners(),
   ])
   const escolas = sp.classificacao
@@ -51,7 +51,9 @@ export default async function EscolasPage({
         <Stat rotulo="Bronze" valor={totaisClassificacao.Bronze} detalhe="em desenvolvimento" />
       </div>
 
+      <Link href={sp.arquivadas === "1" ? "/high-school/escolas" : "/high-school/escolas?arquivadas=1"} className="mb-3 inline-block text-sm text-brand underline">{sp.arquivadas === "1" ? "Ver escolas ativas" : "Ver escolas arquivadas"}</Link>
       <form className="mb-4 flex flex-wrap items-center gap-2" action="/high-school/escolas">
+        {sp.arquivadas === "1" && <input type="hidden" name="arquivadas" value="1" />}
         <input
           name="busca"
           defaultValue={sp.busca}

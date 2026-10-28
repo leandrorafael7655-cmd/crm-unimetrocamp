@@ -23,7 +23,7 @@ afterAll(async()=>{await db?.close()})
 beforeEach(async()=>{
   await root()
   await db.exec(`drop trigger if exists audit_fault on school_action_participants;drop trigger if exists audit_fault on school_action_grade_results;drop trigger if exists audit_fault on route_stops;drop trigger if exists audit_fault on company_contacts;
-    truncate schools,companies,route_plans,calendar_events,calendar_invite_jobs,attendance_cycles,attendance_occurrences,goals cascade;
+    truncate private.external_calendar_reservations,schools,companies,route_plans,calendar_events,calendar_invite_jobs,attendance_cycles,attendance_occurrences,goals cascade;
     update profiles set active=true,role='gerente' where id='${U.gerente2}';
     update profiles set active=true,role='gerente' where id='${U.gerente}';
     update profiles set active=true,must_change_password=false,password_reset_pending=false where id in('${U.b2b}','${U.outro}','${U.hs}','${U.supervisor}');

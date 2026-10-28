@@ -81,11 +81,13 @@ export function makeSupabaseStorage(supabase: SupabaseClient, perfil: Usuario): 
 
   async function carregarEmpresas(): Promise<Empresa[]> {
     if (!profiles.length) await carregarProfiles()
-    const [comp,cont,agr] = await Promise.all([
+    const [active,cont,agr,archived] = await Promise.all([
       readAllRows((from,to) => supabase.from("b2b_company_portfolio").select("*").order("created_at").order("id").range(from,to)),
       readAllRows((from,to) => supabase.from("company_contacts").select("*").order("position").order("id").range(from,to)),
       readAllRows((from,to) => supabase.from("agreements").select("*").order("id").range(from,to)),
+      readAllRows((from,to) => supabase.from("companies").select("*").not("archived_at", "is", null).order("id").range(from,to)),
     ])
+    const comp = [...active, ...archived]
     const contatosPor: Record<string, Contato[]> = {}
     for (const c of cont || []) (contatosPor[c.company_id] ||= []).push(rowToContato(c))
     const convPor: Record<string, Convenio> = {}
@@ -119,6 +121,10 @@ export function makeSupabaseStorage(supabase: SupabaseClient, perfil: Usuario): 
     for (const e of novo) {
       const before = prevById.get(e.id)
       if (before && empresaScalarIgual(before,e) && contatosIguais(before.contatos,e.contatos) && projConvenio(before.convenio)===projConvenio(e.convenio)) continue
+      if (before && !!before.arquivada !== !!e.arquivada) {
+        const { error } = await supabase.rpc("set_commercial_archive", { p_type: "company", p_id: e.id, p_archived: !!e.arquivada, p_reason: e.arquivada ? "Encerramento comercial" : "Reativação comercial" })
+        log("arquivar ou reativar empresa", error); changed = true; continue
+      }
       if (e.cnpj && !cnpjValido(e.cnpj)) throw new Error("CNPJ inválido.")
       if (e.dataProximaAcao) {
         const invalid = validateSchedule(e.dataProximaAcao,e.proximaAcaoInicio,e.proximaAcaoFim)

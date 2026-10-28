@@ -1,0 +1,51 @@
+
+ RUN  v4.1.11 /workspace/scratch/86c3d523b438/uniconecta-fixes
+
+ ❯ lib/testing/final-decisions.test.ts (13 tests | 2 failed) 3625ms
+   × external commitments conflict across modules; internal tasks and adjacent intervals are allowed 111ms
+   × manual agenda appointments queue REQUEST, update and CANCEL atomically without publishing a schedule cycle 90ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  lib/testing/final-decisions.test.ts > external commitments conflict across modules; internal tasks and adjacent intervals are allowed
+AssertionError: promise resolved "{ rows: [], fields: [], …(3) }" instead of rejecting
+
+- Expected
++ Received
+
+- Error {
+-   "message": "rejected promise",
++ {
++   "affectedRows": 1,
++   "command": "UPDATE",
++   "fields": [],
++   "rowCount": 1,
++   "rows": [],
+  }
+
+ ❯ lib/testing/final-decisions.test.ts:94:94
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  lib/testing/final-decisions.test.ts > manual agenda appointments queue REQUEST, update and CANCEL atomically without publishing a schedule cycle
+error: null value in column "id" of relation "attendance_occurrence_history" violates not-null constraint
+ ❯ pe.Ue node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pg-protocol/src/parser.ts:442:10
+ ❯ pe.tt node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pg-protocol/src/parser.ts:220:15
+ ❯ pe.parse node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pg-protocol/src/parser.ts:104:20
+ ❯ N.qe node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/src/pglite.ts:753:25
+ ❯ node_modules/.pnpm/@electric-sql+pglite@0.5.8/node_modules/@electric-sql/pglite/src/pglite.ts:706:13
+ ❯ null.<anonymous> wasm:/wasm/0267bb86:1:5922000
+ ❯ null.<anonymous> wasm:/wasm/0267bb86:1:2616044
+ ❯ null.<anonymous> wasm:/wasm/0267bb86:1:2648530
+ ❯ null.<anonymous> wasm:/wasm/0267bb86:1:2649134
+ ❯ null.<anonymous> wasm:/wasm/0267bb86:1:5569870
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 11 passed (13)
+   Start at  15:57:33
+   Duration  3.93s (transform 83ms, setup 0ms, import 121ms, tests 3.62s, environment 0ms)
+

@@ -1266,12 +1266,12 @@ function FormEmpresa({ inicial, equipe, empresas, aoSalvar, aoFechar, aoExcluir,
         {inicial && inicial.id && podeGerir && (
           confirmando ? (
             <span className="mr-auto flex items-center gap-2 text-xs text-rose-800">
-              Excluir e apagar todo o histórico?
-              <Botao tipo="perigo" tamanho="sm" onClick={aoExcluir}>Sim, excluir</Botao>
+              {inicial.arquivada ? "Reativar esta empresa?" : "Arquivar preservando todo o histórico?"}
+              <Botao tipo="perigo" tamanho="sm" onClick={aoExcluir}>Sim, confirmar</Botao>
               <Botao tipo="neutro" tamanho="sm" onClick={() => setConfirmando(false)}>Não</Botao>
             </span>
           ) : (
-            <Botao tipo="perigo" tamanho="sm" onClick={() => setConfirmando(true)}><Trash2 className="h-3 w-3" />Excluir empresa</Botao>
+            <Botao tipo="perigo" tamanho="sm" onClick={() => setConfirmando(true)}><Trash2 className="h-3 w-3" />{inicial.arquivada ? "Reativar empresa" : "Arquivar empresa"}</Botao>
           )
         )}
         {!confirmando && <span className="flex-1" />}
@@ -1287,6 +1287,7 @@ function FormAtividade({ empresa, equipe, aoSalvar, aoFechar }) {
   const [d, setD] = useState({
     data: hoje, tipo: "Ligação", contato: "", resultado: "Contato realizado",
     observacao: "", proximaAcao: "", dataProximoContato: somarDias(hoje, 7),
+    proximoTipo: "internal",
     proximoInicio: "09:00", proximoFim: "10:00", proximoLocal: "",
     proximoResponsavelId: empresa.ownerId || (equipe.find((p) => p.nome === empresa.consultor)?.id || ""),
     leads: "", impactados: "", novaEtapa: empresa.etapa,
@@ -1335,6 +1336,7 @@ function FormAtividade({ empresa, equipe, aoSalvar, aoFechar }) {
         <Campo rotulo="Próximo passo" largura="sm:col-span-4">
           <input className={inputBase} value={d.proximaAcao} onChange={set("proximaAcao")} placeholder="Ex.: enviar proposta de convênio" />
         </Campo>
+        <Campo rotulo="Tipo do próximo passo" largura="sm:col-span-6"><select className={inputBase} value={d.proximoTipo} onChange={set("proximoTipo")}><option value="internal">Tarefa interna / follow-up — permite sobreposição</option><option value="external">Visita, reunião ou ação in-company — bloqueia sobreposição externa</option></select></Campo>
         <Campo rotulo="Quando" largura="sm:col-span-2"><input type="date" className={`${inputBase} font-mono`} value={d.dataProximoContato} onChange={set("dataProximoContato")} /></Campo>
         <Campo rotulo="Início" largura="sm:col-span-2"><input type="time" className={`${inputBase} font-mono`} value={d.proximoInicio} onChange={set("proximoInicio")} /></Campo>
         <Campo rotulo="Fim" largura="sm:col-span-2"><input type="time" className={`${inputBase} font-mono`} value={d.proximoFim} onChange={set("proximoFim")} /></Campo>
@@ -1874,6 +1876,7 @@ export default function CrmApp({ modo = "demo", aoSair, usuarioInicial = null, p
   const [writeError, setWriteError] = useState("");
   const [sincronizando, setSincronizando] = useState(false);
   const [empresas, setEmpresas] = useState([]);
+  const [verArquivadas, setVerArquivadas] = useState(false);
   const [atividades, setAtividades] = useState([]);
   const [equipe, setEquipe] = useState(EQUIPE_PADRAO);
   const [config, setConfig] = useState(CONFIG_PADRAO);
@@ -2020,20 +2023,20 @@ export default function CrmApp({ modo = "demo", aoSair, usuarioInicial = null, p
   const empresaConvenio = empresas.find((e) => e.id === convenioDe) || null;
 
   const escopoBase = useMemo(
-    () => (ehGestor ? empresas : empresas.filter((e) => modo === "supabase" ? e.ownerId === usuario?.id : e.consultor === usuario?.nome)),
+    () => (ehGestor ? empresas : empresas.filter((e) => modo === "supabase" ? e.ownerId === usuario?.id : e.consultor === usuario?.nome)).filter(e => !e.arquivada),
     [empresas, ehGestor, usuario]
   );
 
   const listaFiltrada = useMemo(() => {
-    const fonte = tela === "carteira" ? empresas.filter((e) => modo === "supabase" ? e.ownerId === usuario?.id : e.consultor === usuario?.nome) : escopoBase;
+    const fonte = tela === "carteira" ? empresas.filter((e) => modo === "supabase" ? e.ownerId === usuario?.id : e.consultor === usuario?.nome) : (ehGestor ? empresas : escopoBase);
     const q = filtros.busca.trim().toLowerCase();
-    return fonte.filter((e) =>
+    return fonte.filter((e) => (!!e.arquivada === verArquivadas) &&
       (!q || `${e.razaoSocial} ${e.nomeFantasia} ${e.cnpj} ${e.cidade}`.toLowerCase().includes(q)) &&
       (!filtros.consultor || e.consultor === filtros.consultor) &&
       (!filtros.classificacao || e.classificacao === filtros.classificacao) &&
       (!filtros.etapa || e.etapa === filtros.etapa)
     );
-  }, [escopoBase, empresas, filtros, tela, usuario]);
+  }, [escopoBase, empresas, filtros, tela, usuario, verArquivadas]);
 
   const fila = useMemo(() => construirFila(escopoBase, hoje), [escopoBase, hoje]);
 
@@ -2048,8 +2051,7 @@ export default function CrmApp({ modo = "demo", aoSair, usuarioInicial = null, p
   };
   const excluirEmpresa = async () => {
     const id = editando.id;
-    if (!await mutarEmpresas(base => base.filter(e => e.id!==id))) return false;
-    setAtividades(base => base.filter(a => a.empresaId!==id));
+    if (!await mutarEmpresas(base => base.map(e => e.id===id ? {...e,arquivada:!e.arquivada} : e))) return false;
     setEditando(null); setAberta(null);
     return true;
   };
@@ -2063,7 +2065,7 @@ export default function CrmApp({ modo = "demo", aoSair, usuarioInicial = null, p
       const company = {...alvo,ultimoContato:d.data,etapa:d.novaEtapa,proximaAcao:d.proximaAcao,
         dataProximaAcao:d.proximaAcao ? d.dataProximoContato : "",proximaAcaoInicio:d.proximaAcao ? d.proximoInicio : "",
         proximaAcaoFim:d.proximaAcao ? d.proximoFim : "",proximaAcaoLocal:d.proximaAcao ? d.proximoLocal : "",
-        proximaAcaoOwnerId:d.proximaAcao ? d.proximoResponsavelId : null};
+        proximaAcaoTipo:d.proximoTipo,proximaAcaoOwnerId:d.proximaAcao ? d.proximoResponsavelId : null};
       const storage = getStorage();
       if (!storage.saveInteraction || !await storage.saveInteraction(activity,company)) throw new Error("Não foi possível confirmar a interação. Seus dados foram preservados.");
       setEmpresas(base => base.map(e => e.id===company.id ? company : e));
@@ -2213,6 +2215,7 @@ export default function CrmApp({ modo = "demo", aoSair, usuarioInicial = null, p
               <select className={`${inputBase} w-auto`} value={filtros.etapa} onChange={(e) => setFiltros({ ...filtros, etapa: e.target.value })}>
                 <option value="">Toda etapa</option>{TODAS_ETAPAS.map((e) => <option key={e}>{e}</option>)}
               </select>
+              <label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={verArquivadas} onChange={e => setVerArquivadas(e.target.checked)} />Arquivadas</label>
               <span className="font-mono text-xs tabular-nums text-slate-500">{listaFiltrada.length} empresa{listaFiltrada.length === 1 ? "" : "s"}</span>
             </div>
           )}
@@ -2224,7 +2227,7 @@ export default function CrmApp({ modo = "demo", aoSair, usuarioInicial = null, p
           )}
           {(tela === "carteira" || tela === "empresas") && <TabelaEmpresas empresas={listaFiltrada} aoAbrir={setAberta} hoje={hoje} />}
           {tela === "consulta" && (
-            <Consulta empresas={empresas} equipe={equipe} config={config} usuario={usuario} aoAbrir={setAberta}
+            <Consulta empresas={empresas.filter(e => !e.arquivada)} equipe={equipe} config={config} usuario={usuario} aoAbrir={setAberta}
               aoCadastrar={() => setEditando({ consultor: usuario.papel === "Consultor" ? usuario.nome : "", ownerId: usuario.papel === "Consultor" ? usuario.id : null })} />
           )}
           {tela === "agenda" && <Agenda empresas={escopoBase} aoAbrir={setAberta} />}

@@ -14,7 +14,7 @@ describe('B2B persistence acknowledgement and complete reads',()=>{
  })
  it('propagates a refused insert instead of reporting success',async()=>{
    const rpc=vi.fn(async()=>({data:null,error:{message:'Gravação recusada'}}))
-   const client:any={rpc,from:()=>{const q:any={select:()=>q,order:()=>q,range:async()=>({data:[],error:null})};return q}}
+   const client:any={rpc,from:()=>{const q:any={select:()=>q,order:()=>q,not:()=>q,range:async()=>({data:[],error:null})};return q}}
    const backend=makeSupabaseStorage(client,{id:'10000000-0000-4000-8000-000000000001',nome:'Teste',papel:'Consultor'} as any)
    await backend.get(CHAVES.empresas,true)
    await expect(backend.set(CHAVES.empresas,JSON.stringify([{id:crypto.randomUUID(),razaoSocial:'Fictícia',contatos:[]}]),true)).rejects.toThrow('Gravação recusada')
@@ -23,7 +23,7 @@ describe('B2B persistence acknowledgement and complete reads',()=>{
  it('only acknowledges a company after the RPC has completed',async()=>{
    let release:(value:unknown)=>void=()=>{}
    const rpc=vi.fn(()=>new Promise(resolve=>{release=resolve}))
-   const client:any={rpc,from:()=>{const q:any={select:()=>q,order:()=>q,range:async()=>({data:[],error:null})};return q}}
+   const client:any={rpc,from:()=>{const q:any={select:()=>q,order:()=>q,not:()=>q,range:async()=>({data:[],error:null})};return q}}
    const backend=makeSupabaseStorage(client,{id:'10000000-0000-4000-8000-000000000001',nome:'Teste',papel:'Consultor'} as any)
    await backend.get(CHAVES.empresas,true)
    const saved=backend.set(CHAVES.empresas,JSON.stringify([{id:crypto.randomUUID(),razaoSocial:'Fictícia',contatos:[]}]),true)

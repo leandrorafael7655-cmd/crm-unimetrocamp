@@ -1,0 +1,49 @@
+{
+  "files": [
+    {
+      "file": "evidence/before-kind-validation.log",
+      "sha256": "a8a86b46c34ac912cb39ffd1ef1cf91ea318d7767649c64d66adfa45ff277317",
+      "bytes": 2314
+    },
+    {
+      "file": "evidence/browser-results.json",
+      "sha256": "f7de5381d58c68a4d17f3b40cc150fb955ee8c6151aa34daff7bfe79099ca935",
+      "bytes": 73454
+    },
+    {
+      "file": "evidence/browser.log",
+      "sha256": "05d89f35919c8a0120fc050b688a1c3a93a2ffbaad6e02a59be7b9cb1edae29e",
+      "bytes": 42
+    },
+    {
+      "file": "evidence/build.log",
+      "sha256": "73457f32d021f94a8be5c15a1a5c6fbc4c323a4a030a017ea9f4a59e91bc7f2d",
+      "bytes": 1562
+    },
+    {
+      "file": "evidence/dependencies.json",
+      "sha256": "c0a1c2dc5fcb7c35aa5cff454ac0fb93b27540610c8dd355934ecb8136290fd9",
+      "bytes": 310
+    },
+    {
+      "file": "evidence/lint.log",
+      "sha256": "0475013b89f04c9c990b48a95dc5e1b58e0016d0f8358accb524da1f81aa4b3b",
+      "bytes": 22247
+    },
+    {
+      "file": "evidence/local-validation.json",
+      "sha256": "4b0d5cb8a93108e4a16c668f6feee68cb5543a6138837b8d6949eca9455a72c3",
+      "bytes": 10929
+    },
+    {
+      "file": "evidence/tests.log",
+      "sha256": "74125be76bd2277bb48f0a3772b16d148e3c5ade26f3dda23aafdaeee1c39741",
+      "bytes": 1907
+    },
+    {
+      "file": "evidence/types.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    }
+  ]
+}

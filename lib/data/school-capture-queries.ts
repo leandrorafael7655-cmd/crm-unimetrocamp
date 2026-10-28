@@ -42,6 +42,7 @@ export async function loadSchoolCaptureData(
   const rows = (table: string, schoolColumn?: string) =>
     everyPage((start, end) => {
       let query = supabase.from(table).select("*")
+      if (table === "schools" && !schoolId) query = query.is("archived_at", null)
       if (schoolId && schoolColumn) query = query.eq(schoolColumn, schoolId)
       return query
         .order(

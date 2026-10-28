@@ -431,9 +431,16 @@ export async function realizadoDaMeta(meta: Meta): Promise<number | null> {
       const { count,error } = await q
       return error ? null : count ?? 0
     }
-    case "b2b_supervest_registrations":
-      // Missing attribution is not a measured zero.
-      return null
+    case "b2b_supervest_registrations": {
+      if (!meta.commercialCycleId) return null
+      try {
+        let q = supabase.from("b2b_cycle_results").select("id,registrations").eq("commercial_cycle_id", meta.commercialCycleId)
+        if (owner) q = q.eq("user_id", owner)
+        const rows = await readAllRows<{ id: string; registrations: number | null }>((from, to) => q.order("id").range(from, to))
+        if (!rows.length || rows.some(row => row.registrations === null)) return null
+        return rows.reduce((sum, row) => sum + row.registrations!, 0)
+      } catch { return null }
+    }
     default:
       return null
   }
