@@ -173,6 +173,12 @@ async function shellStates(label,width) {
 
 async function openMenu(width) {
   const shell = page.locator(".uni-shell")
+  // On a new document the shell first renders expanded, then restores localStorage.
+  // Read the state only after that effect; otherwise a click can race restoration.
+  await page.waitForFunction(() => {
+    const shell = document.querySelector(".uni-shell")
+    return shell?.getAttribute("data-sidebar-collapsed") === String(localStorage.getItem("uniconecta.sidebar.collapsed") === "true")
+  })
   const value = await shell.getAttribute(width >= 768 ? "data-sidebar-collapsed" : "data-mobile-open")
   if (width >= 768 ? value === "true" : value !== "true") {
     await page.locator(width >= 768 ? ".uni-desktop-toggle" : ".uni-mobile-toggle").click()
