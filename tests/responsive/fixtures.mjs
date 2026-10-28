@@ -48,7 +48,7 @@ export const settings = {
 export const attendance = {
   start: "2026-10-26", end: "2026-12-06", actor, manager: true, settings,
   members: owners.map(o => ({ id: o.id, full_name: o.nome, email: "consultor@example.test", attendanceEnabled: true })),
-  slots: [], rotation: [], cycles: [], exceptions: [], absences: [], providerStatus: { configured: true },
+  slots: [], rotation: [], cycles: [], exceptions: [], absences: [], providerStatus: { configured: true, testMode: true },
   occurrences: Array.from({ length: 7 }, (_, i) => ({
     id: "occ-" + i, date: "2026-10-" + (26 + i), userId: "consultor", responsibleName: owners[0].nome,
     responsibleEmail: "consultor@example.test", startTime: "09:00", endTime: "18:00",

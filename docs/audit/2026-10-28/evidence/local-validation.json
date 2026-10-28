@@ -6,7 +6,7 @@
     {
       "command": "corepack pnpm test",
       "exit_code": 0,
-      "vitest_tests": 258,
+      "vitest_tests": 261,
       "node_tests": 10,
       "vitest_files": 37
     },
@@ -51,7 +51,8 @@
         1366,
         1440,
         1920
-      ]
+      ],
+      "source_commit": "ee90a7aa37f1fd2c4b98801924cdbf764d437f31"
     }
   ],
   "earlier_visual_run": {
@@ -124,7 +125,7 @@
     },
     {
       "path": "components/attendance/attendance-board.tsx",
-      "sha256": "b0bd3a6bd4c3e6408152f6471d28a88a40bc85966a1fea8d9218cd45247d3f79"
+      "sha256": "3caff0b7be7887fea793a70f0f87ca39db8a98dca8d517ab208e31d4f97fba23"
     },
     {
       "path": "components/b2b/company-meetings.tsx",
@@ -136,7 +137,7 @@
     },
     {
       "path": "components/goals/b2b-manual-results.tsx",
-      "sha256": "ef02b5fc5e205c4e2abf15f822d2e8bdfd40ae7f1ad863d435edcea4f496a532"
+      "sha256": "5d2d666bed5915082c71d68e30f54ad14161d19cf3d7c508b0f22e73beb56cfb"
     },
     {
       "path": "components/goals/metas-client.tsx",
@@ -168,7 +169,7 @@
     },
     {
       "path": "lib/calendar/smtp-config.ts",
-      "sha256": "30c524d79960a319bdab5ffa120f9e1e19e44f02657c45b03e2e6262c93fca0a"
+      "sha256": "f652b5edb2918679d165d91a199a393a2854d4867bec1f6d928f101e50cf8342"
     },
     {
       "path": "lib/calendar/smtp-mime.test.ts",
@@ -176,11 +177,11 @@
     },
     {
       "path": "lib/calendar/smtp-worker.test.ts",
-      "sha256": "b10297ac615ffe0d919d5f66cc902e0dba359ae76e07d2ea86c74ad825c97fc9"
+      "sha256": "574059e3d1fb94260432876f8ba807736a14fcf7bf2b08e68e72a4928301d9a5"
     },
     {
       "path": "lib/calendar/smtp-worker.ts",
-      "sha256": "a400ae9b76958121e55a317b13d7ee33955fe2e60f5c66ae3020f95082157721"
+      "sha256": "246205d0ce0c61f6f867d80ee7992c48ef0667dcc82d60e7ba16dc9818d6dc3a"
     },
     {
       "path": "lib/data/goals-queries.ts",
@@ -304,7 +305,7 @@
     },
     {
       "path": "tests/responsive/fixtures.mjs",
-      "sha256": "f44f11f8a67d5e73597c49d0485c584b5dcc3e6c9efb4e37d3fddd274e857819"
+      "sha256": "4afc90315bd90bcac3fdd8ebe6324dd37546c25c0fb8e6e62a1e3e3aa5b8c7ee"
     },
     {
       "path": "tests/responsive/run.mjs",
@@ -314,5 +315,35 @@
       "path": "tests/responsive/ui.jsx",
       "sha256": "64da689251b52eac3a4c77b87a51a4a5afe80805e1f257cb798ec66ba5c79a93"
     }
-  ]
+  ],
+  "followup": {
+    "base_commit": "ee90a7aa37f1fd2c4b98801924cdbf764d437f31",
+    "changes": [
+      "Production acceptance mail scope CALENDAR_TEST_USER_ID",
+      "WebKit native form field/grid width constraints"
+    ],
+    "new_tests": "Three production test-scope cases; total 261 Vitest + 10 Node locally passing",
+    "test_mode_browser": {
+      "engine": "Chromium",
+      "checks": 373,
+      "failures": 0,
+      "backend": "simulated"
+    },
+    "ci29": {
+      "commit": "ee90a7aa37f1fd2c4b98801924cdbf764d437f31",
+      "run_id": 40752354614,
+      "status": "failure",
+      "passed": [
+        "install",
+        "types",
+        "lint",
+        "build",
+        "258 Vitest + 10 Node"
+      ],
+      "visual_checks": 2474,
+      "visual_failures": 14,
+      "error": "WebKit manual B2B edit/history width overflow",
+      "fix": "Constrain width of native fields, labels and form grid; new CI required"
+    }
+  }
 }

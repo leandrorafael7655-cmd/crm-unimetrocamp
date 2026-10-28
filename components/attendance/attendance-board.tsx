@@ -260,6 +260,7 @@ export function AttendanceBoard({ initial, personalOnly = false }: { initial: an
 
   return (
     <div className="w-full min-w-0">
+      {data.manager && data.providerStatus?.testMode && <p role="status" className="mb-4 rounded-lg border border-sky-200 bg-sky-50 p-3 text-sm text-sky-950">Validação de convites ativa: somente o perfil de teste configurado recebe e-mails. Revise a fila anterior antes de liberar o envio para a equipe.</p>}
       {data.manager && data.planning && <section className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
         <h2 className="font-semibold">Revisão da escala · prévia, sem publicação</h2>
         <p className="mt-1">Base de 42h por pessoa; almoço de 1h fora da carga. SM: 9h–20h com 3 pessoas; sábado 9h–13h com 2. GDC de 1h para todos na segunda exige pausa aprovada ou cobertura externa.</p>

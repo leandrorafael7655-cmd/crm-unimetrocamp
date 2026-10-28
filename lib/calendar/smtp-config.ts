@@ -7,6 +7,7 @@ export function smtpConfig(env: Readonly<Record<string, string | undefined>> = p
     host: value("SMTP_HOST", "CALENDAR_SMTP_HOST"), port: Number(port),
     user: value("SMTP_USER", "CALENDAR_SMTP_USER"), pass: value("SMTP_PASS", "CALENDAR_SMTP_PASS"),
     from, organizer: value("EMAIL_ORGANIZER", "CALENDAR_ORGANIZER_EMAIL") || from,
+    testUserId: value("CALENDAR_TEST_USER_ID"),
     secure: port === "465", disabled: env.UNICONECTA_DISABLE_EXTERNAL_COMMUNICATIONS === "true",
   }
 }
@@ -20,10 +21,11 @@ export function calendarEmailStatus(env: Readonly<Record<string, string | undefi
   if (![465, 587].includes(cfg.port)) invalid.push("SMTP_PORT")
   if (cfg.from && !email.test(cfg.from)) invalid.push("EMAIL_FROM")
   if (cfg.organizer && !email.test(cfg.organizer)) invalid.push("EMAIL_ORGANIZER")
+  if (cfg.testUserId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cfg.testUserId)) invalid.push("CALENDAR_TEST_USER_ID")
   // Gmail app-password SMTP must use the authenticated mailbox as sender.
   if (cfg.host === "smtp.gmail.com" && cfg.from.toLowerCase() !== cfg.user.toLowerCase()) invalid.push("EMAIL_FROM")
   return { ok: true, configured: !cfg.disabled && !missing.length && !invalid.length,
-    missing, invalid, disabled: cfg.disabled, provider: "smtp", deliveryTracking: false,
+    missing, invalid, disabled: cfg.disabled, testMode: !!cfg.testUserId, provider: "smtp", deliveryTracking: false,
     organizerEmail: cfg.organizer || null }
 }
 

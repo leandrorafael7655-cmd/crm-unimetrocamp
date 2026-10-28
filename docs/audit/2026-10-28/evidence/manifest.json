@@ -17,8 +17,13 @@
     },
     {
       "file": "evidence/build.log",
-      "sha256": "73457f32d021f94a8be5c15a1a5c6fbc4c323a4a030a017ea9f4a59e91bc7f2d",
+      "sha256": "813578e4c0a2c8072ae453bafb5f118c8040fb98e1d6b2be32420396fc97cd16",
       "bytes": 1562
+    },
+    {
+      "file": "evidence/ci29-failure.log",
+      "sha256": "3554224bc57e51ec638d166e3a4264cd2d117da7626dae54b92861dbc11ac14a",
+      "bytes": 1713
     },
     {
       "file": "evidence/dependencies.json",
@@ -32,13 +37,18 @@
     },
     {
       "file": "evidence/local-validation.json",
-      "sha256": "4b0d5cb8a93108e4a16c668f6feee68cb5543a6138837b8d6949eca9455a72c3",
-      "bytes": 10929
+      "sha256": "f54b749028a3c1e1c658947cd1b505a035149a6848d2aa3270637361e30a4c35",
+      "bytes": 11927
+    },
+    {
+      "file": "evidence/test-mode-browser.log",
+      "sha256": "080b6d9c188f842221af21af8bfd5cea0abdddc26aba3966559983e1b1a09a9f",
+      "bytes": 42
     },
     {
       "file": "evidence/tests.log",
-      "sha256": "74125be76bd2277bb48f0a3772b16d148e3c5ade26f3dda23aafdaeee1c39741",
-      "bytes": 1907
+      "sha256": "d840b50860682a5d8e67e6c96d1466e4c5c66f21fb10a8a7687ce0b98375cc4f",
+      "bytes": 1906
     },
     {
       "file": "evidence/types.log",

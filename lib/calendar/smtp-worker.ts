@@ -10,14 +10,19 @@ export async function processSmtpQueue(options: Options = {}): Promise<QueueResu
   const status = calendarEmailStatus()
   const result = { configured: status.configured, processed: 0, sent: 0, failed: 0, superseded: 0 }
   if (status.disabled) return result
-  const admin = createAdminClient()
   const cfg = smtpConfig()
+  // During production acceptance only the verified test profile may receive mail,
+  // including cron/manual calls that otherwise process the whole team queue.
+  if (status.invalid.includes("CALENDAR_TEST_USER_ID")) return { ...result, error: "Perfil de validação inválido; nenhum convite enviado." }
+  if (cfg.testUserId && options.userId && cfg.testUserId !== options.userId) return result
+  const scopedUser = cfg.testUserId || options.userId
+  const admin = createAdminClient()
   // Meetings saved before SMTP configuration are picked up by the same retry path.
   if (status.configured) {
     let query = admin.from("activities").select("id,revision,email_queued_revision")
       .eq("calendar_provider", "email").in("sync_status", ["pending", "failed"]).not("meeting_type", "is", null).order("updated_at").limit(25)
     if (options.meetingId) query = query.eq("id", options.meetingId)
-    if (options.userId) query = query.eq("organizer_user_id", options.userId)
+    if (scopedUser) query = query.eq("organizer_user_id", scopedUser)
     const { data: meetings, error: meetingError } = await query
     if (meetingError) return { ...result, error: "Não foi possível consultar os convites pendentes." }
     for (const meeting of meetings || []) if (meeting.revision > meeting.email_queued_revision) {
@@ -27,7 +32,7 @@ export async function processSmtpQueue(options: Options = {}): Promise<QueueResu
   }
   const { data: jobs, error } = await admin.rpc("claim_calendar_email_jobs", {
     p_limit: Math.max(1, Math.min(25, options.limit ?? 10)),
-    p_user: options.userId || null, p_meeting: options.meetingId || null,
+    p_user: scopedUser || null, p_meeting: options.meetingId || null,
   })
   if (error) return { ...result, error: "Não foi possível processar a fila de convites." }
   if (!jobs?.length) return result

@@ -12,7 +12,7 @@ vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({ rpc: state.
 } }) }))
 import { processSmtpQueue } from "./smtp-worker"
 beforeEach(() => {
-  for (const [key, value] of Object.entries({ SMTP_HOST: "smtp.gmail.com", SMTP_PORT: "465", SMTP_USER: "agenda@example.invalid", SMTP_PASS: "fake-only", EMAIL_FROM: "agenda@example.invalid", UNICONECTA_DISABLE_EXTERNAL_COMMUNICATIONS: "false" })) vi.stubEnv(key, value)
+  for (const [key, value] of Object.entries({ SMTP_HOST: "smtp.gmail.com", SMTP_PORT: "465", SMTP_USER: "agenda@example.invalid", SMTP_PASS: "fake-only", EMAIL_FROM: "agenda@example.invalid", CALENDAR_TEST_USER_ID: "", UNICONECTA_DISABLE_EXTERNAL_COMMUNICATIONS: "false" })) vi.stubEnv(key, value)
   state.updates = []; state.jobs = [{ id: "j1", calendar_event_id: "e1", operation: "REQUEST", event_sequence: 0, lease_token: "lease", attempts: 1, created_at: "2026-10-28T12:00:00Z" }]
   state.event = { event_uid: "event-1@uniconecta", sequence: 0, status: "active", recipient_user_id: "u1", title: "Teste", start_at: "2026-10-29T12:00:00Z", end_at: "2026-10-29T13:00:00Z" }
   state.person = { email: "test@example.invalid", full_name: "Teste", active: true }
@@ -47,6 +47,21 @@ it("missing SMTP settings are recorded; no transport is contacted", async () => 
 it("disabled external communications never claim or send jobs", async () => {
   vi.stubEnv("UNICONECTA_DISABLE_EXTERNAL_COMMUNICATIONS", "true")
   expect(await processSmtpQueue()).toMatchObject({ configured: false, sent: 0 })
+  expect(state.rpc).not.toHaveBeenCalled(); expect(state.sendMail).not.toHaveBeenCalled()
+})
+it("production acceptance scopes even a global cron call to the verified test profile", async () => {
+  vi.stubEnv("CALENDAR_TEST_USER_ID", "10000000-0000-4000-8000-000000000001")
+  await processSmtpQueue()
+  expect(state.rpc).toHaveBeenCalledWith("claim_calendar_email_jobs", expect.objectContaining({ p_user: "10000000-0000-4000-8000-000000000001" }))
+})
+it("a different user's request cannot drain mail while production test mode is enabled", async () => {
+  vi.stubEnv("CALENDAR_TEST_USER_ID", "10000000-0000-4000-8000-000000000001")
+  expect(await processSmtpQueue({ userId: "another-user" })).toMatchObject({ sent: 0, processed: 0 })
+  expect(state.rpc).not.toHaveBeenCalled(); expect(state.sendMail).not.toHaveBeenCalled()
+})
+it("an invalid test profile fails closed without claiming the production queue", async () => {
+  vi.stubEnv("CALENDAR_TEST_USER_ID", "invalid")
+  expect(await processSmtpQueue()).toMatchObject({ sent: 0, processed: 0, configured: false })
   expect(state.rpc).not.toHaveBeenCalled(); expect(state.sendMail).not.toHaveBeenCalled()
 })
 it("a superseded event revision is not sent", async () => {
