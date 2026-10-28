@@ -2,6 +2,10 @@
 
 Esta entrega não autoriza merge, migração em produção nem publicação. As oito migrações abaixo foram aplicadas somente à branch Supabase `audit-fixes-20261027` (`ktmcksngmhxtdnxunntl`), sem copiar dados de produção. O projeto oficial é `snixwajvzaxldglcwnig`.
 
+## Separação de ambientes confirmada em 28/10
+
+As variáveis padrão da Vercel apontam ao Supabase oficial `snixwajvzaxldglcwnig` e abrangem production, preview e development. Não há override específico desta branch para homologação. A branch mantém `git.deploymentEnabled=false`; não habilitar preview antes de configurar URL pública, URL do servidor, chaves públicas e credencial administrativa **da homologação**, com disparos externos desabilitados e contas fictícias. Não copiar a chave administrativa oficial para testes. A chave oficial não foi recuperada nesta etapa. Essa observação não altera configuração, deploy ou migração de produção.
+
 ## Ordem para revisão e aplicação
 
 1. Criar backup recuperável do banco e registrar o deployment atualmente ativo. Repetir o preflight abaixo em modo somente leitura. Manter a versão antiga disponível para comparação, sem reabrir operações vulneráveis durante uma reversão.

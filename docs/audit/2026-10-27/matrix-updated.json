@@ -4,11 +4,11 @@
     "modulo": "Acesso",
     "funcionalidade": "Bloqueio sem sessão",
     "estado_auditado": "Funcional",
-    "estado_execucao": "Parcial",
+    "estado_execucao": "Funcional",
     "retestado": true,
     "camada": "real",
-    "teste_e_limite": "Auth/REST sem sessão não expôs linhas em cinco tabelas. Bloqueio visual em produção não foi retestado.",
-    "evidencia": "homologation-additional-results.json"
+    "teste_e_limite": "URL direta de metas, escolas e rotas sem sessão redirecionou ao login na aplicação local. Auth/REST não expôs linhas em cinco tabelas. Produção não foi retestada.",
+    "evidencia": "browser-access-results.json; homologation-additional-results.json"
   },
   {
     "id": "F02",
@@ -125,11 +125,11 @@
     "modulo": "B2B",
     "funcionalidade": "Criar, editar, consultar e persistir no demo",
     "estado_auditado": "Funcional",
-    "estado_execucao": "Não testado",
-    "retestado": false,
-    "camada": "não retestado",
-    "teste_e_limite": "CRUD do demo foi validado na auditoria anterior, mas não repetido como fluxo completo nesta entrega. Banner explícito e renderização foram verificados em fixture.",
-    "evidencia": "responsive-results.json"
+    "estado_execucao": "Funcional",
+    "retestado": true,
+    "camada": "navegador + localStorage",
+    "teste_e_limite": "Consultor criou, pesquisou e editou; recarga confirmou localStorage. Exclusão indisponível ao consultor e executada pela gerência após troca de usuário. Banner explícito e zero requisições ao Supabase.",
+    "evidencia": "browser-remaining-results.json"
   },
   {
     "id": "F13",
@@ -215,20 +215,20 @@
     "estado_auditado": "Não testado",
     "estado_execucao": "Parcial",
     "retestado": true,
-    "camada": "real + inspeção",
-    "teste_e_limite": "Escola fictícia criada via REST com HS. CRUD completo da escola pela interface não foi executado.",
-    "evidencia": "homologation-data-results.json"
+    "camada": "real",
+    "teste_e_limite": "Cadastro e edição pela interface High School, busca/classificação, nova consulta ao banco e recarga passaram. CNPJ inválido preserva os valores após a correção. Exclusão de escola pela interface não foi executada.",
+    "evidencia": "browser-remaining-results.json; before-remaining-browser.json"
   },
   {
     "id": "F21",
     "modulo": "High School",
     "funcionalidade": "Lista, Kanban e filtros por edição",
     "estado_auditado": "Parcial",
-    "estado_execucao": "Parcial",
+    "estado_execucao": "Funcional",
     "retestado": true,
-    "camada": "simulado",
-    "teste_e_limite": "Kanban, filtros/edições e persistência de arraste validados com backend simulado na suíte responsiva; sem alegar persistência oficial.",
-    "evidencia": "responsive-results.json"
+    "camada": "real + simulado",
+    "teste_e_limite": "Lista/Kanban, filtro por nome e duas edições exercitados com Auth real. Estado negociando persistiu após recarga; edição seguinte permaneceu sem contato. Filtros adicionais por consultor continuam cobertos por backend simulado.",
+    "evidencia": "browser-remaining-results.json; responsive-results.json"
   },
   {
     "id": "F22",
@@ -237,9 +237,9 @@
     "estado_auditado": "Funcional",
     "estado_execucao": "Funcional",
     "retestado": true,
-    "camada": "isolado",
-    "teste_e_limite": "Suíte de Captação por edição reexecutada, preservação de vínculos/validações e histórico. Não é teste autenticado publicado.",
-    "evidencia": "tests.log"
+    "camada": "real + isolado",
+    "teste_e_limite": "Contato e ação de escola foram gravados na edição selecionada pela UI; outra edição não herdou o estado nem mostrou a ação. Histórico e vínculos também cobertos na suíte isolada. Não é teste publicado.",
+    "evidencia": "browser-remaining-results.json; tests.log"
   },
   {
     "id": "F23",
@@ -270,9 +270,9 @@
     "estado_auditado": "Funcional",
     "estado_execucao": "Funcional",
     "retestado": true,
-    "camada": "real",
-    "teste_e_limite": "Principal/apoio consultaram suas projeções; reagendamento manteve UID e remoção/cancelamento atualizou estados sem eventos ativos duplicados.",
-    "evidencia": "homologation-data-results.json"
+    "camada": "real + navegador",
+    "teste_e_limite": "Principal e apoio já tiveram projeções e UID testados por Auth/REST. Novo fluxo High School criou pela UI e localizou a ação na agenda da edição após recarga; banco confirmou uma única projeção ativa do principal. Minha Agenda com Admin SDK permanece separada.",
+    "evidencia": "homologation-data-results.json; browser-remaining-results.json"
   },
   {
     "id": "F26",
@@ -469,8 +469,8 @@
     "estado_execucao": "Funcional",
     "retestado": true,
     "camada": "simulado + real",
-    "teste_e_limite": "1205 checks Chromium de navegação/rotas/recarga por cinco papéis em fixtures, complementados pelos perfis reais efetivamente registrados em homologação. Menu antigo não foi reproduzido na base auditada atual.",
-    "evidencia": "responsive-results.json; browser-homologation-results.json"
+    "teste_e_limite": "CI #26 (SHA cce9393): 2410 verificações Chromium/WebKit, zero falhas. URL/recarga e menu também exercitados nos quatro perfis reais registrados em homologação. Menu antigo não foi reproduzido na base auditada.",
+    "evidencia": "ci-run-26.json; browser-homologation-results.json"
   },
   {
     "id": "F44",
@@ -479,9 +479,9 @@
     "estado_auditado": "Funcional",
     "estado_execucao": "Funcional",
     "retestado": true,
-    "camada": "simulado",
-    "teste_e_limite": "1205 checks Chromium em 320–1920px, zoom 100%, sem falhas; aparelhos físicos e leitor de tela não foram exercitados.",
-    "evidencia": "responsive.log; responsive-results.json"
+    "camada": "simulado + real",
+    "teste_e_limite": "CI #26: Chromium/WebKit, 320–1920px, zoom 100%, 2410 verificações sem falhas. Quatro perfis reais tiveram recarga autenticada a 375px. Sem aparelho físico ou leitor de tela.",
+    "evidencia": "ci-run-26.json; browser-homologation-results.json"
   },
   {
     "id": "F45",
@@ -491,8 +491,8 @@
     "estado_execucao": "Funcional",
     "retestado": true,
     "camada": "real",
-    "teste_e_limite": "Falha do banco manteve valores e não gerou sucesso. A correção do aviso que interceptava Cancelar é confirmada pelo clique e pela etapa móvel da regressão final.",
-    "evidencia": "SAVE-01; browser-homologation-results.json"
+    "teste_e_limite": "Falha B2B preservou valores sem falso sucesso. Novo teste encontrou perda dos campos de escola em CNPJ inválido; formulário corrigido e valores preservados no navegador real.",
+    "evidencia": "browser-homologation-results.json; before-remaining-browser.json; browser-remaining-results.json"
   },
   {
     "id": "F46",
@@ -502,8 +502,8 @@
     "estado_execucao": "Funcional",
     "retestado": true,
     "camada": "ferramentas",
-    "teste_e_limite": "Resultados desta execução em tests.log, typecheck.log, lint.log e build.log. Não equivalem aos testes de integração externa.",
-    "evidencia": "tests.log; typecheck.log; lint.log; build.log"
+    "teste_e_limite": "CI #26: 245 testes, tipos, lint e build aprovados. Alteração adicional: lint dos arquivos, tipos e build limpo passaram; cache local inválido foi preservado e refeito. CI do novo SHA vinculado no PR.",
+    "evidencia": "ci-run-26.json; remaining-readiness.json; remaining-build.log; remaining-typecheck.log"
   },
   {
     "id": "F47",

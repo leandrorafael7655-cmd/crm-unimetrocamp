@@ -196,7 +196,7 @@ Confirmado: Minha Agenda agrega escola e atendimento; reuniões B2B têm seu flu
 
 ### QA-01 — Regressão autenticada e reprodução do ambiente são insuficientes
 
-Ambiente isolado real criado sem dados oficiais; baseline completo sem usuários/dados, grants explícitos, scripts repetíveis e build que não reescreve fontes. Primeira branch revelou falta de grants implícitos; migração 6 corrigiu e os testes autenticados passaram. Restam os fluxos que precisam de Admin SDK/SMTP/Graph e o resultado remoto do CI, identificado separadamente. Homologação não foi confundida com produção.
+Ambiente isolado real criado sem dados oficiais; baseline completo sem usuários/dados, grants explícitos, scripts repetíveis e build que não reescreve fontes. Primeira branch revelou falta de grants implícitos; migração 6 corrigiu e os testes autenticados passaram. O CI #26 passou no SHA registrado em `evidence/ci-run-26.json`; restam os fluxos que precisam de Admin SDK/SMTP/Graph. O resultado de cada novo SHA será vinculado no PR. Homologação não foi confundida com produção.
 
 **Critério original:** Banco vazio é montado pelo repositório; CI reproduz build; contas por papel passam CRUD e isolamento; falhas reproduzidas viram regressões sem envio a pessoas reais.
 
@@ -225,8 +225,19 @@ A exclusão física de empresa com histórico é recusada pela FK `company_portf
 
 Durante a regressão foi detectado e corrigido aviso de erro que interceptava clique no rodapé do modal. O critério de aceite final inclui clicar Cancelar sem forçar o navegador, preservando os valores antes do cancelamento.
 
+## Validação adicional de 28/10/2026
+
+Quatro cenários adicionais foram concluídos: bloqueio de três rotas sem sessão; CRUD/persistência e permissões de exclusão do demo; cadastro/edição/filtro e recarga de escola; e contato/agendamento escolar por edição com localização na Agenda High School após recarga. Os três últimos registros estão em [browser-remaining-results.json](evidence/browser-remaining-results.json); o bloqueio sem sessão está em [browser-access-results.json](evidence/browser-access-results.json). Não foram repetidos os 12 cenários anteriores de metas/perfis.
+
+O formulário de escola apagava seus campos quando o servidor recusava CNPJ inválido: React concluía a ação do formulário e reinicializava os inputs mesmo com `ok: false`. O envio agora captura FormData em `onSubmit`, dentro da transição existente, conservando os campos até a gravação confirmada. A falha anterior está em [before-remaining-browser.json](evidence/before-remaining-browser.json), junto aos erros iniciais de seletores do roteiro, explicitamente distintos do bug. O teste final comprovou nome preenchido após erro, correção do CNPJ e criação/edição persistida. A mesma preservação após recusa foi acrescentada à suíte responsiva de CI, usando uma resposta de erro controlada, em Chromium e WebKit. Essa observação adicional pertence à regressão F20/F45 e não foi inventada como um 18º achado original.
+
+O build local encontrou cache Turbopack inválido após a interrupção. A pasta `.next` anterior foi preservada fora do checkout e o build limpo passou, assim como tipos e lint dos arquivos alterados. Nenhuma migração ou dado oficial foi alterado. [Resultado dos comandos e configuração disponível](evidence/remaining-readiness.json).
+
+O CI #26 concluiu 245 testes e 2410 verificações Chromium/WebKit com backend simulado, sem falhas, no commit `cce9393`. A descrição do PR vincula o CI do novo commit desta correção; a evidência anterior não é apresentada como execução de outro SHA.
+
 ## Entrega operacional
 
+- [Pendências verificadas e insumos necessários](remaining-execution.md).
 - [Matriz completa das 47 funcionalidades](matrix-updated.md), com camada e limites; [JSON](matrix-updated.json).
 - [Plano de implantação, ordem das oito migrações e recuperação](deployment.md).
 - [Prévia da escala, responsáveis identificados e capacidade](scale-preview.md).

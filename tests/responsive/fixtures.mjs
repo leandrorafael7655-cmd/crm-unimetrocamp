@@ -66,6 +66,7 @@ export const mockQueries = {
   ...captureMocks,
   getActor: async () => actor, requireActor: async () => actor, requireManager: async () => actor, requireCan: async () => actor,
   listSchools: async () => schools, listOwners: async () => owners, listActions: async (filters) => isCaptureAgendaFixture() ? listCaptureFixtureActions(filters) : actions,
+  upsertSchool: async () => ({ok:false,message:"Falha controlada ao salvar escola."}),
   listGradeLevels: async () => grades, listEstimatesByEscola: async () => Object.fromEntries(schools.map(e => [e.id, ["3em"]])),
   getSchool360: async () => ({ escola: schools[0], contatos: [{ ...contact, escolaId: schools[0].id, principal: true }],
     estimativas: [{ id: "estimate", escolaId: schools[0].id, serie: "3em", anoLetivo: 2026, estimativaAlunos: 120, numTurmas: 4 }],

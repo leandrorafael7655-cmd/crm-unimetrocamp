@@ -278,7 +278,16 @@ try {
           await page.locator(".uni-main tbody tr").first().click()
           await dialogCheck("B2B company "+width)
         }
-        if(name==="escolas") { await clickText("Nova escola"); await dialogCheck("School form "+width) }
+        if(name==="escolas") {
+          await clickText("Nova escola")
+          const dialog=page.getByRole("dialog")
+          const nameInput=dialog.getByLabel("Nome da escola *",{exact:true})
+          await nameInput.fill("Escola fictícia com dados preservados")
+          await dialog.getByRole("button",{name:"Salvar",exact:true}).click()
+          await dialog.getByText("Falha controlada ao salvar escola.",{exact:true}).waitFor()
+          assert.equal(await nameInput.inputValue(),"Escola fictícia com dados preservados","School fields must survive failed save")
+          await dialogCheck("School form after save error "+width)
+        }
         if(name==="escola") {
           for(const text of ["Editar escola","Estimar","Novo"]) {
             await clickText(text); await dialogCheck("School "+text+" "+width)

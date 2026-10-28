@@ -1,0 +1,46 @@
+{
+  "scope": "Homologação ktmcksngmhxtdnxunntl e branch codex/fix-audit-20261027; produção excluída",
+  "local_admin_credential_present": false,
+  "branch_specific_vercel_env_count": 0,
+  "auth_settings": {
+    "http_status": 200,
+    "email_provider": true,
+    "azure_provider": false,
+    "disable_signup": false,
+    "mailer_autoconfirm": false
+  },
+  "limits": [
+    "Metadados de configuração não comprovam entrega de mensagens.",
+    "Secrets de SMTP nas Edge Functions não foram recuperados; não foi presumida sua ausência ou validade.",
+    "Não há credencial administrativa nem caixa de teste disponíveis ao executor.",
+    "SSO Microsoft obrigatório não foi confirmado como requisito.",
+    "A chave administrativa da Vercel padrão pertence à configuração oficial; não foi recuperada nem reutilizada na homologação. Deploy da branch continua desabilitado."
+  ],
+  "commands": [
+    {
+      "command": "npm run build",
+      "first_result": "Falha no cache local Turbopack: invalid digit found in string",
+      "correction": "Pasta .next preservada fora do checkout e build limpo",
+      "final_exit_code": 0
+    },
+    {
+      "command": "eslint components/high-school/escola-form.tsx scripts/audit/browser-remaining.mjs tests/responsive/run.mjs tests/responsive/fixtures.mjs",
+      "exit_code": 0
+    },
+    {
+      "command": "tsc --noEmit",
+      "exit_code": 0
+    },
+    {
+      "command": "browser-remaining.mjs (DEMO-CRUD-UI,SCHOOL-CRUD-CAPTURE-UI)",
+      "exit_code": 0
+    }
+  ],
+  "vercel_default_database_host": "snixwajvzaxldglcwnig.supabase.co",
+  "vercel_default_database_targets": [
+    "production",
+    "preview",
+    "development"
+  ],
+  "vercel_admin_variable_present_in_default_scope": true
+}

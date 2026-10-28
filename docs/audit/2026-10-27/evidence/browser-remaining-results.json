@@ -1,0 +1,25 @@
+{
+  "results": [
+    {
+      "id": "DEMO-CRUD-UI",
+      "layer": "Navegador → Next.js local → localStorage; sem backend simulado e sem banco",
+      "details": "Consultor cadastrou, buscou e editou com persistência após recarga e sem opção de exclusão; gerência excluiu após troca de usuário. Banner visível; zero requisições Supabase"
+    },
+    {
+      "id": "SCHOOL-CRUD-UI",
+      "layer": "Navegador → Next.js local → Supabase Auth/PostgreSQL reais de homologação",
+      "details": "High School criou e editou escola pela interface; CNPJ inválido recusado com formulário preservado; classificação/busca, recarga e nova consulta ao banco confirmaram a gravação"
+    },
+    {
+      "id": "SCHOOL-CAPTURE-AGENDA-UI",
+      "layer": "Navegador → Next.js local → Supabase Auth/PostgreSQL reais de homologação",
+      "details": "Atuação mudou o Kanban e persistiu após recarga; lista e filtros preservados; edição seguinte permaneceu sem contato. Ação criada pela UI apareceu na Agenda High School após recarga, somente na edição correta, com uma projeção ativa do principal no banco"
+    }
+  ],
+  "failures": [],
+  "errors": [],
+  "limits": [
+    "Somente aplicação local e homologação isolada; não testa produção",
+    "Não comprova envio/recebimento de e-mails, Microsoft Graph ou Minha Agenda dependente de Admin SDK"
+  ]
+}

@@ -391,22 +391,36 @@
       "supabase/baselines/20261004_public.sql",
       "lib/testing/audited-database.ts",
       "tests/fixtures/audited-schema.json",
-      "scripts/audit/"
+      "scripts/audit/",
+      "scripts/audit/browser-remaining.mjs",
+      "components/high-school/escola-form.tsx",
+      "tests/responsive/run.mjs",
+      "tests/responsive/fixtures.mjs"
     ],
     "tests": [
       "Reprodução anterior com código auditado",
       "Banco vazio PGlite + oito migrações",
       "Supabase Auth/REST real",
-      "Regressão Chromium e CI"
+      "Regressão Chromium e CI",
+      "NOSESSION-UI",
+      "DEMO-CRUD-UI",
+      "SCHOOL-CRUD-UI",
+      "SCHOOL-CAPTURE-AGENDA-UI",
+      "Preservação do formulário escolar na suíte Chromium/WebKit de CI"
     ],
     "evidence": [
       "evidence/before-reproductions.log",
       "evidence/tests.log",
       "evidence/build.log",
       "evidence/responsive.log",
-      "evidence/homologation-ledger.json"
+      "evidence/homologation-ledger.json",
+      "evidence/ci-run-26.json",
+      "evidence/browser-access-results.json",
+      "evidence/browser-remaining-results.json",
+      "evidence/before-remaining-browser.json",
+      "evidence/remaining-readiness.json"
     ],
-    "conclusion": "Ambiente isolado real criado sem dados oficiais; baseline completo sem usuários/dados, grants explícitos, scripts repetíveis e build que não reescreve fontes. Primeira branch revelou falta de grants implícitos; migração 6 corrigiu e os testes autenticados passaram. Restam os fluxos que precisam de Admin SDK/SMTP/Graph e o resultado remoto do CI, identificado separadamente. Homologação não foi confundida com produção.",
+    "conclusion": "CI #26 reproduziu instalação, tipos, lint, build, 245 testes e 2410 verificações Chromium/WebKit sem falhas, no SHA registrado em ci-run-26.json. Os 12 cenários anteriores com Auth/banco reais foram preservados. Novos testes concluíram bloqueio sem sessão, CRUD do demo, criação/edição de escola com validação e preservação do formulário, Kanban/lista por edição e ação na Agenda High School após recarga. A regressão encontrou e corrigiu a limpeza indevida do formulário escolar em erro; controles de CRUD legítimo Admin SDK, recuperação recebida e Microsoft continuam dependentes de configuração/contas de teste.",
     "production": "Não aplicado; depende de revisão e implantação."
   }
 ]

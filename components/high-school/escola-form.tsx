@@ -86,7 +86,10 @@ export function EscolaForm({
               </button>
             </div>
 
-            <form action={enviar} className="uni-dialog-body px-4 py-4 sm:px-5">
+            <form onSubmit={(event) => {
+              event.preventDefault()
+              enviar(new FormData(event.currentTarget))
+            }} className="uni-dialog-body px-4 py-4 sm:px-5">
               {escola?.id && <input type="hidden" name="id" value={escola.id} />}
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

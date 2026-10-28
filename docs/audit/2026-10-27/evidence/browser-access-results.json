@@ -1,0 +1,11 @@
+{
+  "results": [
+    {
+      "id": "NOSESSION-UI",
+      "layer": "Navegador → Next.js local → Supabase Auth/PostgreSQL reais de homologação",
+      "details": "Metas, escolas e rotas por URL direta redirecionaram a login sem sessão; nenhum conteúdo protegido foi renderizado"
+    }
+  ],
+  "failures": [],
+  "limit": "Cenário concluído na primeira execução; não foi repetido após a alteração isolada do formulário."
+}
