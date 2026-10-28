@@ -395,7 +395,8 @@
       "scripts/audit/browser-remaining.mjs",
       "components/high-school/escola-form.tsx",
       "tests/responsive/run.mjs",
-      "tests/responsive/fixtures.mjs"
+      "tests/responsive/fixtures.mjs",
+      "scripts/audit/browser-mapbox.mjs"
     ],
     "tests": [
       "Reprodução anterior com código auditado",
@@ -406,7 +407,11 @@
       "DEMO-CRUD-UI",
       "SCHOOL-CRUD-UI",
       "SCHOOL-CAPTURE-AGENDA-UI",
-      "Preservação do formulário escolar na suíte Chromium/WebKit de CI"
+      "Preservação do formulário escolar na suíte Chromium/WebKit de CI",
+      "MAPBOX-GEOCODE-REAL",
+      "MAPBOX-OPTIMIZE-REAL",
+      "MAPBOX-RENDER-REAL",
+      "MAPBOX-MOBILE-REAL"
     ],
     "evidence": [
       "evidence/before-reproductions.log",
@@ -418,9 +423,13 @@
       "evidence/browser-access-results.json",
       "evidence/browser-remaining-results.json",
       "evidence/before-remaining-browser.json",
-      "evidence/remaining-readiness.json"
+      "evidence/remaining-readiness.json",
+      "evidence/mapbox-real-results.json",
+      "evidence/mapbox-browser-results.json",
+      "evidence/mapbox-real-browser.png",
+      "evidence/ci-run-27.json"
     ],
-    "conclusion": "CI #26 reproduziu instalação, tipos, lint, build, 245 testes e 2410 verificações Chromium/WebKit sem falhas, no SHA registrado em ci-run-26.json. Os 12 cenários anteriores com Auth/banco reais foram preservados. Novos testes concluíram bloqueio sem sessão, CRUD do demo, criação/edição de escola com validação e preservação do formulário, Kanban/lista por edição e ação na Agenda High School após recarga. A regressão encontrou e corrigiu a limpeza indevida do formulário escolar em erro; controles de CRUD legítimo Admin SDK, recuperação recebida e Microsoft continuam dependentes de configuração/contas de teste.",
+    "conclusion": "CI #26 reproduziu instalação, tipos, lint, build, 245 testes e 2410 verificações Chromium/WebKit sem falhas, no SHA registrado em ci-run-26.json. Os 12 cenários anteriores com Auth/banco reais foram preservados. Novos testes concluíram bloqueio sem sessão, CRUD do demo, criação/edição de escola com validação e preservação do formulário, Kanban/lista por edição e ação na Agenda High School após recarga. A regressão encontrou e corrigiu a limpeza indevida do formulário escolar em erro; controles de CRUD legítimo Admin SDK, recuperação recebida e Microsoft continuam dependentes de configuração/contas de teste. CI #27 também aprovou a nova regressão do formulário. Mapbox teve geocodificação/otimização por API real e renderização autenticada com captura conferida, sem gravações no CRM.",
     "production": "Não aplicado; depende de revisão e implantação."
   }
 ]

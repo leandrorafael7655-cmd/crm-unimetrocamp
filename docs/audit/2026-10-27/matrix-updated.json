@@ -378,11 +378,11 @@
     "modulo": "Rotas",
     "funcionalidade": "Mapa, geocodificação e otimização",
     "estado_auditado": "Parcial",
-    "estado_execucao": "Parcial",
+    "estado_execucao": "Funcional",
     "retestado": true,
-    "camada": "simulado",
-    "teste_e_limite": "Suíte de otimização, fallback e limites reexecutada com respostas simuladas; token/geolocalização reais não exercitados.",
-    "evidencia": "tests.log; responsive-results.json"
+    "camada": "real + simulado",
+    "teste_e_limite": "Módulos reais retornaram geocodificação e otimização HTTP 200 (7173ms/176ms). Mapa autenticado B2B carregou estilo/tiles/fontes reais; captura conferida mostrou Campinas e bairros; 375px sem transbordamento. GPS físico/aparelho real não testados. Fallback e limites continuam cobertos em testes simulados.",
+    "evidencia": "mapbox-real-results.json; mapbox-browser-results.json; mapbox-real-browser.png; tests.log"
   },
   {
     "id": "F36",
@@ -469,8 +469,8 @@
     "estado_execucao": "Funcional",
     "retestado": true,
     "camada": "simulado + real",
-    "teste_e_limite": "CI #26 (SHA cce9393): 2410 verificações Chromium/WebKit, zero falhas. URL/recarga e menu também exercitados nos quatro perfis reais registrados em homologação. Menu antigo não foi reproduzido na base auditada.",
-    "evidencia": "ci-run-26.json; browser-homologation-results.json"
+    "teste_e_limite": "CI #27 (SHA 9d9e5d9): 2410 verificações Chromium/WebKit, zero falhas. URL/recarga e menu também exercitados nos quatro perfis reais registrados em homologação. Menu antigo não foi reproduzido na base auditada.",
+    "evidencia": "ci-run-27.json; browser-homologation-results.json"
   },
   {
     "id": "F44",
@@ -480,8 +480,8 @@
     "estado_execucao": "Funcional",
     "retestado": true,
     "camada": "simulado + real",
-    "teste_e_limite": "CI #26: Chromium/WebKit, 320–1920px, zoom 100%, 2410 verificações sem falhas. Quatro perfis reais tiveram recarga autenticada a 375px. Sem aparelho físico ou leitor de tela.",
-    "evidencia": "ci-run-26.json; browser-homologation-results.json"
+    "teste_e_limite": "CI #27: Chromium/WebKit, 320–1920px, zoom 100%, 2410 verificações sem falhas. Quatro perfis reais tiveram recarga autenticada a 375px. Sem aparelho físico ou leitor de tela.",
+    "evidencia": "ci-run-27.json; browser-homologation-results.json"
   },
   {
     "id": "F45",
@@ -502,8 +502,8 @@
     "estado_execucao": "Funcional",
     "retestado": true,
     "camada": "ferramentas",
-    "teste_e_limite": "CI #26: 245 testes, tipos, lint e build aprovados. Alteração adicional: lint dos arquivos, tipos e build limpo passaram; cache local inválido foi preservado e refeito. CI do novo SHA vinculado no PR.",
-    "evidencia": "ci-run-26.json; remaining-readiness.json; remaining-build.log; remaining-typecheck.log"
+    "teste_e_limite": "CI #27: 245 testes, tipos, lint e build aprovados. Alteração adicional: lint dos arquivos, tipos e build limpo passaram; cache local inválido foi preservado e refeito. CI do novo SHA vinculado no PR.",
+    "evidencia": "ci-run-27.json; remaining-readiness.json; remaining-build.log; remaining-typecheck.log"
   },
   {
     "id": "F47",

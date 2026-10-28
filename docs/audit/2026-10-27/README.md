@@ -235,6 +235,14 @@ O build local encontrou cache Turbopack inválido após a interrupção. A pasta
 
 O CI #26 concluiu 245 testes e 2410 verificações Chromium/WebKit com backend simulado, sem falhas, no commit `cce9393`. A descrição do PR vincula o CI do novo commit desta correção; a evidência anterior não é apresentada como execução de outro SHA.
 
+## Mapbox com serviço real
+
+A configuração pública existente permitiu encerrar a parcela de mapa/geocodificação/otimização que ainda dependia apenas de acesso disponível. Os próprios módulos server-only, compilados para execução Node com a condição `react-server`, consultaram a API real: geocodificação HTTP 200 em 7173ms e otimização HTTP 200 em 176ms; rota fictícia de uma parada retornou 6259m e 747s. Não foram gravadas rotas nem alterados registros. Os hashes dos fontes estão em [mapbox-real-results.json](evidence/mapbox-real-results.json).
+
+O navegador autenticado B2B carregou estilo, vetores e fontes reais; o roteiro aguardou o desenho antes de considerar sucesso. A [captura conferida](evidence/mapbox-real-browser.png) mostra Campinas e bairros; o viewport de 375px não transbordou. [Resultado completo](evidence/mapbox-browser-results.json). A captura prematura em branco não foi considerada validação. GPS/aparelho físico continuam não testados. Console registrou telemetria bloqueada e Vercel Insights indisponível no servidor local, discriminados na evidência; não foi declarado console sem erros.
+
+O CI #27 aprovou a correção do formulário em `9d9e5d9`, com 245 testes e 2410 verificações nos dois navegadores, incluindo a nova regressão. O último commit acrescenta evidências/roteiro e preserva o mesmo código do produto; seu CI próprio será vinculado na descrição do PR.
+
 ## Entrega operacional
 
 - [Pendências verificadas e insumos necessários](remaining-execution.md).

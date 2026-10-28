@@ -1,0 +1,45 @@
+{
+  "layer": "Módulos reais de geocodificação/otimização → API Mapbox real, somente GET; sem banco",
+  "requests": [
+    {
+      "endpoint": "/search/geocode/v6",
+      "method": "GET",
+      "status": 200,
+      "ms": 7173
+    },
+    {
+      "endpoint": "/optimized-trips/v1/mapbox",
+      "method": "GET",
+      "status": 200,
+      "ms": 176
+    }
+  ],
+  "results": [
+    {
+      "id": "MAPBOX-GEOCODE-REAL",
+      "precision": "place",
+      "latitude": -22.90286,
+      "longitude": -47.057137
+    },
+    {
+      "id": "MAPBOX-OPTIMIZE-REAL",
+      "optimized": true,
+      "distanceM": 6259,
+      "durationS": 747,
+      "eta": {
+        "parada-ficticia": "09:05"
+      }
+    }
+  ],
+  "failures": [],
+  "limits": [
+    "Não testa renderização WebGL no navegador ou geolocalização física",
+    "Não usa token secreto Mapbox nem faz gravações no CRM"
+  ],
+  "source_commit": "9d9e5d91613356e5e58574d2b27616ac8c2b5ea8",
+  "source_hashes": {
+    "lib/data/mapbox-geocode.ts": "5fe6fd03f6efb390421b57ec938a0228e7f945abe7189ff61b5657b6348c947f",
+    "lib/data/mapbox-optimize.ts": "14878c5604d98af4c73f20648a3df3b6db2fb668de5ca0b8424253eb19842278",
+    "lib/data/mapbox-token.ts": "3ebaf737e8853e05540891c805e560ed8ba11217b4dfad23fb5bb2e69c1f68ed"
+  }
+}

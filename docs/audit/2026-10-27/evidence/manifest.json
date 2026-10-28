@@ -35,6 +35,11 @@
     "sha256": "a0ea0dec35b4e6183ddcb7cea0638852a71a74ab398cac97675ec7f26a60e1e4"
   },
   {
+    "file": "ci-run-27.json",
+    "bytes": 834,
+    "sha256": "639c50f007abf34789d877a46eba504635a3cb59665201353219ffa550b87b9c"
+  },
+  {
     "file": "dependency-audit.json",
     "bytes": 310,
     "sha256": "c0ec1509c313bca25918ebc4b785d9f039aead57554c9a0ba068fe8d07019e11"
@@ -93,6 +98,21 @@
     "file": "manager-concurrency-lock.json",
     "bytes": 1504,
     "sha256": "1d43e501c3803289bd6f8a803e87cd59d64cfd08842103f630653fb5f8efe7a5"
+  },
+  {
+    "file": "mapbox-browser-results.json",
+    "bytes": 2605,
+    "sha256": "8a3570d5919428780523bb70337f17e94068740d096d085a5857e589cc9b7de0"
+  },
+  {
+    "file": "mapbox-real-browser.png",
+    "bytes": 344906,
+    "sha256": "99a070e5cac35582f6075e295e20da1a5d0af23e696ca6179ee3ed0574e83e95"
+  },
+  {
+    "file": "mapbox-real-results.json",
+    "bytes": 1272,
+    "sha256": "279d07995aac49f652865c58513cb32f82dc598bf217424b0d06c15eeced49c0"
   },
   {
     "file": "production-preflight-additional.json",
