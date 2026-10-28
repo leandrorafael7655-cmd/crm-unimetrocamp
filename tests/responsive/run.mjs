@@ -177,6 +177,12 @@ async function openMenu(width) {
   if (width >= 768 ? value === "true" : value !== "true") {
     await page.locator(width >= 768 ? ".uni-desktop-toggle" : ".uni-mobile-toggle").click()
   }
+  // WebKit can complete the click before React commits aria-hidden on the drawer.
+  await page.waitForFunction(desktop => {
+    const shell = document.querySelector(".uni-shell")
+    return desktop ? shell?.getAttribute("data-sidebar-collapsed") !== "true" : shell?.getAttribute("data-mobile-open") === "true"
+  }, width >= 768)
+  await page.locator(".uni-sidebar nav").waitFor({state:"visible"})
 }
 
 async function selectB2B(label, width) {

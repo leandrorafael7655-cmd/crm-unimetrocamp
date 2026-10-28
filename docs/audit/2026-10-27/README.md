@@ -21,9 +21,9 @@ Os estados abaixo valem para a branch/homologação e seu critério descrito. Um
 | ROUTE-01 | P0 | Edição de rota pode eliminar todas as paradas | **corrigido e validado** | app/actions/routes.ts; ROUTE-01-REAL |
 | ACCESS-01 | P1 | Supervisor pode rebaixar o único gerente | **corrigido e validado** | app/actions/user-admin.ts; Concorrência PostgreSQL real com duas transações |
 | ACCESS-02 | P1 | Redefinição legada ignora as regras atuais | **implementado com validação pendente** | app/actions/team.ts; lib/auth/admin-compat.test.ts |
-| SAVE-01 | P1 | B2B pode aparentar salvar sem gravar | **implementado com validação pendente** | lib/data/supabase-storage.ts; SAVE-01-REAL |
+| SAVE-01 | P1 | B2B pode aparentar salvar sem gravar | **corrigido e validado** | lib/data/supabase-storage.ts; SAVE-01-REAL |
 | SCHOOL-01 | P1 | Ação escolar antiga aceita término anterior ao início | **corrigido e validado** | lib/domain/validation.ts; SCHOOL-01-REAL |
-| GOALS-01 | P1 | Central de Metas redireciona consultores autorizados | **implementado com validação pendente** | app/gestao/layout.tsx; GOALS-01-RLS-REAL |
+| GOALS-01 | P1 | Central de Metas redireciona consultores autorizados | **corrigido e validado** | app/gestao/layout.tsx; GOALS-01-RLS-REAL |
 | SEC-DEP | P1 | Next.js de produção está em faixa afetada | **corrigido e validado** | package.json; pnpm audit --prod --json |
 | DUP-01 | P2 | Unicidade de CNPJ depende da pontuação | **corrigido e validado** | lib/domain/utils.ts; DUP-01-REAL |
 | AGENDA-02 | P1 | Conflitos de agenda não têm garantia uniforme | **decisão comercial pendente** | lib/domain/validation.ts; AGENDA-02-CONCURRENCY-REAL |
@@ -206,7 +206,7 @@ Ambiente isolado real criado sem dados oficiais; baseline completo sem usuários
 
 ## Verificações e limites
 
-Os comandos e saídas desta execução estão em `evidence/`. O teste anterior foi repetido contra o código auditado em ambiente simulado, reproduzindo: falso sucesso B2B, intervalo escolar invertido, perda de participantes, perda de paradas e acesso legado indevido. As regressões novas exercitam as correções no schema completo recriado, sem usuários reais.
+Os comandos e saídas desta execução estão em `evidence/`. Linhas de log têm somente espaços finais/CR de progresso normalizados, sem mudança dos resultados. O teste anterior foi repetido contra o código auditado em ambiente simulado, reproduzindo: falso sucesso B2B, intervalo escolar invertido, perda de participantes, perda de paradas e acesso legado indevido. As regressões novas exercitam as correções no schema completo recriado, sem usuários reais.
 
 - `npm test`: 225 testes Vitest em 31 arquivos + 20 testes Node, todos aprovados, sem ignorados. Auth é simulado nos testes de domínio/servidor; PostgreSQL PGlite usa o schema público auditado completo e oito migrações, mas não prova rede, SMTP ou Auth real.
 - `tsc --noEmit`: aprovado. `eslint .`: zero erros e 19 avisos preexistentes de Hooks, sem esconder regras. `npm run build`: aprovado com Next 16.4.1, sem scripts que modifiquem fontes.

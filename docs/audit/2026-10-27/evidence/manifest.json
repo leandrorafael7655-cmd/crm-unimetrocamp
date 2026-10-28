@@ -6,13 +6,13 @@
   },
   {
     "file": "browser-homologation-results.json",
-    "bytes": 1605,
-    "sha256": "906c8b37873b144b868e40f2b1016566b43fa0c22401522a7f7cba20806d5bc6"
+    "bytes": 3655,
+    "sha256": "a470c9942c0d60732882a6cac2caad2f923b8925353d26981216b60c62854927"
   },
   {
     "file": "build.log",
-    "bytes": 1586,
-    "sha256": "ef0055ad83eca032125d6b9b88cbbd9f2b1bedd7bbbbfd53a7d939b1099e8da3"
+    "bytes": 1579,
+    "sha256": "e0f2287edc63a27a9f4b5f6c66ed0e7d0421bc6aba32f12c56c23dac19d931c0"
   },
   {
     "file": "dependency-audit.json",
@@ -28,6 +28,11 @@
     "file": "homologation-auth-results.json",
     "bytes": 545,
     "sha256": "2d53eb1416143dd5b63c3a71cc21cff87eb28d180351eb5892a8596cebc34085"
+  },
+  {
+    "file": "homologation-cleanup.json",
+    "bytes": 193,
+    "sha256": "976c276601171acfed16c1dacbf79f0acf9683a4b23dbf0ecee53d8efa4dbd77"
   },
   {
     "file": "homologation-data-results.json",
@@ -56,8 +61,13 @@
   },
   {
     "file": "lint.log",
-    "bytes": 22161,
-    "sha256": "dac7b31e31489e39b3de8d527edc588722379b60ffca75e2fe25222d62b77dc2"
+    "bytes": 22160,
+    "sha256": "aca883a40aae7dcbc7275ddf1aa51ed891cc1b37d701713352d00f7bd0e7fb6b"
+  },
+  {
+    "file": "lockfile.log",
+    "bytes": 287,
+    "sha256": "aa7b4b2598b102d76b60c90337c6b39ce17142e4d42e8e5b4228e39d2c5d1a73"
   },
   {
     "file": "manager-concurrency-lock.json",
@@ -93,5 +103,10 @@
     "file": "typecheck.log",
     "bytes": 0,
     "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "file": "typegen.log",
+    "bytes": 59,
+    "sha256": "adba4af9194e10e47dda75ff0fd0f8c2b756474896d0eba5612799c527ff372a"
   }
 ]

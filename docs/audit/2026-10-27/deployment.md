@@ -32,7 +32,7 @@ Os CHECKs `NOT VALID` passam a proteger gravações novas e alterações, preser
 
 ## Ambiente novo e configuração segura
 
-O snapshot `supabase/baselines/20261004_public.sql` contém somente o schema público auditado, funções, políticas e grants. Serve exclusivamente para projeto Supabase **vazio e isolado**, com schema Auth gerenciado já disponível. Aplicar esse snapshot e as oito migrações em sequência, sem exposição ao público entre as etapas. Ele não deve ser aplicado a produção ou sobre o histórico remoto já existente. O gerador é `node scripts/audit/export-baseline.mjs`; o teste `createAuditedDatabase` recria as 50 tabelas a partir desse mesmo schema, usando um Auth mínimo simulado no PGlite.
+O snapshot `supabase/baselines/20261004_public.sql` contém somente o schema público auditado, funções, políticas e grants. Serve exclusivamente para projeto Supabase **vazio e isolado**, com schema Auth gerenciado já disponível. Aplicar esse snapshot e as oito migrações em sequência, sem exposição ao público entre as etapas. Ele não deve ser aplicado a produção ou sobre o histórico remoto já existente. Não mesclar a branch de banco de testes: aplicar somente as oito migrações de correção revisadas, sem fixtures. O gerador é `node scripts/audit/export-baseline.mjs`; o teste `createAuditedDatabase` recria as 50 tabelas a partir desse mesmo schema, usando um Auth mínimo simulado no PGlite.
 
 Usar URL/chave pública de homologação no cliente e chave administrativa **somente desse ambiente**, por variável segura no servidor. A chave administrativa não estava disponível ao executor; por isso fluxos legítimos do Admin SDK e telas dependentes dele continuam com validação integrada pendente. Nunca usar a chave oficial para esses testes. Bootstrap inicial exige `INITIAL_ADMIN_EMAIL` e `INITIAL_ADMIN_SETUP_TOKEN` com pelo menos 32 caracteres, fornecido por canal seguro; não é necessário para um CRM com gerente já existente.
 
@@ -55,3 +55,7 @@ Após aplicação, preferir uma migração corretiva para frente. Não remover a
 - Convites: caixa de teste, atualização/cancelamento pelo mesmo UID e resposta do destinatário. Microsoft: tenant, permissões, variáveis, conta/organizador e OAuth reais.
 - Conferir metas próprias e indicador indisponível quando a fonte não existir; reconciliar números com lançamento fictício conhecido.
 - Revisar a prévia da escala e as preferências antes de qualquer publicação. Não publicar os 246 rascunhos em lote.
+
+## Fixture de falha controlada
+
+Os scripts `scripts/audit/homologation-fault-setup.sql` e `homologation-fault-cleanup.sql` são exclusivos da homologação com as contas fictícias. O primeiro injeta falha no prefixo de teste; o segundo desativa essa falha por substituição da função por operação neutra, sem excluir objetos ou dados. A falha foi desativada após os 12 cenários de navegador. Essa limpeza de fixture não é uma nona migração de produção.

@@ -411,10 +411,10 @@
     "modulo": "Gestão",
     "funcionalidade": "Central de Metas para consultores",
     "estado_auditado": "Com erro",
-    "estado_execucao": "Parcial",
+    "estado_execucao": "Funcional",
     "retestado": true,
     "camada": "real + simulado",
-    "teste_e_limite": "Filtro de metas próprias por RLS confirmado, B2B navegou/recarregou. Resultado final dos demais perfis está na evidência do navegador; configuração protegida por guarda e teste.",
+    "teste_e_limite": "Filtro de metas próprias por RLS confirmado, B2B navegou/recarregou. B2B, High School, supervisor e gerente abriram e recarregaram metas no navegador real; resultado por perfil está na evidência; configuração protegida por guarda e teste.",
     "evidencia": "GOALS-01"
   },
   {
@@ -488,7 +488,7 @@
     "modulo": "Interface",
     "funcionalidade": "Mensagens de erro e preservação de formulário",
     "estado_auditado": "Parcial",
-    "estado_execucao": "Parcial",
+    "estado_execucao": "Funcional",
     "retestado": true,
     "camada": "real",
     "teste_e_limite": "Falha do banco manteve valores e não gerou sucesso. A correção do aviso que interceptava Cancelar é confirmada pelo clique e pela etapa móvel da regressão final.",

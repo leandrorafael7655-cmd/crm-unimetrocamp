@@ -117,7 +117,7 @@
     "id": "SAVE-01",
     "priority": "P1",
     "title": "B2B pode aparentar salvar sem gravar",
-    "status": "implementado com validação pendente",
+    "status": "corrigido e validado",
     "acceptance": "Falha de rede, RLS ou unicidade mostra erro, mantém formulário e não exibe registro ficticiamente salvo; sucesso persiste após recarga e novo login.",
     "files": [
       "lib/data/supabase-storage.ts",
@@ -168,7 +168,7 @@
     "id": "GOALS-01",
     "priority": "P1",
     "title": "Central de Metas redireciona consultores autorizados",
-    "status": "implementado com validação pendente",
+    "status": "corrigido e validado",
     "acceptance": "Ambos acessam metas próprias por clique, URL direta e recarga; não leem metas alheias nem alteram configurações.",
     "files": [
       "app/gestao/layout.tsx",
