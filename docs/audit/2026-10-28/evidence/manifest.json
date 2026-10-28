@@ -17,13 +17,23 @@
     },
     {
       "file": "evidence/build.log",
-      "sha256": "813578e4c0a2c8072ae453bafb5f118c8040fb98e1d6b2be32420396fc97cd16",
+      "sha256": "bb454562a5686d28a4846d173fd75573f9cf42df9a7c174c6ec2f1ae352777d7",
       "bytes": 1562
+    },
+    {
+      "file": "evidence/chromium-layout-after.log",
+      "sha256": "724453ca19b280ebdcb278394de16ac0b3289fbc9f0028d72d5516f3b6d96ef6",
+      "bytes": 42
     },
     {
       "file": "evidence/ci29-failure.log",
       "sha256": "3554224bc57e51ec638d166e3a4264cd2d117da7626dae54b92861dbc11ac14a",
       "bytes": 1713
+    },
+    {
+      "file": "evidence/ci30-failure.log",
+      "sha256": "2eaf05bcf128c3846d9dbd3c004fdc11da0e6835bb673f86cdc813007141fcd8",
+      "bytes": 1717
     },
     {
       "file": "evidence/dependencies.json",
@@ -37,8 +47,8 @@
     },
     {
       "file": "evidence/local-validation.json",
-      "sha256": "f54b749028a3c1e1c658947cd1b505a035149a6848d2aa3270637361e30a4c35",
-      "bytes": 11927
+      "sha256": "a8bece27daa4278c720a655a6f2c2415f77cfcb091b32d17b8587d64c515bc09",
+      "bytes": 13272
     },
     {
       "file": "evidence/test-mode-browser.log",
@@ -54,6 +64,16 @@
       "file": "evidence/types.log",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "bytes": 0
+    },
+    {
+      "file": "evidence/webkit-layout-after.log",
+      "sha256": "724453ca19b280ebdcb278394de16ac0b3289fbc9f0028d72d5516f3b6d96ef6",
+      "bytes": 42
+    },
+    {
+      "file": "evidence/webkit-native-select-before.json",
+      "sha256": "6fef30f006c37a55cf885d590f3d5b8f71e27501e405667375de74a0114ac2c6",
+      "bytes": 3471
     }
   ]
 }

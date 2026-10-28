@@ -363,6 +363,16 @@ try {
           }
         }
         if(name==="metas-b2b") {
+          await page.getByLabel("Consultor",{exact:true}).selectOption("consultor")
+          await page.getByLabel("Empresa",{exact:true}).selectOption("company")
+          await page.getByLabel("Ciclo comercial",{exact:true}).selectOption("cc")
+          await page.getByLabel("Meta de inscrições",{exact:true}).fill("15")
+          await page.getByLabel("Inscrições realizadas",{exact:true}).fill("3")
+          await page.getByRole("button",{name:"Salvar lançamento",exact:true}).click()
+          await page.getByText("Falha controlada no lançamento.",{exact:true}).waitFor()
+          assert.equal(await page.getByLabel("Empresa",{exact:true}).inputValue(),"company")
+          assert.equal(await page.getByLabel("Meta de inscrições",{exact:true}).inputValue(),"15")
+          await check("Manual B2B new result after rejected save "+width)
           await page.getByRole("button",{name:"Editar lançamento",exact:true}).click()
           await page.getByLabel("Meta de inscrições",{exact:true}).fill("15")
           await page.getByLabel("Inscrições realizadas",{exact:true}).fill("3")
@@ -430,7 +440,7 @@ try {
           await page.waitForSelector("dialog[open]",{state:"detached"})
           assert.equal(await page.getByRole("dialog",{name:"Empresa de teste",exact:true}).count(),1)
         }
-        if(width===1366 && ["dashboard","b2b","escola","atendimento"].includes(name)) {
+        if(width===1366 && ["dashboard","b2b","escola","atendimento","metas-b2b"].includes(name)) {
           await page.screenshot({path:"responsive-results/"+engine+"-"+name+"-1366.png",fullPage:true})
         }
       }

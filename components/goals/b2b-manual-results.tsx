@@ -26,9 +26,9 @@ export function B2bManualResults({ results, companies, people, cycles, history, 
     }}>
       <input type="hidden" name="revision" value={editing?.revision || 0} />
       {([["Consultor", "user_id", people, editing?.user_id], ["Empresa", "company_id", companies, editing?.company_id], ["Ciclo comercial", "commercial_cycle_id", cycles, editing?.commercial_cycle_id]] as const).map(([label, key, options, selected]) => <label key={key} className="min-w-0 text-sm">{label}
-        <select aria-label={label} name={key} className={field} required defaultValue={selected || ""} disabled={busy || !!editing}>
+        {editing ? <><input aria-label={label} readOnly className={field} value={name(options, selected || "")} /><input type="hidden" name={key} value={selected} /></> : <span className="block w-full min-w-0 max-w-full overflow-hidden rounded-md focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-teal-700"><select aria-label={label} name={key} className={field} required defaultValue="" disabled={busy}>
           <option value="">Selecione</option>{options.map(x => <option key={x.id} value={x.id}>{x.name}</option>)}
-        </select>{editing && <input type="hidden" name={key} value={selected} />}
+        </select></span>}
       </label>)}
       <label className="min-w-0 text-sm">Meta de inscrições<input name="target_value" type="number" min="0" max="2147483647" step="1" defaultValue={editing?.target_value ?? ""} className={field} /></label>
       <label className="min-w-0 text-sm">Inscrições realizadas<input name="registrations" type="number" min="0" max="2147483647" step="1" defaultValue={editing?.registrations ?? ""} className={field} /></label>
@@ -36,8 +36,8 @@ export function B2bManualResults({ results, companies, people, cycles, history, 
       <div className="flex gap-3 sm:col-span-2"><button disabled={busy} className="rounded bg-brand px-4 py-2 text-sm text-white">Salvar lançamento</button>{editing && <button type="button" onClick={() => setEditing(null)} className="text-sm">Cancelar edição</button>}</div>
     </form>}
     <div className="uni-scroll-region max-w-full overflow-x-auto rounded-lg border" tabIndex={0} role="region" aria-label="Lançamentos B2B">
-      <table className="w-full min-w-[650px] text-left text-sm"><thead><tr>{["Consultor", "Empresa", "Ciclo", "Meta", "Inscrições", "Histórico"].map(h => <th key={h} className="p-3">{h}</th>)}</tr></thead><tbody>
-        {results.map(row => <tr key={row.id} className="border-t"><td className="p-3">{name(people, row.user_id)}</td><td className="p-3">{name(companies, row.company_id)}</td><td className="p-3">{name(cycles, row.commercial_cycle_id)}</td><td className="p-3">{row.target_value ?? "Sem lançamento"}</td><td className="p-3">{row.registrations ?? "Sem lançamento"}</td><td className="p-3">
+      <table className="w-full min-w-[650px] text-left text-sm"><thead><tr>{["Consultor", "Empresa", "Ciclo", "Meta", "Inscrições", "Histórico"].map(h => <th key={h} className="whitespace-nowrap p-3">{h}</th>)}</tr></thead><tbody>
+        {results.map(row => <tr key={row.id} className="border-t"><td className="p-3">{name(people, row.user_id)}</td><td className="p-3">{name(companies, row.company_id)}</td><td className="whitespace-nowrap p-3">{name(cycles, row.commercial_cycle_id)}</td><td className="p-3">{row.target_value ?? "Sem lançamento"}</td><td className="p-3">{row.registrations ?? "Sem lançamento"}</td><td className="p-3">
           {canWrite && <button onClick={() => setEditing(row)} className="text-brand underline">Editar lançamento</button>}
           <details><summary>Ver histórico</summary>{history.filter(h => h.result_id === row.id).map(h => <p key={h.id} className="mt-2">{h.changed_by_name} · {new Date(h.changed_at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })} · Meta: {h.new_values.target_value ?? "sem lançamento"}; inscrições: {h.new_values.registrations ?? "sem lançamento"}</p>)}</details>
         </td></tr>)}

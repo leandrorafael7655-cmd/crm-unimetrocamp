@@ -137,7 +137,7 @@
     },
     {
       "path": "components/goals/b2b-manual-results.tsx",
-      "sha256": "5d2d666bed5915082c71d68e30f54ad14161d19cf3d7c508b0f22e73beb56cfb"
+      "sha256": "9ef82ea13ca34addd8e71408dc745b141d16816b88b6a85506a42cb598c3487c"
     },
     {
       "path": "components/goals/metas-client.tsx",
@@ -309,7 +309,7 @@
     },
     {
       "path": "tests/responsive/run.mjs",
-      "sha256": "fad4ae2686a6520d8bcb08dc82ac71c72d8f547b6e671edf493c8b827d5a3155"
+      "sha256": "59d765d8c5f6acb91095df3c9b0593754e592d691e3d2e35f87308a557382df4"
     },
     {
       "path": "tests/responsive/ui.jsx",
@@ -344,6 +344,40 @@
       "visual_failures": 14,
       "error": "WebKit manual B2B edit/history width overflow",
       "fix": "Constrain width of native fields, labels and form grid; new CI required"
+    },
+    "ci30": {
+      "commit": "1ddffc59757b4528b62cc7550ed14d4218acf991",
+      "run_id": 40754631579,
+      "status": "failure",
+      "visual_checks": 2474,
+      "visual_failures": 14,
+      "passed": [
+        "install",
+        "types",
+        "lint",
+        "build",
+        "261 Vitest + 10 Node"
+      ]
+    },
+    "native_select_correction": {
+      "reason": "WebKit native selected text contributes 820px of overflow to a 254px label while element boxes remain within the viewport. CSS max-width alone did not constrain that paint.",
+      "fix": "Readonly identity fields during edit; clipped native-select paint wrapper with visible focus during create. Table headers stay on one line.",
+      "local_tests": [
+        {
+          "engine": "WebKit 26.0",
+          "checks": 325,
+          "failures": 0,
+          "backend": "simulated",
+          "launcher": "same Playwright binary, custom launcher for extracted local Ubuntu libraries"
+        },
+        {
+          "engine": "Chromium",
+          "checks": 325,
+          "failures": 0,
+          "backend": "simulated"
+        }
+      ],
+      "coverage": "Select long company at creation, rejected save retains values, edit rejects save without clearing, history, eight viewport widths, shared navigation/profile checks. These separate executions are not summed."
     }
   }
 }
