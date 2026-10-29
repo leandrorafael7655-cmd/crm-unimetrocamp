@@ -94,7 +94,7 @@ export async function buscarPontosMapa(
       .from("companies")
       .select(
         "id, razao_social, nome_fantasia, cidade, bairro, latitude, longitude, owner_id, classificacao, etapa, possui_beneficio, proxima_acao, data_proxima_acao",
-      )
+      ).is("archived_at", null)
       .not("latitude", "is", null)
       .gte("latitude", bbox.sul)
       .lte("latitude", bbox.norte)
@@ -141,7 +141,7 @@ export async function buscarPontosMapa(
       .from("schools")
       .select(
         "id, name, cidade, bairro, latitude, longitude, primary_owner_id, classification, relationship_stage, relationship_status, potential, next_action, next_action_at",
-      )
+      ).is("archived_at", null)
       .not("latitude", "is", null)
       .gte("latitude", bbox.sul)
       .lte("latitude", bbox.norte)
@@ -188,14 +188,14 @@ export async function buscarPontosMapa(
   if (wantEmpresas) {
     const { count } = await supabase
       .from("companies")
-      .select("id", { count: "exact", head: true })
+      .select("id", { count: "exact", head: true }).is("archived_at", null)
       .is("latitude", null)
     semCoordenada.empresas = count ?? 0
   }
   if (wantEscolas) {
     const { count } = await supabase
       .from("schools")
-      .select("id", { count: "exact", head: true })
+      .select("id", { count: "exact", head: true }).is("archived_at", null)
       .is("latitude", null)
     semCoordenada.escolas = count ?? 0
   }
@@ -211,8 +211,8 @@ export async function opcoesFiltroMapa(): Promise<{
 }> {
   const supabase = await createClient()
   const [empresas, escolas, perfis] = await Promise.all([
-    supabase.from("companies").select("cidade, etapa"),
-    supabase.from("schools").select("cidade"),
+    supabase.from("companies").select("cidade, etapa").is("archived_at", null),
+    supabase.from("schools").select("cidade").is("archived_at", null),
     supabase.from("profiles").select("id, full_name").eq("active", true),
   ])
   const cidades = new Set<string>()

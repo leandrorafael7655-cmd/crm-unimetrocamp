@@ -5,6 +5,7 @@ import { getActor } from "@/lib/auth/guards"
 import { can } from "@/lib/domain/roles"
 import { getSchool360, listOwners, listGradeLevels } from "@/lib/data/high-school-queries"
 import { Card, Chip, SectionTitle } from "@/components/high-school/hs-ui"
+import { ArchiveSchool } from "@/components/high-school/archive-school"
 import { EscolaForm } from "@/components/high-school/escola-form"
 import { ContatosPanel, EstimativasPanel } from "@/components/high-school/escola-360-panels"
 import { SchoolCapture } from "@/components/high-school/school-capture"
@@ -45,7 +46,7 @@ export default async function Escola360Page({ params }: { params: Promise<{ id: 
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-xl font-semibold text-slate-900 text-balance">{escola.nome}</h1>
+              <h1 className="text-xl font-semibold text-slate-900 text-balance">{escola.nome}{escola.arquivada ? " · Arquivada" : ""}</h1>
               {escola.classificacao && (
                 <Chip className={CORES_CLASSIFICACAO_HS[escola.classificacao]}>{escola.classificacao}</Chip>
               )}
@@ -59,7 +60,7 @@ export default async function Escola360Page({ params }: { params: Promise<{ id: 
             </p>
           </div>
           {podeEscrever && (
-            <EscolaForm owners={owners} escola={escola} variant="outline" />
+            <div className="flex flex-wrap items-center gap-2"><EscolaForm owners={owners} escola={escola} variant="outline" /><ArchiveSchool id={escola.id} archived={!!escola.arquivada} /></div>
           )}
         </div>
 

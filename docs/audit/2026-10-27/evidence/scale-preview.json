@@ -1,0 +1,74 @@
+[
+  {
+    "slot_key": "junior",
+    "sort_order": 1,
+    "active": true,
+    "linked": true,
+    "responsible_review": "Júnior",
+    "draft_count": 31,
+    "draft_without_user": 0
+  },
+  {
+    "slot_key": "vanessa",
+    "sort_order": 2,
+    "active": true,
+    "linked": true,
+    "responsible_review": "Vanessa",
+    "draft_count": 31,
+    "draft_without_user": 0
+  },
+  {
+    "slot_key": "madu",
+    "sort_order": 3,
+    "active": true,
+    "linked": true,
+    "responsible_review": "Madu",
+    "draft_count": 31,
+    "draft_without_user": 0
+  },
+  {
+    "slot_key": "carla",
+    "sort_order": 4,
+    "active": true,
+    "linked": true,
+    "responsible_review": "Carla",
+    "draft_count": 31,
+    "draft_without_user": 0
+  },
+  {
+    "slot_key": "adryeli",
+    "sort_order": 5,
+    "active": true,
+    "linked": true,
+    "responsible_review": "Adriely",
+    "draft_count": 30,
+    "draft_without_user": 0
+  },
+  {
+    "slot_key": "ramon",
+    "sort_order": 6,
+    "active": true,
+    "linked": true,
+    "responsible_review": "Ramon",
+    "draft_count": 30,
+    "draft_without_user": 0
+  },
+  {
+    "slot_key": "consultor_7",
+    "sort_order": 7,
+    "active": true,
+    "linked": false,
+    "responsible_review": "Revisão operacional",
+    "draft_count": 30,
+    "draft_without_user": 30
+  },
+  {
+    "slot_key": "consultor_8",
+    "sort_order": 8,
+    "active": true,
+    "linked": false,
+    "responsible_review": "Revisão operacional",
+    "draft_count": 31,
+    "draft_without_user": 31
+  }
+]

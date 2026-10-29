@@ -188,14 +188,14 @@ export function CompanyMeetings({
         <div>
           <h3 className="text-base font-semibold text-slate-900">Responsáveis e reuniões</h3>
           <p className="mt-1 text-xs text-slate-500">
-            Envie convites e deixe cada participante aceitar na própria agenda.
+            O convite é enviado automaticamente ao responsável do CRM, que pode aceitar na própria agenda.
           </p>
         </div>
         <button
           type="button"
           className={primary}
           onClick={newMeeting}
-          disabled={busy || !data?.canEdit || !data.contacts.length || !data.organizer.email}
+          disabled={busy || !data?.canEdit || !data.organizer.email}
         >
           <CalendarPlus size={16} />
           Agendar reunião
@@ -230,7 +230,7 @@ export function CompanyMeetings({
               </p>
               <p className="mt-1 text-slate-500">
                 {data.emailInvitations.configured
-                  ? "Convites por e-mail disponíveis. Você também recebe o convite para aceitar."
+                  ? "Convites por e-mail disponíveis para o responsável do CRM."
                   : "Você pode salvar o agendamento. O envio aguarda a configuração do remetente de e-mail pela gerência."}
               </p>
             </div>
@@ -257,7 +257,7 @@ export function CompanyMeetings({
             </div>
             {!data.contacts.length && (
               <p className="rounded-lg border border-dashed p-3 text-xs text-slate-500">
-                Cadastre o responsável e seu e-mail para enviar convites de reunião.
+                Cadastre os contatos da empresa para manter o histórico comercial. O convite vai ao usuário do CRM.
               </p>
             )}
             <ul className="grid gap-2 sm:grid-cols-2">
@@ -395,23 +395,14 @@ export function CompanyMeetings({
                 <CalendarPlus size={18} />
                 {meeting.revision ? "Editar reunião" : "Agendar reunião"}
               </h4>
-              <label className="space-y-1 text-xs sm:col-span-2">
-                Envio do convite
-                <select className={field} value={meeting.calendarProvider || "email"}
-                  disabled={meeting.revision > 0}
-                  onChange={(e) => setMeeting({ ...meeting, calendarProvider: e.target.value as "email" | "graph", meetingType: "presencial" })}>
-                  <option value="email">Por e-mail — sem vincular conta</option>
-                  <option value="graph" disabled={!data.microsoft.connected}>Outlook e Teams automático — conta vinculada</option>
-                </select>
-              </label>
+              <p className="text-xs text-slate-600 sm:col-span-2">Envio por e-mail ao responsável do CRM. Contatos da empresa e participantes adicionais não recebem comunicações automáticas.</p>
               <label className="space-y-1 text-xs">
                 Empresa
                 <input readOnly className={field} value={companyName} />
               </label>
               <label className="space-y-1 text-xs">
-                Responsável da empresa
+                Contato da empresa (opcional)
                 <select
-                  required
                   className={field}
                   value={meeting.contactId}
                   onChange={(e) => setMeeting({ ...meeting, contactId: e.target.value })}
@@ -430,7 +421,7 @@ export function CompanyMeetings({
                 <input
                   readOnly
                   className={field}
-                  value={selected?.email || "Cadastre o e-mail na ficha do responsável"}
+                  value={selected?.email || "Sem e-mail de contato; o convite vai ao consultor"}
                 />
               </label>
               <div className="grid gap-2 sm:grid-cols-2">
@@ -537,76 +528,7 @@ export function CompanyMeetings({
                   onChange={(e) => setMeeting({ ...meeting, description: e.target.value })}
                 />
               </label>
-              <fieldset className="space-y-2 sm:col-span-2">
-                <legend className="mb-2 text-sm font-medium">Participantes adicionais — opcional</legend>
-                {meeting.participants.map((p, index) => (
-                  <div key={index} className="flex items-end gap-2">
-                    <div className="grid min-w-0 flex-1 gap-2 sm:grid-cols-2">
-                      <label className="space-y-1 text-xs">
-                        Nome
-                        <input
-                          maxLength={160}
-                          className={field}
-                          value={p.name}
-                          onChange={(e) =>
-                            setMeeting({
-                              ...meeting,
-                              participants: meeting.participants.map((v, i) =>
-                                i === index ? { ...v, name: e.target.value } : v,
-                              ),
-                            })
-                          }
-                        />
-                      </label>
-                      <label className="space-y-1 text-xs">
-                        E-mail
-                        <input
-                          type="email"
-                          required
-                          maxLength={254}
-                          className={field}
-                          value={p.email}
-                          onChange={(e) =>
-                            setMeeting({
-                              ...meeting,
-                              participants: meeting.participants.map((v, i) =>
-                                i === index ? { ...v, email: e.target.value } : v,
-                              ),
-                            })
-                          }
-                        />
-                      </label>
-                    </div>
-                    <button
-                      type="button"
-                      aria-label={`Remover participante ${index + 1}`}
-                      className="p-2 text-rose-600"
-                      onClick={() =>
-                        setMeeting({
-                          ...meeting,
-                          participants: meeting.participants.filter((_, i) => i !== index),
-                        })
-                      }
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  className={secondary}
-                  disabled={meeting.participants.length >= 100}
-                  onClick={() =>
-                    setMeeting({
-                      ...meeting,
-                      participants: [...meeting.participants, { name: "", email: "" }],
-                    })
-                  }
-                >
-                  <Plus size={14} />
-                  Adicionar participante +
-                </button>
-              </fieldset>
+
               <p className="text-xs text-slate-500 sm:col-span-2">
                 {meeting.calendarProvider === "email"
                   ? "O UniConecta enviará o convite para você, o responsável e os participantes adicionais. Cada pessoa aceita na própria agenda. O aceite não é registrado automaticamente no CRM."

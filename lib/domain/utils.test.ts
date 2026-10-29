@@ -69,6 +69,11 @@ describe("slug", () => {
 })
 
 describe("CNPJ", () => {
+  it("preserves and validates the official alphanumeric CNPJ example",()=>{
+    expect(mascaraCNPJ("00000000E08G12")).toBe("00.000.000/E08G-12")
+    expect(cnpjValido("00.000.000/E08G-12")).toBe(true)
+    expect(cnpjValido("00.000.000/E08G-13")).toBe(false)
+  })
   it("soDigitos remove tudo que não é dígito", () => {
     expect(soDigitos("11.222.333/0001-81")).toBe("11222333000181")
     expect(soDigitos("abc")).toBe("")

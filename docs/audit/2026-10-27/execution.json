@@ -1,0 +1,444 @@
+[
+  {
+    "id": "SEC-01",
+    "priority": "P0",
+    "title": "Autocadastro aceita o papel supervisor",
+    "status": "corrigido e validado",
+    "acceptance": "Autocadastro com qualquer role privilegiada não cria acesso gerencial; somente gerente autorizado atribui papéis; testes via Auth e RLS com caixa de teste passam.",
+    "files": [
+      "app/actions/team.ts",
+      "app/actions/user-admin.ts",
+      "supabase/migrations/20261027204357_audit_access_security.sql"
+    ],
+    "tests": [
+      "SEC-01-METADATA",
+      "SEC-01-ACCESS-REAL",
+      "lib/testing/audit-remediation.test.ts",
+      "lib/auth/admin-compat.test.ts"
+    ],
+    "evidence": [
+      "evidence/homologation-auth-results.json",
+      "evidence/homologation-data-results.json",
+      "evidence/homologation-password-results.json"
+    ],
+    "conclusion": "Gatilho ignora metadata de papel/situação e cria B2B inativo. Alterações sensíveis só pelo servidor autorizado. REST, metadata no Auth e remoção indevida da flag de senha foram recusados. Criação do usuário foi exercitada no gatilho real do banco isolado; entrega de convite/cadastro administrativo pelo Admin SDK ainda depende da chave segura desse ambiente.",
+    "production": "Não aplicado; depende de revisão e implantação."
+  },
+  {
+    "id": "SCHOOL-02",
+    "priority": "P0",
+    "title": "Edição escolar pode apagar participantes anteriores",
+    "status": "corrigido e validado",
+    "acceptance": "Falha em qualquer etapa mantém data, participantes e resultados originais; sucesso grava todos e atualiza a agenda; teste autenticado de principal e apoio após recarga.",
+    "files": [
+      "app/actions/high-school.ts",
+      "supabase/migrations/20261027204641_audit_atomic_writes.sql"
+    ],
+    "tests": [
+      "SCHOOL-02-REAL",
+      "SCHOOL-AGENDA-REAL",
+      "lib/testing/audit-remediation.test.ts"
+    ],
+    "evidence": [
+      "evidence/homologation-data-results.json"
+    ],
+    "conclusion": "Ação, participantes, resultados e projeções de calendário gravam na mesma transação. Falha de resultado após alterar participantes preservou o estado anterior. Sucesso preservou IDs de resultado e ID/UID do principal; o apoio removido ficou cancelado.",
+    "production": "Não aplicado; depende de revisão e implantação."
+  },
+  {
+    "id": "ROUTE-01",
+    "priority": "P0",
+    "title": "Edição de rota pode eliminar todas as paradas",
+    "status": "corrigido e validado",
+    "acceptance": "Falhas de update/delete/insert preservam exatamente a versão anterior; sucesso mantém vínculos e ordem após recarregar e entrar novamente.",
+    "files": [
+      "app/actions/routes.ts",
+      "components/routes/route-planner.tsx",
+      "supabase/migrations/20261027204641_audit_atomic_writes.sql",
+      "supabase/migrations/20261027212751_audit_optional_route_return.sql"
+    ],
+    "tests": [
+      "ROUTE-01-REAL",
+      "lib/testing/audit-remediation.test.ts"
+    ],
+    "evidence": [
+      "evidence/homologation-data-results.json"
+    ],
+    "conclusion": "Plano e paradas são atômicos e mantêm IDs ao reordenar. Falha em parada preservou plano/paradas completos; outro consultor foi bloqueado. A prévia confirmou quatro saídas sem retorno em produção: retorno opcional foi preservado, não tratado como corrupção.",
+    "production": "Não aplicado; depende de revisão e implantação."
+  },
+  {
+    "id": "ACCESS-01",
+    "priority": "P1",
+    "title": "Supervisor pode rebaixar o único gerente",
+    "status": "corrigido e validado",
+    "acceptance": "Supervisor não altera gerente; tentativas concorrentes não deixam zero gerentes; saída de usuários com carteira continua bloqueada.",
+    "files": [
+      "app/actions/user-admin.ts",
+      "app/actions/team.ts",
+      "supabase/migrations/20261027204357_audit_access_security.sql"
+    ],
+    "tests": [
+      "Concorrência PostgreSQL real com duas transações",
+      "lib/auth/admin-compat.test.ts",
+      "lib/testing/audit-remediation.test.ts"
+    ],
+    "evidence": [
+      "evidence/manager-concurrency-lock.json",
+      "evidence/homologation-data-results.json"
+    ],
+    "conclusion": "Servidor exige gerente para alterar acesso. Contador privado serializa remoção/desativação/rebaixamento, inclusive cascade/ban no Auth. Duas transações reais concorrentes: uma remoção confirmou; a outra esperou e recebeu 23514, mantendo um gerente ativo. Não depende do botão da interface.",
+    "production": "Não aplicado; depende de revisão e implantação."
+  },
+  {
+    "id": "ACCESS-02",
+    "priority": "P1",
+    "title": "Redefinição legada ignora as regras atuais",
+    "status": "implementado com validação pendente",
+    "acceptance": "Todo ponto de entrada bloqueia supervisor/consultores; exige troca após senha temporária e registra operador/resultado sem armazenar senha. Confirmar também o endpoint real em homologação.",
+    "files": [
+      "app/actions/team.ts",
+      "app/actions/user-admin.ts",
+      "app/actions/user-access.ts"
+    ],
+    "tests": [
+      "lib/auth/admin-compat.test.ts",
+      "lib/auth/user-access*.test.ts",
+      "Troca obrigatória no Auth real"
+    ],
+    "evidence": [
+      "evidence/homologation-password-results.json",
+      "evidence/tests.log"
+    ],
+    "conclusion": "Entradas legadas delegam ao fluxo atual, exigem gerente, mantêm auditoria e troca obrigatória. Supervisor/B2B/HS bloqueados antes de abrir cliente administrativo. Troca efetiva da própria senha validada no Auth real; geração administrativa e endpoints legítimos completos aguardam a chave administrativa da homologação, sem solicitá-la no chat. Decisão de 28/10: a validação final será em produção, durante manutenção com backup completo e usuário de teste, após aprovação; não exige nova homologação.",
+    "production": "Não aplicado; depende de revisão e implantação."
+  },
+  {
+    "id": "SAVE-01",
+    "priority": "P1",
+    "title": "B2B pode aparentar salvar sem gravar",
+    "status": "corrigido e validado",
+    "acceptance": "Falha de rede, RLS ou unicidade mostra erro, mantém formulário e não exibe registro ficticiamente salvo; sucesso persiste após recarga e novo login.",
+    "files": [
+      "lib/data/supabase-storage.ts",
+      "lib/data/local-storage.ts",
+      "components/crm-app.jsx",
+      "supabase/migrations/20261027204755_audit_b2b_writes.sql"
+    ],
+    "tests": [
+      "SAVE-01-REAL",
+      "SAVE-01-BROWSER-PERSISTENCE",
+      "SAVE-01-BROWSER-FAILURE",
+      "lib/data/persistence.test.ts",
+      "lib/testing/audit-remediation.test.ts"
+    ],
+    "evidence": [
+      "evidence/homologation-data-results.json",
+      "evidence/homologation-additional-results.json",
+      "evidence/browser-homologation-results.json"
+    ],
+    "conclusion": "Erros sobem até a interface; estado e modal só confirmam depois da gravação. Empresa/contatos/convênio e interação/próximo passo são transacionais. Navegador real confirmou criação/edição/busca/recarga e preservação de formulário diante de falha do banco. O teste identificou aviso cobrindo o botão Cancelar; a interceptação foi corrigida e o clique faz parte da regressão final.",
+    "production": "Não aplicado; depende de revisão e implantação."
+  },
+  {
+    "id": "SCHOOL-01",
+    "priority": "P1",
+    "title": "Ação escolar antiga aceita término anterior ao início",
+    "status": "corrigido e validado",
+    "acceptance": "Ações antigas e novas recusam fim igual/anterior ao início; horários incompletos seguem regra explícita; dados históricos válidos são preservados.",
+    "files": [
+      "lib/domain/validation.ts",
+      "app/actions/high-school.ts",
+      "components/high-school/escola-360-panels.tsx",
+      "supabase/migrations/20261027204658_audit_business_validation.sql",
+      "supabase/migrations/20261027210239_audit_schedule_identity_guards.sql"
+    ],
+    "tests": [
+      "SCHOOL-01-REAL",
+      "lib/testing/audit-remediation.test.ts",
+      "lib/domain/attendance-planning.test.ts"
+    ],
+    "evidence": [
+      "evidence/homologation-data-results.json"
+    ],
+    "conclusion": "Cronologia validada em domínio, formulário, servidor e CHECK geral, incluindo ação sem edição. Agendamentos exigem responsável e intervalo completo. Fim igual/anterior recusado pelo banco real. Registros históricos realizados podem continuar somente com data quando permitido.",
+    "production": "Não aplicado; depende de revisão e implantação."
+  },
+  {
+    "id": "GOALS-01",
+    "priority": "P1",
+    "title": "Central de Metas redireciona consultores autorizados",
+    "status": "corrigido e validado",
+    "acceptance": "Ambos acessam metas próprias por clique, URL direta e recarga; não leem metas alheias nem alteram configurações.",
+    "files": [
+      "app/gestao/layout.tsx",
+      "app/gestao/metas/page.tsx",
+      "app/gestao/configuracoes/page.tsx",
+      "lib/data/goals-queries.ts"
+    ],
+    "tests": [
+      "GOALS-01-RLS-REAL",
+      "GOALS-01-BROWSER-*",
+      "lib/auth/config-access.test.ts",
+      "lib/testing/audit-remediation.test.ts"
+    ],
+    "evidence": [
+      "evidence/homologation-data-results.json",
+      "evidence/browser-homologation-results.json"
+    ],
+    "conclusion": "Layout aceita metas próprias e consulta filtra o ator; configuração mantém acesso gerencial. Acesso B2B e recarga já comprovados no navegador real; matriz final registra individualmente os demais perfis efetivamente concluídos. Consultor não recebeu meta alheia na API real nem acesso a configuração.",
+    "production": "Não aplicado; depende de revisão e implantação."
+  },
+  {
+    "id": "SEC-DEP",
+    "priority": "P1",
+    "title": "Next.js de produção está em faixa afetada",
+    "status": "corrigido e validado",
+    "acceptance": "Aviso aplicável eliminado do lockfile/runtime publicado; login, ações e build passam; triagem documentada para alertas restantes.",
+    "files": [
+      "package.json",
+      "pnpm-lock.yaml",
+      "app/globals.css",
+      "app/vendor/shadcn.css"
+    ],
+    "tests": [
+      "pnpm audit --prod --json",
+      "npm run build",
+      "npm test"
+    ],
+    "evidence": [
+      "evidence/dependency-audit.json",
+      "evidence/build.log",
+      "evidence/tests.log"
+    ],
+    "conclusion": "Next 16.3.0 atualizado para 16.4.1, correção explicitamente indicada no GHSA-p3m5-59mp-jv5r; versões compatíveis e lockfile verificados. CLI shadcn retirada do runtime, preservando exatamente seu CSS com licença. Scanner atual: zero alertas de produção. Publicação permanece para revisão, portanto a versão oficial ainda precisa receber a correção.",
+    "production": "Não aplicado; depende de revisão e implantação."
+  },
+  {
+    "id": "DUP-01",
+    "priority": "P2",
+    "title": "Unicidade de CNPJ depende da pontuação",
+    "status": "corrigido e validado",
+    "acceptance": "As duas representações não criam dois registros; campos vazios e regras de filial funcionam; conflitos retornam mensagem clara.",
+    "files": [
+      "lib/domain/utils.ts",
+      "lib/domain/utils.test.ts",
+      "supabase/migrations/20261027204658_audit_business_validation.sql"
+    ],
+    "tests": [
+      "DUP-01-REAL",
+      "lib/testing/audit-remediation.test.ts",
+      "CNPJ alfanumérico oficial 00.000.000/E08G-12"
+    ],
+    "evidence": [
+      "evidence/homologation-data-results.json",
+      "evidence/tests.log"
+    ],
+    "conclusion": "Unicidade compara CNPJ canônico, preserva máscara e aceita CNPJ alfanumérico com dígitos verificadores. Banco real recusou duplicata com/sem pontuação. Nenhuma empresa foi fundida ou apagada; vazios continuam opcionais e filial com identificador distinto permanece distinta.",
+    "production": "Não aplicado; depende de revisão e implantação."
+  },
+  {
+    "id": "AGENDA-02",
+    "priority": "P1",
+    "title": "Conflitos de agenda não têm garantia uniforme",
+    "status": "implementado com validação pendente",
+    "acceptance": "Testar principal e apoio, duas sessões simultâneas, intervalos adjacentes, cancelamento e ausência; conflito bloqueia ou exige exceção conforme regra aprovada.",
+    "files": [
+      "lib/domain/validation.ts",
+      "lib/domain/attendance-planning.ts",
+      "supabase/migrations/20261027204658_audit_business_validation.sql",
+      "supabase/migrations/20261028183718_audit_unified_external_agenda.sql"
+    ],
+    "tests": [
+      "AGENDA-02-CONCURRENCY-REAL",
+      "lib/testing/audit-remediation.test.ts",
+      "lib/domain/attendance-planning.test.ts",
+      "lib/testing/final-decisions.test.ts"
+    ],
+    "evidence": [
+      "evidence/homologation-data-results.json",
+      "evidence/tests.log",
+      "../2026-10-28/final-decisions.md"
+    ],
+    "conclusion": "Bloqueio de compromissos externos e permissão de sobreposição interna confirmados em 28/10. A projeção no PostgreSQL cruza módulos, inclusive troca de tipo sem alterar horário. Testes locais PGlite passam; concorrência e uso autenticado da nova versão oficial aguardam publicação aprovada.",
+    "production": "Não aplicado; depende de revisão e implantação."
+  },
+  {
+    "id": "OPS-01",
+    "priority": "P1",
+    "title": "Escala atual ainda não foi publicada",
+    "status": "decisão comercial pendente",
+    "acceptance": "Nenhum horário necessário sem responsável; escala publicada aparece no consultor correto após recarga; nenhum rascunho aparece indevidamente; convites só a destinatários aprovados.",
+    "files": [
+      "lib/domain/attendance-planning.ts",
+      "app/actions/attendance.ts",
+      "components/attendance/attendance-board.tsx",
+      "supabase/migrations/20261027204806_audit_attendance_rules.sql"
+    ],
+    "tests": [
+      "lib/domain/attendance-planning.test.ts",
+      "Consulta atual somente leitura"
+    ],
+    "evidence": [
+      "evidence/scale-preview.json",
+      "evidence/tests.log"
+    ],
+    "conclusion": "O responsável solicitou apagar a escala existente; 249 ocorrências e um ciclo foram removidos em 28/10, com backup privado e verificação independente, antes desta etapa. A nova distribuição aguarda preferências, restrições, sábados e GDC. Decisão expressa: não bloqueia a conclusão do PR; não houve nova publicação de escala.",
+    "production": "Não aplicado; depende de revisão e implantação."
+  },
+  {
+    "id": "METRIC-01",
+    "priority": "P2",
+    "title": "Meta B2B SuperVest retorna zero sem cálculo",
+    "status": "implementado com validação pendente",
+    "acceptance": "Dados oficiais fictícios conhecidos produzem total correto; sem integração mostra indisponível; alterações mantêm histórico e não duplicam atribuição.",
+    "files": [
+      "lib/data/goals-queries.ts",
+      "lib/domain/goals.ts",
+      "components/goals/goal-cards.tsx",
+      "components/goals/metas-client.tsx",
+      "components/goals/supervest-client.tsx",
+      "app/dashboard/page.tsx",
+      "supabase/migrations/20261028183704_audit_manual_b2b_goals.sql"
+    ],
+    "tests": [
+      "METRIC-01-BROWSER",
+      "lib/data/goals-availability.test.ts",
+      "lib/data/goals-batching.test.ts",
+      "lib/domain/goals.test.ts",
+      "lib/testing/final-decisions.test.ts"
+    ],
+    "evidence": [
+      "evidence/browser-homologation-results.json",
+      "evidence/tests.log",
+      "../2026-10-28/final-decisions.md"
+    ],
+    "conclusion": "Origem definida em 28/10: lançamento manual de gerente por empresa, consultor e ciclo comercial. Tela, RPC, RLS, histórico e revisão implementados; zero distingue ausência. Validação local de banco, permissão e interface; reconciliação no ambiente oficial aguarda aprovação/publicação.",
+    "production": "Não aplicado; depende de revisão e implantação."
+  },
+  {
+    "id": "INT-01",
+    "priority": "P2",
+    "title": "Microsoft Graph/Teams não está ativado",
+    "status": "dependência externa",
+    "acceptance": "No modo aprovado, criar/editar/cancelar sem duplicar Event ID e confirmar organizador, destinatários, respostas e persistência com contas de teste.",
+    "files": [
+      "docs/b2b-outlook-teams.md",
+      "lib/calendar/calendar-dispatch.ts",
+      "docs/audit/2026-10-27/deployment.md"
+    ],
+    "tests": [
+      "Testes de Graph/convites com provedor simulado",
+      "Projeções e fila reais no banco"
+    ],
+    "evidence": [
+      "evidence/tests.log",
+      "evidence/homologation-data-results.json"
+    ],
+    "conclusion": "Decisão de 28/10: convites Gmail SMTP na Vercel, sem Microsoft Graph/Teams. Processador, MIME/ICS, REQUEST/CANCEL, UID/SEQUENCE e erros visíveis têm validação local. Credenciais serão cadastradas pelo responsável diretamente no Vercel. Recebimento e inclusão no calendário do perfil Rafael ainda dependem da publicação aprovada e do teste real. Microsoft fica fora do escopo de aceite.",
+    "production": "Não aplicado; depende de revisão e implantação."
+  },
+  {
+    "id": "AGENDA-01",
+    "priority": "P2",
+    "title": "Minha Agenda não consolida compromissos B2B",
+    "status": "implementado com validação pendente",
+    "acceptance": "Cenário fictício com escola, atendimento e B2B aparece conforme escopo aprovado, sem duplicação e sem dados de outros consultores.",
+    "files": [
+      "app/actions/attendance.ts",
+      "docs/audit/2026-10-27/README.md",
+      "lib/domain/company-agenda.ts"
+    ],
+    "tests": [
+      "Inspeção da composição atual",
+      "SCHOOL-AGENDA-REAL",
+      "lib/testing/final-decisions.test.ts"
+    ],
+    "evidence": [
+      "evidence/homologation-data-results.json",
+      "../2026-10-28/final-decisions.md"
+    ],
+    "conclusion": "Inclusão de reuniões, próximos passos datados e ações B2B na agenda compartilhada implementada conforme decisão de 28/10. Consulta por usuário no servidor e testes locais; aceite com banco oficial ainda pendente.",
+    "production": "Não aplicado; depende de revisão e implantação."
+  },
+  {
+    "id": "PERF-01",
+    "priority": "P2",
+    "title": "Listas e índices precisam de revisão com volume",
+    "status": "corrigido e validado",
+    "acceptance": "Mais de 1000 registros fictícios retornam contagem e páginas completas; consultas críticas têm planos e tempos registrados; permissões permanecem intactas.",
+    "files": [
+      "lib/data/pagination.ts",
+      "lib/data/supabase-storage.ts",
+      "lib/data/route-queries.ts",
+      "lib/data/goals-queries.ts",
+      "lib/auth/guards.ts"
+    ],
+    "tests": [
+      "homologation-volume.mjs",
+      "EXPLAIN ANALYZE em homologação",
+      "lib/data/persistence.test.ts",
+      "lib/data/goals-batching.test.ts"
+    ],
+    "evidence": [
+      "evidence/homologation-volume-results.json",
+      "evidence/homologation-query-plan.json",
+      "evidence/tests.log"
+    ],
+    "conclusion": "1001 empresas fictícias retornaram em páginas 500/500/1, sem duplicar ou truncar, com RLS real: 433ms nesta execução. Plano administrativo da última página: 0,515ms de execução, separado da medição REST. Consultas de aderência agrupadas, somas escolares paginadas/em lotes e ator deduplicado durante renderização. Avisos de índices não usados em branch nova não justificam apagar índices. Tempos de navegação local são registrados à parte e não são SLA de produção.",
+    "production": "Não aplicado; depende de revisão e implantação."
+  },
+  {
+    "id": "QA-01",
+    "priority": "P2",
+    "title": "Regressão autenticada e reprodução do ambiente são insuficientes",
+    "status": "implementado com validação pendente",
+    "acceptance": "Banco vazio é montado pelo repositório; CI reproduz build; contas por papel passam CRUD e isolamento; falhas reproduzidas viram regressões sem envio a pessoas reais.",
+    "files": [
+      ".github/workflows/responsive-layout.yml",
+      "package.json",
+      "supabase/baselines/20261004_public.sql",
+      "lib/testing/audited-database.ts",
+      "tests/fixtures/audited-schema.json",
+      "scripts/audit/",
+      "scripts/audit/browser-remaining.mjs",
+      "components/high-school/escola-form.tsx",
+      "tests/responsive/run.mjs",
+      "tests/responsive/fixtures.mjs",
+      "scripts/audit/browser-mapbox.mjs"
+    ],
+    "tests": [
+      "Reprodução anterior com código auditado",
+      "Banco vazio PGlite + oito migrações",
+      "Supabase Auth/REST real",
+      "Regressão Chromium e CI",
+      "NOSESSION-UI",
+      "DEMO-CRUD-UI",
+      "SCHOOL-CRUD-UI",
+      "SCHOOL-CAPTURE-AGENDA-UI",
+      "Preservação do formulário escolar na suíte Chromium/WebKit de CI",
+      "MAPBOX-GEOCODE-REAL",
+      "MAPBOX-OPTIMIZE-REAL",
+      "MAPBOX-RENDER-REAL",
+      "MAPBOX-MOBILE-REAL"
+    ],
+    "evidence": [
+      "evidence/before-reproductions.log",
+      "evidence/tests.log",
+      "evidence/build.log",
+      "evidence/responsive.log",
+      "evidence/homologation-ledger.json",
+      "evidence/ci-run-26.json",
+      "evidence/browser-access-results.json",
+      "evidence/browser-remaining-results.json",
+      "evidence/before-remaining-browser.json",
+      "evidence/remaining-readiness.json",
+      "evidence/mapbox-real-results.json",
+      "evidence/mapbox-browser-results.json",
+      "evidence/mapbox-real-browser.png",
+      "evidence/ci-run-27.json"
+    ],
+    "conclusion": "CI #26 reproduziu instalação, tipos, lint, build, 245 testes e 2410 verificações Chromium/WebKit sem falhas, no SHA registrado em ci-run-26.json. Os 12 cenários anteriores com Auth/banco reais foram preservados. Novos testes concluíram bloqueio sem sessão, CRUD do demo, criação/edição de escola com validação e preservação do formulário, Kanban/lista por edição e ação na Agenda High School após recarga. A regressão encontrou e corrigiu a limpeza indevida do formulário escolar em erro; controles de CRUD legítimo Admin SDK, recuperação recebida e Microsoft continuam dependentes de configuração/contas de teste. CI #27 também aprovou a nova regressão do formulário. Mapbox teve geocodificação/otimização por API real e renderização autenticada com captura conferida, sem gravações no CRM. Decisão de 28/10: a validação final será em produção, durante manutenção com backup completo e usuário de teste, após aprovação; não exige nova homologação.",
+    "production": "Não aplicado; depende de revisão e implantação."
+  }
+]

@@ -1,0 +1,59 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> my-project@0.1.0 build
+> next build
+
+▲ Next.js 16.4.1 (Turbopack)
+- Environments: .env.local
+✓ Running next.config.mjs took 25ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 4.8s
+  Running TypeScript ...
+  Finished TypeScript in 8.8s ...
+  Collecting page data using 8 workers ...
+  Generating static pages using 8 workers (0/12) ...
+  Generating static pages using 8 workers (3/12)
+  Generating static pages using 8 workers (6/12)
+  Generating static pages using 8 workers (9/12)
+✓ Generating static pages using 8 workers (12/12) in 431ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /api/cron/b2b-relationships
+├ ƒ /api/cron/calendar-invites
+├ ƒ /api/cron/close-weeks
+├ ƒ /api/mapa/pontos
+├ ƒ /api/microsoft/callback
+├ ƒ /api/microsoft/connect
+├ ƒ /atendimento
+├ ƒ /atendimento/minha-agenda
+├ ○ /auth/callback
+├ ƒ /auth/error
+├ ○ /auth/login
+├ ○ /auth/reset-password
+├ ƒ /b2b/carteira
+├ ƒ /dashboard
+├ ○ /demo
+├ ƒ /gestao/configuracoes
+├ ƒ /gestao/metas
+├ ƒ /high-school
+├ ƒ /high-school/agenda
+├ ƒ /high-school/captacao-escolas
+├ ƒ /high-school/escolas
+├ ƒ /high-school/escolas/[id]
+├ ƒ /high-school/pipeline
+├ ƒ /mapa
+├ ƒ /mapa/rotas
+├ ƒ /perfil
+├ ƒ /perfil/alterar-senha
+├ ƒ /setup
+└ ƒ /supervest
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand

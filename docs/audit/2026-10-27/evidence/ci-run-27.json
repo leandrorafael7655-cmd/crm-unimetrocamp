@@ -1,0 +1,20 @@
+{
+  "commit": "9d9e5d91613356e5e58574d2b27616ac8c2b5ea8",
+  "run_id": 40736304828,
+  "status": "completed",
+  "conclusion": "success",
+  "url": "https://github.com/leandrorafael7655-cmd/crm-unimetrocamp/actions/runs/40736304828",
+  "vitest": 225,
+  "node": 20,
+  "responsive_checks": 2410,
+  "responsive_failures": 0,
+  "engines": [
+    "chromium",
+    "webkit"
+  ],
+  "backends": "simulados; inclui nova regressão do formulário escolar após recusa de gravação",
+  "artifact": "https://github.com/leandrorafael7655-cmd/crm-unimetrocamp/actions/runs/40736304828/artifacts/12837148080",
+  "lint_errors": 0,
+  "lint_warnings": 19,
+  "note": "SHA da correção de produção do formulário; commit posterior acrescenta documentação, evidências e roteiro de teste Mapbox. O CI do SHA final será vinculado na descrição do PR."
+}

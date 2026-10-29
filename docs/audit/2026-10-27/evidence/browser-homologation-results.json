@@ -1,0 +1,89 @@
+{
+  "results": [
+    {
+      "id": "GOALS-01-BROWSER-b2b",
+      "layer": "Navegador local → aplicação Next.js → Auth/banco Supabase reais de homologação",
+      "details": "Login, acesso direto e recarga da Central de Metas concluídos"
+    },
+    {
+      "id": "METRIC-01-BROWSER",
+      "layer": "Navegador local → aplicação Next.js → Auth/banco Supabase reais de homologação",
+      "details": "Indicador sem origem transacional aparece como Não disponível, sem progresso inventado"
+    },
+    {
+      "id": "CONFIG-ACCESS-BROWSER",
+      "layer": "Navegador local → aplicação Next.js → Auth/banco Supabase reais de homologação",
+      "details": "Consultor redirecionado ao tentar configurações gerenciais"
+    },
+    {
+      "id": "SAVE-01-BROWSER-PERSISTENCE",
+      "layer": "Navegador local → aplicação Next.js → Auth/banco Supabase reais de homologação",
+      "details": "Cadastro, busca, edição e recarga pela interface; nova sessão Auth confirmou registro editado e proprietário no banco real"
+    },
+    {
+      "id": "SAVE-01-BROWSER-FAILURE",
+      "layer": "Navegador local → aplicação Next.js → Auth/banco Supabase reais de homologação",
+      "details": "Falha controlada do PostgreSQL manteve formulário aberto e preenchido; consulta real confirmou zero registros salvos"
+    },
+    {
+      "id": "RESPONSIVE-REAL-b2b",
+      "layer": "Navegador local → aplicação Next.js → Auth/banco Supabase reais de homologação",
+      "details": "Navegador de 375px, zoom padrão 100%, recarga autenticada sem transbordamento horizontal"
+    },
+    {
+      "id": "GOALS-01-BROWSER-hs",
+      "layer": "Navegador local → aplicação Next.js → Auth/banco Supabase reais de homologação",
+      "details": "Login, acesso direto e recarga da Central de Metas concluídos"
+    },
+    {
+      "id": "RESPONSIVE-REAL-hs",
+      "layer": "Navegador local → aplicação Next.js → Auth/banco Supabase reais de homologação",
+      "details": "Navegador de 375px, zoom padrão 100%, recarga autenticada sem transbordamento horizontal"
+    },
+    {
+      "id": "GOALS-01-BROWSER-supervisor",
+      "layer": "Navegador local → aplicação Next.js → Auth/banco Supabase reais de homologação",
+      "details": "Login, acesso direto e recarga da Central de Metas concluídos"
+    },
+    {
+      "id": "RESPONSIVE-REAL-supervisor",
+      "layer": "Navegador local → aplicação Next.js → Auth/banco Supabase reais de homologação",
+      "details": "Navegador de 375px, zoom padrão 100%, recarga autenticada sem transbordamento horizontal"
+    },
+    {
+      "id": "GOALS-01-BROWSER-gerente",
+      "layer": "Navegador local → aplicação Next.js → Auth/banco Supabase reais de homologação",
+      "details": "Login, acesso direto e recarga da Central de Metas concluídos"
+    },
+    {
+      "id": "RESPONSIVE-REAL-gerente",
+      "layer": "Navegador local → aplicação Next.js → Auth/banco Supabase reais de homologação",
+      "details": "Navegador de 375px, zoom padrão 100%, recarga autenticada sem transbordamento horizontal"
+    }
+  ],
+  "errors": [],
+  "failures": [],
+  "timings": [
+    {
+      "role": "b2b",
+      "step": "direct-goals",
+      "ms": 30626
+    },
+    {
+      "role": "hs",
+      "step": "direct-goals",
+      "ms": 24535
+    },
+    {
+      "role": "supervisor",
+      "step": "direct-goals",
+      "ms": 23436
+    },
+    {
+      "role": "gerente",
+      "step": "direct-goals",
+      "ms": 30795
+    }
+  ],
+  "transport": "Chamadas do navegador à homologação encaminhadas por HTTP sem simular respostas; servidor Next.js e Supabase reais"
+}

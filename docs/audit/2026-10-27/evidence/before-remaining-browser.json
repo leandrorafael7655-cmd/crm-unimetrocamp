@@ -1,0 +1,24 @@
+{
+  "results": [
+    {
+      "id": "NOSESSION-UI",
+      "layer": "Navegador → Next.js local → Supabase Auth/PostgreSQL reais de homologação",
+      "details": "Metas, escolas e rotas por URL direta redirecionaram a login sem sessão; nenhum conteúdo protegido foi renderizado"
+    }
+  ],
+  "failures": [
+    {
+      "id": "DEMO-CRUD-UI",
+      "message": "locator.waitFor: Timeout 60000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('dialog') to be hidden\u001b[22m\n\u001b[2m    124 × locator resolved to visible <div role=\"dialog\" aria-modal=\"true\" aria-label=\"[DEMO AUDITORIA] 1793207514533\" class=\"uni-dialog w-full max-w-5xl rounded-lg bg-white shadow-2xl\">…</div>\u001b[22m\n"
+    },
+    {
+      "id": "SCHOOL-CRUD-CAPTURE-UI",
+      "message": "Expected values to be strictly equal:\n+ actual - expected\n\n+ ''\n- '[AUDITORIA UI HS] 1793207583555'\n"
+    }
+  ],
+  "errors": [],
+  "limits": [
+    "Somente aplicação local e homologação isolada; não testa produção",
+    "Não comprova envio/recebimento de e-mails, Microsoft Graph ou Minha Agenda dependente de Admin SDK"
+  ]
+}

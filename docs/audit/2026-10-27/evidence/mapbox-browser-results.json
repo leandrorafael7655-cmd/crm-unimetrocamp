@@ -1,0 +1,77 @@
+{
+  "layer": "Navegador autenticado → Next.js local → Supabase de homologação + Mapbox real",
+  "requests": [
+    {
+      "path": "/styles/v1/mapbox/light-v11",
+      "status": 200
+    },
+    {
+      "path": "/styles/v1/mapbox/light-v11/iconset.pbf",
+      "status": 200
+    },
+    {
+      "path": "/v4/mapbox.mapbox-streets-v8,mapbox.mapbox-terrain-v2,mapbox.mapbox-bathymetry-v2/10/377/578.vector.pbf",
+      "status": 200
+    },
+    {
+      "path": "/v4/mapbox.mapbox-streets-v8,mapbox.mapbox-terrain-v2,mapbox.mapbox-bathymetry-v2/10/377/579.vector.pbf",
+      "status": 200
+    },
+    {
+      "path": "/v4/mapbox.mapbox-streets-v8,mapbox.mapbox-terrain-v2,mapbox.mapbox-bathymetry-v2/10/378/579.vector.pbf",
+      "status": 200
+    },
+    {
+      "path": "/v4/mapbox.mapbox-streets-v8,mapbox.mapbox-terrain-v2,mapbox.mapbox-bathymetry-v2/10/378/578.vector.pbf",
+      "status": 200
+    },
+    {
+      "path": "/fonts/v1/mapbox/Arial%20Unicode%20MS%20Regular/0-255.pbf",
+      "status": 200
+    },
+    {
+      "path": "/fonts/v1/mapbox/DIN%20Pro%20Medium/8192-8447.pbf",
+      "status": 200
+    },
+    {
+      "path": "/fonts/v1/mapbox/DIN%20Pro%20Italic/0-255.pbf",
+      "status": 200
+    },
+    {
+      "path": "/fonts/v1/mapbox/DIN%20Pro%20Regular/0-255.pbf",
+      "status": 200
+    },
+    {
+      "path": "/fonts/v1/mapbox/DIN%20Pro%20Medium/0-255.pbf",
+      "status": 200
+    }
+  ],
+  "results": [
+    {
+      "id": "MAPBOX-RENDER-REAL",
+      "role": "consultor_b2b",
+      "viewport": 1366,
+      "distinctMapColors": 390,
+      "capture": "mapbox-real-browser.png",
+      "capture_visually_reviewed": true
+    },
+    {
+      "id": "MAPBOX-MOBILE-REAL",
+      "viewport": 375,
+      "horizontalOverflow": false
+    }
+  ],
+  "failures": [],
+  "consoleErrors": [
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Refused to execute script from 'http://127.0.0.1:3012/_vercel/insights/script.js' because its MIME type ('text/plain') is not executable, and strict MIME type checking is enabled."
+  ],
+  "limits": [
+    "Sem geolocalização física ou aparelho real",
+    "Telemetria Mapbox bloqueada; nenhum dado comercial alterado",
+    "Renderização WebGL por software no executor, com avaliação da captura"
+  ],
+  "console_interpretation": "Duas falhas de rede correspondem à telemetria Mapbox bloqueada. As outras duas são o script Vercel Insights com 404/MIME no servidor local. Nenhuma foi omitida nem usada para afirmar console limpo."
+}

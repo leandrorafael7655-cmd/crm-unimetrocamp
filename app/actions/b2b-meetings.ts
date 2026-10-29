@@ -8,11 +8,10 @@ import { createAdminClient } from "@/lib/supabase/admin"
 import {
   assertUuid,
   normalizeEmail,
-  normalizeParticipants,
   validEmail,
   validateMeetingInput,
 } from "@/lib/meetings/domain"
-import { connectionStatus } from "@/lib/meetings/microsoft"
+import { calendarEmailStatus } from "@/lib/calendar/smtp-config"
 import { emailInvitationStatus } from "@/lib/meetings/email"
 import { refreshMeetingResponses, syncMeeting } from "@/lib/meetings/sync"
 import type {
@@ -71,7 +70,7 @@ export async function loadCompanyMeetings(companyId: string) {
         .eq("company_id", companyId)
         .not("meeting_type", "is", null)
         .order("start_at", { ascending: false }),
-      connectionStatus(actor.id),
+      Promise.resolve({configured:false,connected:false,email:null,missing:[]}),
       emailInvitationStatus(),
     ])
     if (contacts.error || meetings.error)
@@ -135,39 +134,24 @@ export async function saveCompanyMeeting(input: MeetingInput) {
       throw new Error("A empresa e a forma de envio de um agendamento existente não podem ser alteradas.")
     if (!actor.email || !validEmail(normalizeEmail(actor.email)))
       throw new Error("Cadastre um e-mail válido no seu perfil para receber o convite.")
-    if (provider === "graph") {
-      const ms = await connectionStatus(actor.id)
-      if (!ms.connected || normalizeEmail(ms.email || "") !== normalizeEmail(actor.email))
-        throw new Error("Vincule a conta Microsoft correspondente ao e-mail corporativo do seu perfil.")
-      if (input.meetingType === "online") throw new Error("Use Teams ou presencial no calendário Outlook.")
-    } else if (input.meetingType === "teams")
-      throw new Error("Para enviar sem vincular a Microsoft, escolha Online com link e informe o endereço da reunião.")
+    if (provider !== "email") throw new Error("Novos agendamentos usam convite por e-mail, sem integração Microsoft.")
+    if (input.meetingType === "teams") throw new Error("Escolha Online com link e informe o endereço da reunião.")
     const admin = createAdminClient()
-    const { data: contact, error } = await admin
-      .from("company_contacts")
-      .select("id,nome,email")
-      .eq("id", input.contactId)
-      .eq("company_id", company.id)
-      .maybeSingle()
-    if (error || !contact?.email || !validEmail(normalizeEmail(contact.email)))
-      throw new Error("Selecione um responsável com e-mail válido na ficha da empresa.")
-    if (normalizeEmail(contact.email) === normalizeEmail(actor.email))
-      throw new Error("O responsável da empresa deve ter um e-mail diferente do organizador.")
+    const { data: contact, error } = input.contactId ? await admin.from("company_contacts").select("id,nome,email").eq("id", input.contactId).eq("company_id", company.id).maybeSingle() : { data: null, error: null }
+    if (error || (input.contactId && !contact)) throw new Error("Contato não encontrado nesta empresa.")
     if (Date.parse(times.start_at) <= Date.now())
       throw new Error("Agende a reunião para uma data e horário futuros.")
-    const participants = normalizeParticipants(input.participants, actor.email, contact.email)
-    if (provider === "email") {
-      const emailService = await emailInvitationStatus()
-      if (emailService.organizerEmail && [actor.email, contact.email, ...participants.map(p => p.email)]
-        .some(email => normalizeEmail(email) === normalizeEmail(emailService.organizerEmail!)))
-        throw new Error("O remetente central do UniConecta precisa ser diferente dos participantes, para que todos possam receber e aceitar o convite.")
-    }
+    // Contacts stay in the commercial record; only the CRM responsible is invited.
+    const participants = current?.activity_participants || []
+    const emailService = calendarEmailStatus()
+    if (emailService.organizerEmail && normalizeEmail(actor.email) === normalizeEmail(emailService.organizerEmail))
+      throw new Error("O remetente central precisa ser diferente do e-mail do responsável do CRM.")
     const payload: MeetingPayload = {
       company_id: company.id,
       company_name: company.nome_fantasia || company.razao_social,
-      contact_id: contact.id,
-      contact_name: contact.nome,
-      contact_email: normalizeEmail(contact.email),
+      contact_id: contact?.id || "",
+      contact_name: contact?.nome || "",
+      contact_email: normalizeEmail(contact?.email || ""),
       organizer_user_id: actor.id,
       organizer_name: actor.full_name,
       organizer_email: normalizeEmail(actor.email),
@@ -186,7 +170,7 @@ export async function saveCompanyMeeting(input: MeetingInput) {
       p_actor: actor.id,
       p_revision: input.revision,
       p_operation: input.revision === 0 ? "create" : "update",
-      p_payload: payload,
+      p_payload: { ...payload, contact_id: payload.contact_id || null, email_sender: emailService.organizerEmail },
     })
     if (stageError) throw new Error(stageError.message)
     const result = await syncMeeting(input.id)

@@ -1,0 +1,395 @@
+[
+  {
+    "id": "SEC-01",
+    "prioridade": "P0",
+    "categoria": "Falha comprovada de autorização",
+    "titulo": "Autocadastro aceita o papel supervisor",
+    "esperado": "Cadastro não autorizado não pode criar acesso gerencial; papéis devem vir de provisionamento aprovado.",
+    "observado": "Signup está habilitado e handle_new_user aceita raw_user_meta_data.role=supervisor, criando perfil ativo. A função real copiada da produção gerou supervisor e is_manager=true em PostgreSQL isolado. Confirmação de e-mail continua exigida; não equivale a aprovação da gerência. Nenhuma conta foi criada no projeto real.",
+    "reproducao": [
+      "Consultar /auth/v1/settings com chave pública: disable_signup=false.",
+      "Em banco isolado, instalar a função real e inserir usuário fictício com metadata role supervisor.",
+      "Consultar profiles e o predicado gerencial: supervisor ativo, acesso gerencial verdadeiro."
+    ],
+    "evidencia": [
+      "E02: auth_public_settings; E10: repro-auth-result.jsonl",
+      "supabase/migrations/004_handle_new_user_4roles.sql"
+    ],
+    "impacto": "Um solicitante com e-mail confirmado pode receber poderes amplos de leitura/gestão sem aprovação. Não foi demonstrado vazamento ou ataque em produção.",
+    "causa": "Identificada: confiar em metadados definidos pelo solicitante para atribuir papel privilegiado, combinado a cadastro público habilitado.",
+    "correcao": "Impedir escolha de privilégios via metadata; controlar o provisionamento no servidor. Se o CRM for interno, desabilitar signup público e revisar contas/ações existentes sem modificar dados nesta auditoria.",
+    "aceite": "Autocadastro com qualquer role privilegiada não cria acesso gerencial; somente gerente autorizado atribui papéis; testes via Auth e RLS com caixa de teste passam.",
+    "esforco": "0,5 dia para contenção de configuração; 1–2 dias para correção e validação.",
+    "dependencias": "Responsável por Auth, conta gerente de teste e ambiente isolado."
+  },
+  {
+    "id": "SCHOOL-02",
+    "prioridade": "P0",
+    "categoria": "Falha comprovada sob falha de gravação",
+    "titulo": "Edição escolar pode apagar participantes anteriores",
+    "esperado": "Uma edição deve salvar ação e participantes integralmente ou preservar todos os dados anteriores.",
+    "observado": "upsertAction altera a ação, apaga participantes e tenta reinseri-los em chamadas separadas. Falha injetada na inserção retornou erro, mas deixou zero participantes e a data nova. O fluxo novo de Captação por RPC não compartilha esta sequência.",
+    "reproducao": [
+      "Em fixture, criar ação legada com dois participantes.",
+      "Editar data e participantes; fazer a inserção retornar erro.",
+      "Consultar o estado: participantes=0 e data já alterada."
+    ],
+    "evidencia": [
+      "E11: SCHOOL-02 em reproductions.json",
+      "app/actions/high-school.ts"
+    ],
+    "impacto": "Perda de vínculos de responsáveis/apoio e inconsistência na agenda/convites. P0 pela perda reproduzida em teste; não houve perda de registros reais nesta auditoria.",
+    "causa": "Identificada: múltiplas gravações sem transação envolvendo ação e participantes.",
+    "correcao": "Concentrar a edição em transação/RPC com validação e autorização, reutilizando o padrão da Captação. Fazer o mesmo exame para a substituição de resultados.",
+    "aceite": "Falha em qualquer etapa mantém data, participantes e resultados originais; sucesso grava todos e atualiza a agenda; teste autenticado de principal e apoio após recarga.",
+    "esforco": "1–3 dias.",
+    "dependencias": "Homologação com dados fictícios e cenários de falha no banco."
+  },
+  {
+    "id": "ROUTE-01",
+    "prioridade": "P0",
+    "categoria": "Falha comprovada sob falha de gravação",
+    "titulo": "Edição de rota pode eliminar todas as paradas",
+    "esperado": "Falhar ao salvar uma rota deve conservar o plano e suas paradas anteriores.",
+    "observado": "salvarPlanoAction atualiza o plano, apaga paradas e só então insere as novas. Na falha controlada de insert, retornou erro com zero paradas e data já modificada.",
+    "reproducao": [
+      "Criar fixture com plano e paradas existentes.",
+      "Editar o plano e simular falha no insert de route_stops.",
+      "Consultar plano/paradas: data alterada e nenhuma parada."
+    ],
+    "evidencia": [
+      "E11: ROUTE-01 em reproductions.json",
+      "app/actions/routes.ts"
+    ],
+    "impacto": "Perda do roteiro de visitas planejado e retrabalho comercial. P0 pelo risco de perda comprovado sob falha; não foi alterada rota real.",
+    "causa": "Identificada: substituição destrutiva de filhos sem transação; erro do delete também não é verificado.",
+    "correcao": "Salvar plano e paradas em uma transação com autorização por proprietário e validações de entrada.",
+    "aceite": "Falhas de update/delete/insert preservam exatamente a versão anterior; sucesso mantém vínculos e ordem após recarregar e entrar novamente.",
+    "esforco": "1–2 dias.",
+    "dependencias": "Banco de homologação, contas de dois consultores e gerente."
+  },
+  {
+    "id": "ACCESS-01",
+    "prioridade": "P1",
+    "categoria": "Falha comprovada de autorização",
+    "titulo": "Supervisor pode rebaixar o único gerente",
+    "esperado": "A gestão de papéis deve preservar ao menos um gerente ativo e restringir operações sobre gerentes.",
+    "observado": "changeRole usa requireManager, que inclui supervisor, e só restringe promoção para gerente. Em execução do código real com dependências simuladas, supervisor rebaixou o único gerente; restaram zero gerentes ativos.",
+    "reproducao": [
+      "Simular ator supervisor e um único perfil gerente ativo.",
+      "Invocar changeRole para transformar esse perfil em consultor_b2b.",
+      "Observar ok=true e zero gerentes ativos."
+    ],
+    "evidencia": [
+      "E11: ACCESS-01",
+      "app/actions/team.ts; lib/auth/guards.ts"
+    ],
+    "impacto": "Pode interromper a administração e reabrir condições de bootstrap. O encadeamento até tomada de conta não foi executado.",
+    "causa": "Identificada: verifica o novo papel, mas não protege o papel do alvo nem o último gerente de forma transacional.",
+    "correcao": "Restringir ações sobre gerentes ao gerente; proteger o último gerente no banco/transação e revisar também desativação/exclusão/caminhos legados.",
+    "aceite": "Supervisor não altera gerente; tentativas concorrentes não deixam zero gerentes; saída de usuários com carteira continua bloqueada.",
+    "esforco": "1–2 dias.",
+    "dependencias": "Definição de quem pode gerir supervisor e gerente; contas de teste."
+  },
+  {
+    "id": "ACCESS-02",
+    "prioridade": "P1",
+    "categoria": "Falha comprovada em caminho legado",
+    "titulo": "Redefinição legada ignora as regras atuais",
+    "esperado": "Somente gerente pode gerar senha temporária, com troca obrigatória e trilha administrativa identificando o operador, conforme a documentação do projeto.",
+    "observado": "team.ts resetPassword permite supervisor, retorna senha temporária e não escreve a flag de troca nem a auditoria administrativa do fluxo novo. Está registrada no manifesto de Server Actions de /setup; não foi encontrada referência no cliente atual. O gatilho Auth pode registrar uma mudança de senha, mas não substitui a autoria administrativa correta. Não foi invocada contra o servidor publicado.",
+    "reproducao": [
+      "Compilar e verificar a exportação no manifesto de ações.",
+      "Executar resetPassword com ator supervisor e Auth/DB simulados.",
+      "Observar sucesso e retorno de credencial; nenhuma flag ou evento administrativo foi escrito pelo caminho."
+    ],
+    "evidencia": [
+      "E11: ACCESS-02",
+      "app/actions/team.ts; app/actions/user-access.ts",
+      "docs/password-recovery-validation.md"
+    ],
+    "impacto": "Mantém uma superfície de redefinição com controles diferentes dos prometidos. Exposição HTTP efetiva e exploração em produção não foram validadas.",
+    "causa": "Identificada: duas implementações coexistem; o caminho antigo não usa o serviço central novo.",
+    "correcao": "Remover a exportação legada ou delegar integralmente ao fluxo seguro; revisar inviteUser/resendInvite pelo mesmo motivo.",
+    "aceite": "Todo ponto de entrada bloqueia supervisor/consultores; exige troca após senha temporária e registra operador/resultado sem armazenar senha. Confirmar também o endpoint real em homologação.",
+    "esforco": "1–2 dias.",
+    "dependencias": "Homologação Auth, conta alvo fictícia e coletor de e-mail se necessário."
+  },
+  {
+    "id": "SAVE-01",
+    "prioridade": "P1",
+    "categoria": "Falha comprovada de persistência",
+    "titulo": "B2B pode aparentar salvar sem gravar",
+    "esperado": "Interface deve confirmar sucesso apenas após persistência e preservar formulário/dados diante de falha.",
+    "observado": "No adaptador real, insert de empresa recusado é apenas enviado ao console e set retorna true. A fixture confirmou zero empresas persistidas com sucesso reportado. gravar no componente também ignora o retorno falso em outros erros; estado é atualizado e formulários podem fechar.",
+    "reproducao": [
+      "Executar makeSupabaseStorage com fixture retornando erro ao inserir empresa.",
+      "Chamar set com uma nova empresa fictícia.",
+      "Comparar retorno com estado persistido: true versus zero registros."
+    ],
+    "evidencia": [
+      "E11: SAVE-01",
+      "lib/data/supabase-storage.ts; components/crm-app.jsx"
+    ],
+    "impacto": "Consultor pode perder trabalho, acreditar que registrou um contato/empresa e só perceber a ausência ao atualizar a tela.",
+    "causa": "Identificada: erros tratados como log, retorno não propagado e atualização otimista sem reversão adequada.",
+    "correcao": "Propagar erros de todas as operações, aguardar confirmação antes de fechar formulário e conservar valores; transacionar grupos de gravação relacionados.",
+    "aceite": "Falha de rede, RLS ou unicidade mostra erro, mantém formulário e não exibe registro ficticiamente salvo; sucesso persiste após recarga e novo login.",
+    "esforco": "2–3 dias.",
+    "dependencias": "Contas de teste e injeção de falhas no adaptador/banco."
+  },
+  {
+    "id": "SCHOOL-01",
+    "prioridade": "P1",
+    "categoria": "Falha comprovada de validação",
+    "titulo": "Ação escolar antiga aceita término anterior ao início",
+    "esperado": "Toda ação com horário deve ter fim posterior ao início, independentemente de edição ou tela de origem.",
+    "observado": "upsertAction aceitou 15:00–14:00 na fixture. O gatilho real aceitou a mesma cronologia em PostgreSQL isolado quando supervest_cycle_id é nulo. O gatilho só aplica a validação ao fluxo com edição.",
+    "reproducao": [
+      "Invocar a ação antiga com tipo válido, data e início 15h/fim 14h.",
+      "Verificar ok=true na fixture.",
+      "Instalar o gatilho real em banco isolado e inserir ação sem edição: registro inválido aceito."
+    ],
+    "evidencia": [
+      "E11: SCHOOL-01; E12: SCHOOL-01-DB",
+      "app/actions/high-school.ts; school-action-guard.json"
+    ],
+    "impacto": "Compromissos inválidos prejudicam agenda, disponibilidade e convites.",
+    "causa": "Identificada: validação condicional à edição e ausência de CHECK geral equivalente na tabela.",
+    "correcao": "Validar cronologia no servidor e impor restrição de banco compatível com campos opcionais; revisar legados antes de aplicar.",
+    "aceite": "Ações antigas e novas recusam fim igual/anterior ao início; horários incompletos seguem regra explícita; dados históricos válidos são preservados.",
+    "esforco": "0,5–1 dia.",
+    "dependencias": "Levantamento de registros legados e regra para horários opcionais."
+  },
+  {
+    "id": "GOALS-01",
+    "prioridade": "P1",
+    "categoria": "Falha comprovada de autorização da tela",
+    "titulo": "Central de Metas redireciona consultores autorizados",
+    "esperado": "Consultor B2B e High School devem acessar somente metas próprias, como prevê goals.read.own e o menu.",
+    "observado": "O layout /gestao exige goals.read.all antes de carregar a página. O layout real redirecionou ambos os papéis para / em teste com getActor simulado.",
+    "reproducao": [
+      "Simular perfil B2B ativo e executar GestaoLayout.",
+      "Repetir com High School.",
+      "Observar REDIRECT:/; comparar com o menu e ROLE_PERMISSIONS."
+    ],
+    "evidencia": [
+      "E11: GOALS-01-consultor_b2b e GOALS-01-high_school",
+      "app/gestao/layout.tsx; lib/domain/roles.ts; components/navigation/system-sidebar.tsx"
+    ],
+    "impacto": "Consultores veem uma opção sem acesso e não acompanham suas metas.",
+    "causa": "Identificada: guarda do layout foi aplicada ao grupo inteiro de gestão com permissão gerencial.",
+    "correcao": "Aceitar leitura própria no caminho de metas e filtrar dados pelo ator; manter configurações/escrita protegidas em seus pontos de entrada.",
+    "aceite": "Ambos acessam metas próprias por clique, URL direta e recarga; não leem metas alheias nem alteram configurações.",
+    "esforco": "0,5–1 dia.",
+    "dependencias": "Contas de teste e metas fictícias de dois usuários."
+  },
+  {
+    "id": "SEC-DEP",
+    "prioridade": "P1",
+    "categoria": "Vulnerabilidade de dependência identificada",
+    "titulo": "Next.js de produção está em faixa afetada",
+    "esperado": "Runtime publicado deve estar em versão corrigida para os avisos aplicáveis, com dependências de ferramenta separadas do runtime.",
+    "observado": "Next 16.3.0 está na faixa afetada pelo DoS de Server Actions GHSA-p3m5-59mp-jv5r, corrigido em 16.4.1. Há Server Actions no CRM. Scanner: 81 ocorrências, 80 advisories distintos; 60 advisories dependem exclusivamente da cadeia da CLI shadcn. Não são 81 falhas exploradas. RCE condicionada a Windows, next/og, use cache ou otimização de imagem não foi demonstrada; requisitos correspondentes não foram encontrados nesta aplicação.",
+    "reproducao": [
+      "Instalar com pnpm 10 e executar pnpm audit --prod --json.",
+      "Cruzar lockfile, versão publicada e uso de Server Actions com o aviso oficial.",
+      "Separar cadeia da CLI e condições não utilizadas; não enviar payload exploratório à produção."
+    ],
+    "evidencia": [
+      "E13: dependency-audit.json; dependency-summary.json",
+      "package.json; pnpm-lock.yaml",
+      "https://github.com/vercel/next.js/security/advisories/GHSA-p3m5-59mp-jv5r"
+    ],
+    "impacto": "Risco de indisponibilidade do servidor por requisições malformadas; nenhum ataque ou indisponibilidade foi reproduzido.",
+    "causa": "Identificada: versão de runtime anterior à correção publicada. Exploitabilidade específica em Vercel não foi medida.",
+    "correcao": "Atualizar para versão suportada corrigida, no mínimo a correção indicada pelo fornecedor, compatibilizar React/ESLint e reexecutar build e regressão; retirar CLI da árvore de produção quando possível.",
+    "aceite": "Aviso aplicável eliminado do lockfile/runtime publicado; login, ações e build passam; triagem documentada para alertas restantes.",
+    "esforco": "1–2 dias, sujeito à compatibilidade.",
+    "dependencias": "Janela de homologação/deploy e consulta ao aviso oficial vigente."
+  },
+  {
+    "id": "DUP-01",
+    "prioridade": "P2",
+    "categoria": "Lacuna comprovada de integridade",
+    "titulo": "Unicidade de CNPJ depende da pontuação",
+    "esperado": "Mesmo CNPJ deve representar a mesma pessoa jurídica nos pontos de gravação, observada a regra comercial de unidades/filiais.",
+    "observado": "A interface B2B valida dígitos, mas o índice no banco compara texto sem normalização. CNPJ formatado e não formatado foram aceitos como duas linhas no teste com o índice real. Não foi comprovada duplicidade atual no banco.",
+    "reproducao": [
+      "Em PostgreSQL isolado, criar a mesma definição de índice único.",
+      "Inserir um CNPJ fictício com pontuação e o equivalente só com dígitos.",
+      "Contar duas linhas."
+    ],
+    "evidencia": [
+      "E12: DUP-01-DB",
+      "lib/data/mapping.ts; app/actions/high-school.ts; E02: índices"
+    ],
+    "impacto": "Importações, APIs ou telas distintas podem criar carteiras duplicadas e indicadores inconsistentes.",
+    "causa": "Identificada: unicidade textual e normalização não centralizada no servidor/banco.",
+    "correcao": "Normalizar dígitos na escrita e na unicidade; validar antes e identificar duplicados sem excluir histórico automaticamente.",
+    "aceite": "As duas representações não criam dois registros; campos vazios e regras de filial funcionam; conflitos retornam mensagem clara.",
+    "esforco": "1–2 dias.",
+    "dependencias": "Regra de identidade entre empresa, escola, filial e unidade; saneamento prévio."
+  },
+  {
+    "id": "AGENDA-02",
+    "prioridade": "P1",
+    "categoria": "Controle incompleto; regra comercial a validar",
+    "titulo": "Conflitos de agenda não têm garantia uniforme",
+    "esperado": "Identificar conflitos de responsável e apoio entre escala, escolas e B2B, com decisão explícita sobre bloquear ou permitir exceção.",
+    "observado": "Há verificações no preview da escala, algumas como warning, e consulta escolar considera o principal. Não foi encontrada exclusão de sobreposição no banco nem verificação equivalente no salvamento escolar. O gatilho real aceitou duas ações do mesmo principal/data/horário em banco mínimo isolado. Isto demonstra a lacuna da camada examinada, não um duplo agendamento real nem a falha de todo caminho de UI.",
+    "reproducao": [
+      "Revisar previewSuggestedSchedule e persistência escolar.",
+      "Aplicar gatilho real e definições relevantes em banco isolado.",
+      "Inserir duas ações 9h–10h do mesmo principal/data: duas aceitas."
+    ],
+    "evidencia": [
+      "E12: AGENDA-02-DB",
+      "app/actions/attendance.ts; app/actions/school-capture.ts; E02: constraints"
+    ],
+    "impacto": "Risco de visitas e atendimento disputarem o mesmo consultor e de apoio ser ignorado.",
+    "causa": "Identificada a cobertura parcial; necessidade de bloqueio absoluto versus aviso é ponto de validação comercial.",
+    "correcao": "Definir regra por tipo de compromisso e aplicar verificação central na gravação com controle de concorrência; incluir participantes de apoio e exceções auditadas.",
+    "aceite": "Testar principal e apoio, duas sessões simultâneas, intervalos adjacentes, cancelamento e ausência; conflito bloqueia ou exige exceção conforme regra aprovada.",
+    "esforco": "2–4 dias.",
+    "dependencias": "Decisão comercial sobre exceções e ambiente autenticado de testes."
+  },
+  {
+    "id": "OPS-01",
+    "prioridade": "P1",
+    "categoria": "Pendência operacional comprovada",
+    "titulo": "Escala atual ainda não foi publicada",
+    "esperado": "Escala revisada e atribuída deve ficar visível ao consultor após publicação, sem enviar mensagens indevidas.",
+    "observado": "Consulta real: 246 ocorrências draft de 26/10 a 21/11, 61 sem usuário; oito posições ativas, seis vinculadas. Nenhuma published. Há três canceladas. O código restringe consultor a published/cancelled. Não há evidência de falha de sincronização destes rascunhos.",
+    "reproducao": [
+      "Consultar contagens por status e user_id sem ler dados pessoais.",
+      "Comparar com getAttendanceData para consultor.",
+      "Constatar que os rascunhos não integram a consulta pessoal de publicados."
+    ],
+    "evidencia": [
+      "E02: business_state e attendance",
+      "app/actions/attendance.ts"
+    ],
+    "impacto": "Consultores podem ficar sem orientação diária, mesmo com planejamento já gerado pela gestão.",
+    "causa": "Identificada: estado e vínculo dos registros; motivo de não publicação depende da gestão.",
+    "correcao": "Revisar quem ocupa as posições, ausências e cobertura; gerar/validar período fictício em homologação; publicar a escala operacional somente após aprovação da gestão e controle do envio.",
+    "aceite": "Nenhum horário necessário sem responsável; escala publicada aparece no consultor correto após recarga; nenhum rascunho aparece indevidamente; convites só a destinatários aprovados.",
+    "esforco": "0,5–1 dia de configuração/revisão, além de eventual saneamento.",
+    "dependencias": "Gerência, equipe vigente e provedor de envio de teste antes de validar comunicações."
+  },
+  {
+    "id": "METRIC-01",
+    "prioridade": "P2",
+    "categoria": "Funcionalidade incompleta identificada",
+    "titulo": "Meta B2B SuperVest retorna zero sem cálculo",
+    "esperado": "Um indicador deve informar valor apurado ou indisponibilidade; zero não deve substituir ausência de integração de dados.",
+    "observado": "realizadoDaMeta retorna 0 literal para b2b_supervest_registrations, com comentário de ausência de origem transacional. Tipo aparece no domínio/UI. Entre as duas metas do banco, nenhuma usa esse tipo; não foi comprovado relatório operacional errado hoje.",
+    "reproducao": [
+      "Inspecionar o caso b2b_supervest_registrations em realizadoDaMeta.",
+      "Comparar com tipos disponíveis e as contagens de metas no banco.",
+      "Observar ausência de cálculo e retorno constante."
+    ],
+    "evidencia": [
+      "lib/data/goals-queries.ts; lib/domain/goals.ts",
+      "E02: goals"
+    ],
+    "impacto": "Ao usar esse tipo, a equipe pode interpretar ausência de cálculo como ausência de resultado comercial.",
+    "causa": "Identificada: origem transacional/atribuição ainda não implementada.",
+    "correcao": "Sinalizar indisponível e impedir uso enganoso; implementar apuração somente após definir fonte oficial, atribuição ao consultor e ciclo.",
+    "aceite": "Dados oficiais fictícios conhecidos produzem total correto; sem integração mostra indisponível; alterações mantêm histórico e não duplicam atribuição.",
+    "esforco": "0,5 dia para sinalização; 2–5 dias para apuração, conforme fonte.",
+    "dependencias": "Fonte oficial e regra de atribuição confirmadas."
+  },
+  {
+    "id": "INT-01",
+    "prioridade": "P2",
+    "categoria": "Integração implementada sem configuração",
+    "titulo": "Microsoft Graph/Teams não está ativado",
+    "esperado": "Se o modo conectado for utilizado, deve concluir OAuth, criar/atualizar/cancelar o mesmo evento e consultar respostas. É opcional na documentação atual.",
+    "observado": "Não há contas Microsoft vinculadas; cinco variáveis requeridas não constam na Vercel: tenant, client, secret, redirect e encryption key. O modo por e-mail é independente e sua entrega não foi testada.",
+    "reproducao": [
+      "Consultar somente nomes das variáveis de ambiente.",
+      "Contar microsoft_calendar_accounts sem ler tokens.",
+      "Comparar com docs/b2b-outlook-teams.md."
+    ],
+    "evidencia": [
+      "E02: env e microsoft_accounts",
+      "docs/b2b-outlook-teams.md; lib/meetings/microsoft.ts"
+    ],
+    "impacto": "Geração automática de Teams e consulta de respostas não estão disponíveis pelo modo conectado atual. Não impede o uso manual de links ou o modo de convite SMTP, se configurado.",
+    "causa": "Identificada: configuração necessária ausente; não foi demonstrado defeito no Graph.",
+    "correcao": "Confirmar necessidade comercial. Se aprovado, configurar aplicativo/consentimento e contas de teste; caso contrário, deixar a limitação clara e validar o modo por e-mail.",
+    "aceite": "No modo aprovado, criar/editar/cancelar sem duplicar Event ID e confirmar organizador, destinatários, respostas e persistência com contas de teste.",
+    "esforco": "1–3 dias técnicos, além de prazo administrativo do tenant.",
+    "dependencias": "Administrador Microsoft, caixas e Teams de teste; decisão se é requisito ou opção."
+  },
+  {
+    "id": "AGENDA-01",
+    "prioridade": "P2",
+    "categoria": "Escopo de integração a validar",
+    "titulo": "Minha Agenda não consolida compromissos B2B",
+    "esperado": "Se a promessa for uma agenda única, incluir compromissos B2B relevantes sem duplicar eventos; se forem agendas separadas, explicitar a distinção.",
+    "observado": "Minha Agenda agrega attendance_occurrences e school_actions. Reuniões em activities e próximos passos de empresas não entram nessa agregação, embora existam telas B2B e fila de calendário.",
+    "reproducao": [
+      "Revisar getAttendanceData e a origem dos itens de Minha Agenda.",
+      "Comparar com atividades/reuniões e próximo passo B2B.",
+      "Confirmar que essas fontes não são agregadas pela consulta."
+    ],
+    "evidencia": [
+      "app/actions/attendance.ts; app/atendimento/minha-agenda/page.tsx",
+      "docs/b2b-outlook-teams.md"
+    ],
+    "impacto": "Consultor pode precisar consultar mais de uma tela para planejar o dia.",
+    "causa": "Identificada a separação de fontes. É hipótese, a validar com a operação, que todas devam aparecer no mesmo painel.",
+    "correcao": "Definir escopo de agenda única; se confirmado, agregar por responsável/participante, data, fuso e fonte, preservando estados de envio.",
+    "aceite": "Cenário fictício com escola, atendimento e B2B aparece conforme escopo aprovado, sem duplicação e sem dados de outros consultores.",
+    "esforco": "1–3 dias após decisão.",
+    "dependencias": "Validação de escopo comercial e testes autenticados."
+  },
+  {
+    "id": "PERF-01",
+    "prioridade": "P2",
+    "categoria": "Melhoria de confiabilidade e desempenho",
+    "titulo": "Listas e índices precisam de revisão com volume",
+    "esperado": "Listas devem completar resultados com paginação e consultas proporcionais ao uso; índices devem ser justificados por consultas medidas.",
+    "observado": "Adaptador legado carrega empresas/contatos/convênios com select(*) sem paginação; algumas consultas de locais usam limite de 200. Carteira/Captação novas já usam lotes. Advisor: 24 FKs sem índice, 50 índices sem uso observado, seis múltiplas políticas permissivas e um par duplicado. Não houve truncamento ou lentidão de SQL reproduzidos com a base pequena.",
+    "reproducao": [
+      "Revisar carregarEmpresas e pontosDisponiveis.",
+      "Consultar advisor de performance e definições de índices.",
+      "Comparar com volume atual; não executar carga na produção."
+    ],
+    "evidencia": [
+      "lib/data/supabase-storage.ts; lib/data/route-queries.ts",
+      "E02: advisories.performance"
+    ],
+    "impacto": "Com crescimento, busca e indicadores podem ficar incompletos ou lentos. Ainda não é falha de volume comprovada hoje.",
+    "causa": "Risco identificado por limites/ausência de paginação; causa de lentidão real não foi medida.",
+    "correcao": "Paginar e filtrar no servidor; medir planos com dados fictícios representativos; avaliar par duplicado e índices de FK, sem remover índices só por aviso de pouco uso.",
+    "aceite": "Mais de 1000 registros fictícios retornam contagem e páginas completas; consultas críticas têm planos e tempos registrados; permissões permanecem intactas.",
+    "esforco": "2–4 dias.",
+    "dependencias": "Homologação com volume representativo e metas de desempenho acordadas."
+  },
+  {
+    "id": "QA-01",
+    "prioridade": "P2",
+    "categoria": "Melhoria de engenharia e ambientes",
+    "titulo": "Regressão autenticada e reprodução do ambiente são insuficientes",
+    "esperado": "Manter homologação isolada, teste completo dos papéis e versão do banco reproduzível a partir do repositório.",
+    "observado": "Não há branch Supabase; os oito deployments recentes examinados são de produção. Configurações Supabase têm escopo production/preview/development, sem valores lidos. Histórico do banco tem 34 migrações; repositório tem 25 arquivos SQL incluindo rollbacks, sem toda a base inicial. Build modifica nove arquivos por scripts. A suíte passa, mas não cobriu as falhas de autorização/gravação reproduzidas nesta auditoria.",
+    "reproducao": [
+      "Comparar inventário de branches/deployments e alvos das variáveis.",
+      "Comparar ledger de migrações com SQL versionado.",
+      "Executar scripts de build e observar diff gerado e cobertura de testes."
+    ],
+    "evidencia": [
+      "E02; E03; E04; .github/workflows/responsive-layout.yml",
+      "scripts/apply-attendance-feature.mjs; supabase/migrations"
+    ],
+    "impacto": "Dificulta testar sem risco operacional e repetir o ambiente para corrigir problemas com segurança e previsibilidade.",
+    "causa": "Identificados testes majoritariamente isolados e histórico parcial. Valores das variáveis não foram lidos, portanto compartilhamento efetivo de banco entre ambientes não foi afirmado.",
+    "correcao": "Criar homologação com dados fictícios e comunicações capturadas; versionar esquema inicial e migrações; adicionar testes autenticados e de falhas transacionais; gradualmente eliminar alteração de código durante build.",
+    "aceite": "Banco vazio é montado pelo repositório; CI reproduz build; contas por papel passam CRUD e isolamento; falhas reproduzidas viram regressões sem envio a pessoas reais.",
+    "esforco": "3–5 dias para base mínima e fluxos críticos; evolução posterior por módulo.",
+    "dependencias": "Definição do ambiente operacional correto, responsável DevOps/DB e contas de teste."
+  }
+]

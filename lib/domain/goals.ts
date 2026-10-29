@@ -70,7 +70,11 @@ export function fimSemanaComercial(weekStart: string): string {
 /** Lista os inícios de semana (segundas) de `de` até `ate`, inclusive. */
 export function semanasNoIntervalo(de: string, ate: string): string[] {
   const out: string[] = []
-  let cur = fromIsoDate(inicioSemanaComercial(fromIsoDate(de)))
+  // de/ate are civil dates, not instants at midnight UTC (which is the previous day in SP).
+  const first = fromIsoDate(de)
+  const dow = first.getUTCDay()
+  first.setUTCDate(first.getUTCDate() - (dow === 0 ? 6 : dow - 1))
+  let cur = first
   const fim = fromIsoDate(ate)
   while (cur.getTime() <= fim.getTime()) {
     out.push(isoDate(cur))
@@ -137,26 +141,25 @@ export function semanaAtingida(completedActions: number, appliedTarget: number):
 /* ──────────────────────  anti-dupla-contagem SuperVest  ────────────────── */
 
 export interface ApuracaoSupervest {
-  oficial: number
-  hsAtribuidas: number
-  b2bAtribuidas: number
-  outrosCanais: number // oficial − (hs + b2b)
+  oficial: number | null
+  hsAtribuidas: number | null
+  b2bAtribuidas: number | null
+  outrosCanais: number | null // unavailable when any source is missing
   inconsistente: boolean // outrosCanais < 0
 }
 
 export function apurarSupervest(
-  oficial: number,
-  hsAtribuidas: number,
-  b2bAtribuidas: number,
+  oficial: number | null,
+  hsAtribuidas: number | null,
+  b2bAtribuidas: number | null,
 ): ApuracaoSupervest {
-  const atribuidas = hsAtribuidas + b2bAtribuidas
-  const outros = oficial - atribuidas
+  const outros = oficial===null || hsAtribuidas===null || b2bAtribuidas===null ? null : oficial-hsAtribuidas-b2bAtribuidas
   return {
     oficial,
     hsAtribuidas,
     b2bAtribuidas,
     outrosCanais: outros,
-    inconsistente: outros < 0,
+    inconsistente: outros!==null && outros < 0,
   }
 }
 

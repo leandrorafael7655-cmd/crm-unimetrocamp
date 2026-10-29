@@ -1,0 +1,236 @@
+[
+  {
+    "acl": "{authenticated=w/postgres}",
+    "table": "companies",
+    "column": "id",
+    "schema": "public"
+  },
+  {
+    "acl": "{authenticated=w/postgres}",
+    "table": "companies",
+    "column": "razao_social",
+    "schema": "public"
+  },
+  {
+    "acl": "{authenticated=w/postgres}",
+    "table": "companies",
+    "column": "nome_fantasia",
+    "schema": "public"
+  },
+  {
+    "acl": "{authenticated=w/postgres}",
+    "table": "companies",
+    "column": "cnpj",
+    "schema": "public"
+  },
+  {
+    "acl": "{authenticated=w/postgres}",
+    "table": "companies",
+    "column": "segmento",
+    "schema": "public"
+  },
+  {
+    "acl": "{authenticated=w/postgres}",
+    "table": "companies",
+    "column": "colaboradores",
+    "schema": "public"
+  },
+  {
+    "acl": "{authenticated=w/postgres}",
+    "table": "companies",
+    "column": "cidade",
+    "schema": "public"
+  },
+  {
+    "acl": "{authenticated=w/postgres}",
+    "table": "companies",
+    "column": "bairro",
+    "schema": "public"
+  },
+  {
+    "acl": "{authenticated=w/postgres}",
+    "table": "companies",
+    "column": "telefone",
+    "schema": "public"
+  },
+  {
+    "acl": "{authenticated=w/postgres}",
+    "table": "companies",
+    "column": "site",
+    "schema": "public"
+  },
+  {
+    "acl": "{authenticated=w/postgres}",
+    "table": "companies",
+    "column": "origem",
+    "schema": "public"
+  },
+  {
+    "acl": "{authenticated=w/postgres}",
+    "table": "companies",
+    "column": "classificacao",
+    "schema": "public"
+  },
+  {
+    "acl": "{authenticated=w/postgres}",
+    "table": "companies",
+    "column": "etapa",
+    "schema": "public"
+  },
+  {
+    "acl": "{authenticated=w/postgres}",
+    "table": "companies",
+    "column": "potencial",
+    "schema": "public"
+  },
+  {
+    "acl": "{authenticated=w/postgres}",
+    "table": "companies",
+    "column": "possui_beneficio",
+    "schema": "public"
+  },
+  {
+    "acl": "{authenticated=w/postgres}",
+    "table": "companies",
+    "column": "observacoes",
+    "schema": "public"
+  },
+  {
+    "acl": "{authenticated=w/postgres}",
+    "table": "companies",
+    "column": "consultor",
+    "schema": "public"
+  },
+  {
+    "acl": "{authenticated=w/postgres}",
+    "table": "companies",
+    "column": "owner_id",
+    "schema": "public"
+  },
+  {
+    "acl": "{authenticated=w/postgres}",
+    "table": "companies",
+    "column": "ultimo_contato",
+    "schema": "public"
+  },
+  {
+    "acl": "{authenticated=w/postgres}",
+    "table": "companies",
+    "column": "proxima_acao",
+    "schema": "public"
+  },
+  {
+    "acl": "{authenticated=w/postgres}",
+    "table": "companies",
+    "column": "data_proxima_acao",
+    "schema": "public"
+  },
+  {
+    "acl": "{authenticated=w/postgres}",
+    "table": "companies",
+    "column": "data_entrada",
+    "schema": "public"
+  },
+  {
+    "acl": "{authenticated=w/postgres}",
+    "table": "companies",
+    "column": "link_inscricao",
+    "schema": "public"
+  },
+  {
+    "acl": "{authenticated=w/postgres}",
+    "table": "companies",
+    "column": "link_consultor",
+    "schema": "public"
+  },
+  {
+    "acl": "{authenticated=w/postgres}",
+    "table": "companies",
+    "column": "created_at",
+    "schema": "public"
+  },
+  {
+    "acl": "{authenticated=w/postgres}",
+    "table": "companies",
+    "column": "updated_at",
+    "schema": "public"
+  },
+  {
+    "acl": "{authenticated=w/postgres}",
+    "table": "companies",
+    "column": "logradouro",
+    "schema": "public"
+  },
+  {
+    "acl": "{authenticated=w/postgres}",
+    "table": "companies",
+    "column": "numero",
+    "schema": "public"
+  },
+  {
+    "acl": "{authenticated=w/postgres}",
+    "table": "companies",
+    "column": "complemento",
+    "schema": "public"
+  },
+  {
+    "acl": "{authenticated=w/postgres}",
+    "table": "companies",
+    "column": "cep",
+    "schema": "public"
+  },
+  {
+    "acl": "{authenticated=w/postgres}",
+    "table": "companies",
+    "column": "latitude",
+    "schema": "public"
+  },
+  {
+    "acl": "{authenticated=w/postgres}",
+    "table": "companies",
+    "column": "longitude",
+    "schema": "public"
+  },
+  {
+    "acl": "{authenticated=w/postgres}",
+    "table": "companies",
+    "column": "geocoded_at",
+    "schema": "public"
+  },
+  {
+    "acl": "{authenticated=w/postgres}",
+    "table": "companies",
+    "column": "geocode_precision",
+    "schema": "public"
+  },
+  {
+    "acl": "{authenticated=w/postgres}",
+    "table": "companies",
+    "column": "geocode_hash",
+    "schema": "public"
+  },
+  {
+    "acl": "{authenticated=w/postgres}",
+    "table": "companies",
+    "column": "next_action_start_time",
+    "schema": "public"
+  },
+  {
+    "acl": "{authenticated=w/postgres}",
+    "table": "companies",
+    "column": "next_action_end_time",
+    "schema": "public"
+  },
+  {
+    "acl": "{authenticated=w/postgres}",
+    "table": "companies",
+    "column": "next_action_location",
+    "schema": "public"
+  },
+  {
+    "acl": "{authenticated=w/postgres}",
+    "table": "companies",
+    "column": "next_action_owner_id",
+    "schema": "public"
+  }
+]

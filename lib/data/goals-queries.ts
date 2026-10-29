@@ -1,5 +1,10 @@
+import { requireActor } from "@/lib/auth/guards"
+import { can } from "@/lib/domain/roles"
+import { saoPauloToday } from "@/lib/domain/school-agenda"
 import "server-only"
 import { createClient } from "@/lib/supabase/server"
+import { profileDisplayName } from "@/lib/domain/user-display"
+import { readAllRows } from "./pagination"
 import {
   inicioSemanaComercial,
   fimSemanaComercial,
@@ -131,14 +136,18 @@ export async function listSupervestSnapshots(cycleId: string): Promise<SnapshotS
 /* ─────────────────────────────  metas  ───────────────────────── */
 
 export async function listGoals(): Promise<Meta[]> {
+  const actor = await requireActor()
   const supabase = await createClient()
-  const { data } = await supabase
+  let query = supabase
     .from("goals")
     .select(
       "id,goal_type,scope_type,team_type,user_id,commercial_cycle_id,supervest_cycle_id,target_value,start_at,end_at,status,notes," +
-        "goal_types(label,unit),profiles!goals_user_id_fkey(full_name)",
+        "goal_types(label,unit),profiles!goals_user_id_fkey(full_name,consultant_tag)",
     )
     .order("created_at", { ascending: false })
+  if (!can(actor.role,"goals.read.all")) query = query.eq("scope_type","individual").eq("user_id",actor.id)
+  const { data, error } = await query
+  if (error) throw new Error(error.message)
   return (data ?? []).map((g: any) => ({
     id: g.id,
     goalType: g.goal_type,
@@ -147,7 +156,7 @@ export async function listGoals(): Promise<Meta[]> {
     scopeType: g.scope_type,
     teamType: g.team_type,
     userId: g.user_id,
-    userName: g.profiles?.full_name ?? null,
+    userName: g.profiles ? profileDisplayName(g.profiles, "") || null : null,
     commercialCycleId: g.commercial_cycle_id,
     supervestCycleId: g.supervest_cycle_id,
     targetValue: Number(g.target_value),
@@ -172,7 +181,7 @@ export async function listGoalHistory(goalId: string): Promise<GoalHistoryRow[]>
   const supabase = await createClient()
   const { data } = await supabase
     .from("goal_history")
-    .select("id,field_changed,previous_value,new_value,reason,changed_at,profiles(full_name)")
+    .select("id,field_changed,previous_value,new_value,reason,changed_at,profiles(full_name,consultant_tag)")
     .eq("goal_id", goalId)
     .order("changed_at", { ascending: false })
   return (data ?? []).map((h: any) => ({
@@ -182,7 +191,7 @@ export async function listGoalHistory(goalId: string): Promise<GoalHistoryRow[]>
     newValue: h.new_value,
     reason: h.reason,
     changedAt: h.changed_at,
-    changedByName: h.profiles?.full_name ?? null,
+    changedByName: h.profiles ? profileDisplayName(h.profiles, "") || null : null,
   }))
 }
 
@@ -213,7 +222,7 @@ export async function contarAcoesSemana(
   weekEnd: string,
 ): Promise<{ completed: number; distinctCompanies: number }> {
   const supabase = await createClient()
-  const { data } = await supabase
+  const rows = await readAllRows<{company_id:string}>((from,to) => supabase
     .from("activities")
     .select("company_id")
     .eq("primary_owner_id", userId)
@@ -222,7 +231,7 @@ export async function contarAcoesSemana(
     .not("company_id", "is", null)
     .gte("data", weekStart)
     .lte("data", weekEnd)
-  const rows = data ?? []
+    .order("id").range(from,to))
   const empresas = new Set(rows.map((r) => r.company_id))
   return { completed: rows.length, distinctCompanies: empresas.size }
 }
@@ -251,18 +260,25 @@ export async function aderenciaDoConsultor(
   const supabase = await createClient()
   const semanasRange = semanasNoIntervalo(de, ate)
 
-  const { data: snaps } = await supabase
-    .from("weekly_action_snapshots")
-    .select("week_start,applied_target,completed_actions,achieved,applicable,exception_reason")
-    .eq("user_id", userId)
-    .gte("week_start", semanasRange[0] ?? de)
+  const [snapshotResult,exceptionResult,activities] = await Promise.all([
+    supabase.from("weekly_action_snapshots")
+      .select("week_start,applied_target,completed_actions,achieved,applicable,exception_reason")
+      .eq("user_id",userId).gte("week_start",semanasRange[0] ?? de).lte("week_start",ate),
+    supabase.from("goal_week_exceptions").select("week_start,reason")
+      .eq("user_id",userId).gte("week_start",semanasRange[0] ?? de).lte("week_start",ate),
+    readAllRows<{id:string;data:string}>((from,to)=>supabase.from("activities").select("id,data")
+      .eq("primary_owner_id",userId).eq("status","realizada").eq("conta_meta_semanal",true)
+      .not("company_id","is",null).gte("data",semanasRange[0] ?? de).lte("data",ate).order("id").range(from,to)),
+  ])
+  if (snapshotResult.error || exceptionResult.error) throw new Error("Não foi possível calcular a aderência: dados indisponíveis.")
+  const snaps=snapshotResult.data,exc=exceptionResult.data
   const snapByWeek = new Map((snaps ?? []).map((s) => [s.week_start, s]))
-
-  const { data: exc } = await supabase
-    .from("goal_week_exceptions")
-    .select("week_start,reason")
-    .eq("user_id", userId)
   const excByWeek = new Map((exc ?? []).map((e) => [e.week_start, e]))
+  const completedByWeek=new Map<string,number>()
+  for(const row of activities) {
+    const week=inicioSemanaComercial(new Date(`${row.data}T12:00:00-03:00`))
+    completedByWeek.set(week,(completedByWeek.get(week) ?? 0)+1)
+  }
 
   const semanas: SemanaAderencia[] = []
   let corrente: AderenciaConsultor["semanaCorrente"] = null
@@ -271,7 +287,7 @@ export async function aderenciaDoConsultor(
     const excecao = excByWeek.get(ws)
     if (isSemanaCorrente(ws)) {
       const target = resolverMetaSemanal(ws, goalsB2b, userId)
-      const { completed } = await contarAcoesSemana(userId, ws, fimSemanaComercial(ws))
+      const completed = completedByWeek.get(ws) ?? 0
       corrente = { completed, target, achieved: semanaAtingida(completed, target) }
       // semana corrente não entra na aderência histórica (ainda aberta)
       continue
@@ -289,7 +305,7 @@ export async function aderenciaDoConsultor(
     } else {
       // sem snapshot (semana passada não fechada): calcula ao vivo como fallback
       const target = resolverMetaSemanal(ws, goalsB2b, userId)
-      const { completed } = await contarAcoesSemana(userId, ws, fimSemanaComercial(ws))
+      const completed = completedByWeek.get(ws) ?? 0
       semanas.push({
         weekStart: ws,
         appliedTarget: target,
@@ -314,7 +330,7 @@ export async function aderenciaDoConsultor(
 }
 
 export interface MetaComRealizado extends Meta {
-  realizado: number
+  realizado: number | null
 }
 
 /**
@@ -324,7 +340,7 @@ export interface MetaComRealizado extends Meta {
  */
 export async function metasAtivasComRealizado(goalTypes: string[]): Promise<MetaComRealizado[]> {
   const todas = await listGoals()
-  const hoje = new Date().toISOString().slice(0, 10)
+  const hoje = saoPauloToday()
   const ativas = todas.filter(
     (m) =>
       goalTypes.includes(m.goalType) &&
@@ -345,31 +361,37 @@ export async function metasAtivasComRealizado(goalTypes: string[]): Promise<Meta
 async function somarGradeResults(
   supabase: Awaited<ReturnType<typeof createClient>>,
   campo: "leads" | "supervest_registrations",
-  startAt: string,
-  endAt: string,
+  startAt: string | null,
+  endAt: string | null,
   ownerId: string | null,
   supervestCycleId: string | null,
-): Promise<number> {
+): Promise<number | null> {
   let q = supabase
     .from("school_actions")
     .select("id")
     .eq("status", "realizada")
-    .gte("action_date", startAt)
-    .lte("action_date", endAt)
+  if (startAt) q=q.gte("action_date",startAt)
+  if (endAt) q=q.lte("action_date",endAt)
   if (ownerId) q = q.eq("primary_owner_id", ownerId)
   if (supervestCycleId) q = q.eq("supervest_cycle_id", supervestCycleId)
-  const { data: acoes } = await q
-  const ids = (acoes ?? []).map((a) => a.id)
-  if (ids.length === 0) return 0
-  const { data: results } = await supabase
-    .from("school_action_grade_results")
-    .select(campo)
-    .in("school_action_id", ids)
-  return (results ?? []).reduce((s, r: any) => s + (r[campo] ?? 0), 0)
+  try {
+    const acoes=await readAllRows<{id:string}>((from,to)=>q.order("id").range(from,to))
+    let total=0
+    // Bound URL size as well as PostgREST's row cap; one action may have multiple grade rows.
+    for(let offset=0;offset<acoes.length;offset+=100) {
+      const ids=acoes.slice(offset,offset+100).map(a=>a.id)
+      const results=await readAllRows<Record<string,number>>((from,to)=>supabase.from("school_action_grade_results")
+        .select(campo).in("school_action_id",ids).order("id").range(from,to))
+      total+=results.reduce((sum,row)=>sum+(row[campo] ?? 0),0)
+    }
+    return total
+  } catch { return null }
 }
 
 /** Realizado derivado de uma meta, conforme seu tipo e escopo. */
-export async function realizadoDaMeta(meta: Meta): Promise<number> {
+export async function realizadoDaMeta(meta: Meta): Promise<number | null> {
+  const actor = await requireActor()
+  if (!can(actor.role,"goals.read.all") && (meta.scopeType!=="individual" || meta.userId!==actor.id)) return null
   const supabase = await createClient()
   const owner = meta.scopeType === "individual" ? meta.userId : null
 
@@ -393,8 +415,8 @@ export async function realizadoDaMeta(meta: Meta): Promise<number> {
         .gte("action_date", meta.startAt)
         .lte("action_date", meta.endAt)
       if (owner) q = q.eq("primary_owner_id", owner)
-      const { count } = await q
-      return count ?? 0
+      const { count,error } = await q
+      return error ? null : count ?? 0
     }
     case "b2b_weekly_actions": {
       let q = supabase
@@ -406,14 +428,21 @@ export async function realizadoDaMeta(meta: Meta): Promise<number> {
         .gte("data", meta.startAt)
         .lte("data", meta.endAt)
       if (owner) q = q.eq("primary_owner_id", owner)
-      const { count } = await q
-      return count ?? 0
+      const { count,error } = await q
+      return error ? null : count ?? 0
     }
-    case "b2b_supervest_registrations":
-      // Sem origem transacional dedicada nesta fase; rótulo mantido separado.
-      return 0
+    case "b2b_supervest_registrations": {
+      if (!meta.commercialCycleId) return null
+      try {
+        let q = supabase.from("b2b_cycle_results").select("id,registrations").eq("commercial_cycle_id", meta.commercialCycleId)
+        if (owner) q = q.eq("user_id", owner)
+        const rows = await readAllRows<{ id: string; registrations: number | null }>((from, to) => q.order("id").range(from, to))
+        if (!rows.length || rows.some(row => row.registrations === null)) return null
+        return rows.reduce((sum, row) => sum + row.registrations!, 0)
+      } catch { return null }
+    }
     default:
-      return 0
+      return null
   }
 }
 
@@ -423,35 +452,18 @@ export async function apuracaoSupervest(cycleId: string) {
   const supabase = await createClient()
 
   // inscrição oficial = maior snapshot (leitura mais recente) do ciclo
-  const { data: snaps } = await supabase
+  const { data: snaps,error: snapshotError } = await supabase
     .from("supervest_snapshots")
     .select("official_registrations,snapshot_date")
     .eq("cycle_id", cycleId)
     .order("snapshot_date", { ascending: false })
     .limit(1)
-  const oficial = snaps?.[0]?.official_registrations ?? 0
+  const oficial = snapshotError ? null : snaps?.[0]?.official_registrations ?? null
 
-  // HS atribuídas = soma de school_action_grade_results.supervest_registrations
-  // das ações vinculadas a este ciclo SuperVest
-  const { data: acoes } = await supabase
-    .from("school_actions")
-    .select("id")
-    .eq("supervest_cycle_id", cycleId)
-    .eq("status", "realizada")
-  const acaoIds = (acoes ?? []).map((a) => a.id)
-  let hs = 0
-  if (acaoIds.length > 0) {
-    const { data: results } = await supabase
-      .from("school_action_grade_results")
-      .select("supervest_registrations")
-      .in("school_action_id", acaoIds)
-    hs = (results ?? []).reduce((s, r) => s + (r.supervest_registrations ?? 0), 0)
-  }
+  const hs=await somarGradeResults(supabase,"supervest_registrations",null,null,null,cycleId)
 
-  // B2B atribuídas: metas do tipo b2b_supervest_registrations não são "realizado";
-  // nesta fase, inscrições B2B atribuídas ainda não têm origem transacional própria,
-  // então ficam em 0 até haver lançamento B2B dedicado. Mantém o rótulo separado.
-  const b2b = 0
+  // Missing B2B attribution also prevents calculating a reliable "other channels" residual.
+  const b2b = null
 
   return apurarSupervest(oficial, hs, b2b)
 }

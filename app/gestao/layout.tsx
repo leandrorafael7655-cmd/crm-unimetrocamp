@@ -9,7 +9,7 @@ export default async function GestaoLayout({ children }: { children: React.React
   const actor = await getActor()
   if (!actor) redirect("/auth/login")
   if (!actor.active) redirect("/auth/login?erro=inativo")
-  if (!can(actor.role, "goals.read.all")) redirect("/")
+  if (!can(actor.role, "goals.read.all") && !can(actor.role, "goals.read.own")) redirect("/")
 
   return (
     <ResponsiveShell sidebar={<SystemSidebar role={actor.role} userName={actor.full_name} />} mainClassName="min-w-0 flex-1 p-4 sm:p-6">{children}</ResponsiveShell>

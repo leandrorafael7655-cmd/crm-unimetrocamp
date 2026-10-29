@@ -1,0 +1,19 @@
+{
+  "commit": "cce939309988e1564b246afdffd85827479429e3",
+  "run_id": 40730387325,
+  "status": "completed",
+  "conclusion": "success",
+  "url": "https://github.com/leandrorafael7655-cmd/crm-unimetrocamp/actions/runs/40730387325",
+  "vitest": 225,
+  "node": 20,
+  "responsive_checks": 2410,
+  "responsive_failures": 0,
+  "responsive_backends": "simulados",
+  "engines": [
+    "chromium",
+    "webkit"
+  ],
+  "lint_errors": 0,
+  "lint_warnings": 19,
+  "note": "CI anterior à correção adicional do formulário; o CI do próximo commit será vinculado no PR, sem reutilizar este resultado como validação de outro SHA."
+}

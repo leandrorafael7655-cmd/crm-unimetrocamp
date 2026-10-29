@@ -17,6 +17,10 @@ function diaSemanaISO(iso: string): number {
 }
 
 describe("semana comercial (segunda→domingo, SP UTC−3)", () => {
+  it("civil Monday does not include an extra previous week through UTC conversion",()=>{
+    expect(semanasNoIntervalo("2026-10-26","2026-11-01")).toEqual(["2026-10-26"])
+    expect(semanasNoIntervalo("2027-01-04","2027-01-10")).toEqual(["2027-01-04"])
+  })
   it("início da semana é sempre uma segunda-feira", () => {
     const inicio = inicioSemanaComercial(new Date("2026-08-19T15:00:00.000Z")) // quarta
     expect(diaSemanaISO(inicio)).toBe(1)
@@ -91,6 +95,10 @@ describe("aderência de campo", () => {
 })
 
 describe("anti-dupla-contagem SuperVest", () => {
+  it("keeps missing sources unavailable and preserves a measured zero",()=>{
+    expect(apurarSupervest(null,0,null)).toMatchObject({oficial:null,hsAtribuidas:0,b2bAtribuidas:null,outrosCanais:null,inconsistente:false})
+    expect(apurarSupervest(0,0,0).outrosCanais).toBe(0)
+  })
   it("outros canais = oficial − atribuídas", () => {
     const r = apurarSupervest(100, 40, 30)
     expect(r.outrosCanais).toBe(30)

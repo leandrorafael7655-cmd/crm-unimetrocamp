@@ -48,7 +48,7 @@ export const settings = {
 export const attendance = {
   start: "2026-10-26", end: "2026-12-06", actor, manager: true, settings,
   members: owners.map(o => ({ id: o.id, full_name: o.nome, email: "consultor@example.test", attendanceEnabled: true })),
-  slots: [], rotation: [], cycles: [], exceptions: [], absences: [], providerStatus: { configured: true },
+  slots: [], rotation: [], cycles: [], exceptions: [], absences: [], providerStatus: { configured: true, testMode: true },
   occurrences: Array.from({ length: 7 }, (_, i) => ({
     id: "occ-" + i, date: "2026-10-" + (26 + i), userId: "consultor", responsibleName: owners[0].nome,
     responsibleEmail: "consultor@example.test", startTime: "09:00", endTime: "18:00",
@@ -66,6 +66,8 @@ export const mockQueries = {
   ...captureMocks,
   getActor: async () => actor, requireActor: async () => actor, requireManager: async () => actor, requireCan: async () => actor,
   listSchools: async () => schools, listOwners: async () => owners, listActions: async (filters) => isCaptureAgendaFixture() ? listCaptureFixtureActions(filters) : actions,
+  saveB2bResult: async () => ({ok:false,message:"Falha controlada no lançamento."}),
+  upsertSchool: async () => ({ok:false,message:"Falha controlada ao salvar escola."}),
   listGradeLevels: async () => grades, listEstimatesByEscola: async () => Object.fromEntries(schools.map(e => [e.id, ["3em"]])),
   getSchool360: async () => ({ escola: schools[0], contatos: [{ ...contact, escolaId: schools[0].id, principal: true }],
     estimativas: [{ id: "estimate", escolaId: schools[0].id, serie: "3em", anoLetivo: 2026, estimativaAlunos: 120, numTurmas: 4 }],

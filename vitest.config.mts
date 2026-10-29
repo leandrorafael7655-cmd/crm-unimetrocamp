@@ -6,6 +6,8 @@ import { fileURLToPath } from "node:url"
 export default defineConfig({
   test: {
     environment: "node",
+    maxWorkers: 4,
+    hookTimeout: 30000,
     include: ["lib/**/*.test.ts"],
   },
   resolve: {

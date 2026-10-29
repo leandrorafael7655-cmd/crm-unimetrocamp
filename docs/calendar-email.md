@@ -1,3 +1,5 @@
+> Configuração atual: convites Gmail SMTP são processados na **Vercel**. Consulte [variáveis exatas e regras finais](audit/2026-10-28/final-decisions.md). O consumidor Edge abaixo foi aposentado; não deve ser ligado em paralelo. O conteúdo restante registra a configuração anterior.
+
 # Convites automáticos por e-mail
 
 O CRM gera um convite iCalendar ao publicar a escala e ao salvar agendamentos de ações com responsável, data e horários completos. O destinatário aceita ou recusa no seu aplicativo de calendário. Não há acesso à agenda do destinatário nem aceite automático.

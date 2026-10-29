@@ -19,15 +19,12 @@ import {
 } from "@/lib/data/goals-queries"
 import { construirFilaHS, ETAPAS_HS_ATIVAS } from "@/lib/domain/high-school"
 import { GoalCard } from "@/components/goals/goal-cards"
+import { hojeISO } from "@/lib/domain/utils"
 import { BlocoModulo, Kpi, KpiGrid, BlocoErro, BlocoVazio } from "@/components/dashboard/dashboard-ui"
 
 export const dynamic = "force-dynamic"
 
 const brData = (iso: string) => (iso ? iso.split("-").reverse().join("/") : "—")
-
-function hojeISO() {
-  return new Date().toISOString().slice(0, 10)
-}
 
 async function carregarHS(hoje: string) {
   const [escolas, acoes, grades, seriesPorEscola] = await Promise.all([
@@ -213,8 +210,8 @@ export default async function DashboardGeral() {
                   </p>
                   <KpiGrid>
                     <Kpi rotulo="Meta inscrições" valor={svR.value.ciclo.registrationsTarget} />
-                    <Kpi rotulo="Oficial" valor={svR.value.apur?.oficial ?? 0} tom="brand" />
-                    <Kpi rotulo="Atribuídas HS" valor={svR.value.apur?.hsAtribuidas ?? 0} tom="ok" />
+                    <Kpi rotulo="Oficial" valor={svR.value.apur?.oficial ?? "Não disponível"} tom="brand" />
+                    <Kpi rotulo="Atribuídas HS" valor={svR.value.apur?.hsAtribuidas ?? "Não disponível"} tom="ok" />
                   </KpiGrid>
                   <p className="mt-3 text-xs text-slate-500">
                     Outros canais:{" "}
@@ -223,7 +220,7 @@ export default async function DashboardGeral() {
                         svR.value.apur?.inconsistente ? "text-rose-600" : "text-slate-700"
                       }`}
                     >
-                      {svR.value.apur?.outrosCanais ?? 0}
+                      {svR.value.apur?.outrosCanais ?? "Não disponível"}
                     </span>
                     {svR.value.apur?.inconsistente && (
                       <span className="ml-1 text-rose-600">· atribuídas acima do oficial, revisar</span>

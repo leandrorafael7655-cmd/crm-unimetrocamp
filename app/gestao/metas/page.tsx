@@ -1,4 +1,4 @@
-import { getActor } from "@/lib/auth/guards"
+import { requireCan } from "@/lib/auth/guards"
 import { can } from "@/lib/domain/roles"
 import { listOwners } from "@/lib/data/high-school-queries"
 import {
@@ -23,7 +23,8 @@ import {
 export const dynamic = "force-dynamic"
 
 export default async function CentralDeMetasPage() {
-  const actor = await getActor()
+  const actor = await requireCan("goals.read.own")
+  const all = can(actor.role,"goals.read.all")
   const podeEscrever = actor ? can(actor.role, "goals.write") : false
   const podeBackfill = actor?.role === "gerente" || actor?.role === "supervisor"
 
@@ -38,7 +39,7 @@ export default async function CentralDeMetasPage() {
   const metas: MetaView[] = await Promise.all(
     metasRaw.map(async (m) => {
       const realizado = await realizadoDaMeta(m)
-      const prog = calcularProgresso(m.targetValue, realizado)
+      const prog = calcularProgresso(m.targetValue, realizado ?? 0)
       return {
         id: m.id,
         goalType: m.goalType,
@@ -50,8 +51,8 @@ export default async function CentralDeMetasPage() {
         userName: m.userName,
         targetValue: m.targetValue,
         realizado,
-        atingimentoPct: prog.atingimentoPct,
-        faltante: prog.faltante,
+        atingimentoPct: realizado===null ? null : prog.atingimentoPct,
+        faltante: realizado===null ? null : prog.faltante,
         startAt: m.startAt,
         endAt: m.endAt,
         status: m.status,
@@ -70,7 +71,7 @@ export default async function CentralDeMetasPage() {
   const de = inicioSemanaComercial(inicioJanela)
   const ate = fimSemanaComercial(inicioSemanaComercial(hoje))
 
-  const consultoresB2b = owners.filter((o) => o.role === "consultor_b2b" || o.role === "supervisor")
+  const consultoresB2b = owners.filter((o) => (all || o.id===actor.id) && (o.role === "consultor_b2b" || o.role === "supervisor"))
   const consultores: ConsultorView[] = await Promise.all(
     consultoresB2b.map(async (o) => {
       const ad = await aderenciaDoConsultor(o.id, o.nome, de, ate, metasB2b)
@@ -100,7 +101,7 @@ export default async function CentralDeMetasPage() {
     reason: e.reason,
   }))
 
-  const ownersView: OwnerView[] = owners.map((o) => ({ id: o.id, nome: o.nome, role: o.role }))
+  const ownersView: OwnerView[] = owners.filter(o => all || o.id===actor.id).map((o) => ({ id: o.id, nome: o.nome, role: o.role }))
   const ccOpt: CicloOption[] = ciclosComerciais.map((c) => ({ id: c.id, name: c.name }))
   const svOpt: CicloOption[] = ciclosSupervest.map((c) => ({ id: c.id, name: c.name }))
 

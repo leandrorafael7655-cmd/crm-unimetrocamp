@@ -1,0 +1,37 @@
+
+> my-project@0.1.0 test /workspace/scratch/86c3d523b438/uniconecta-fixes
+> vitest run && node --test tests/*.test.mjs
+
+
+ RUN  v4.1.11 /workspace/scratch/86c3d523b438/uniconecta-fixes
+
+
+ Test Files  37 passed (37)
+      Tests  261 passed (261)
+   Start at  16:20:38
+   Duration  10.49s (transform 1.49s, setup 0ms, import 2.88s, tests 31.44s, environment 4ms)
+
+(node:392) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ Vercel message uses REQUEST, recipient acceptance and São Paulo timezone (18.691605ms)
+✔ reschedule and cancel retain UID and increment sequence (1.81141ms)
+✔ date-only follow-ups use a transparent all-day event (1.212327ms)
+✔ retired Supabase sender cannot become a parallel consumer (1.874534ms)
+(node:393) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspace/scratch/86c3d523b438/uniconecta-fixes/lib/auth/site-redirect.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspace/scratch/86c3d523b438/uniconecta-fixes/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ legacy navigation preserves route and query on the configured domain (1.31421ms)
+✔ migration is inactive until explicitly enabled (0.17208ms)
+✔ existing auth links and API calls stay on their original origin (0.212551ms)
+✔ new domain and preview URLs never redirect (0.162445ms)
+✔ invalid destinations and loops leave the legacy site working (0.335796ms)
+✔ password recovery callback follows the origin where the user requested it (0.353643ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 192.356648

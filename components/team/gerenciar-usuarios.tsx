@@ -16,6 +16,7 @@ import {
   addUser,
   deleteUser,
   listManagedUsers,
+  updateManagedUser,
   sendPasswordRecovery,
   type ManagedUser,
   type UserAdminResult,
@@ -47,6 +48,15 @@ export function GerenciarUsuarios({ perfil }: { perfil: Usuario }) {
   const [papel, setPapel] = useState<Role>("consultor_b2b")
   const [tag, setTag] = useState("")
   const [incluirAtendimento, setIncluirAtendimento] = useState(true)
+  const [edicao, setEdicao] = useState<null | {
+    id: string
+    fullName: string
+    email: string
+    role: Role
+    consultantTag: string
+    includeInAttendance: boolean
+    active: boolean
+  }>(null)
 
   const [diag, setDiag] = useState<Diagnostic[] | null>(null)
   const [diagLoading, setDiagLoading] = useState(false)
@@ -90,9 +100,42 @@ export function GerenciarUsuarios({ perfil }: { perfil: Usuario }) {
     } finally { setOcupado(null) }
   }
 
+  const abrirEdicao = (u: ManagedUser) => {
+    setFeedback(null)
+    setEdicao({
+      id: u.id,
+      fullName: u.full_name,
+      email: u.email,
+      role: u.role,
+      consultantTag: u.consultant_tag || "",
+      includeInAttendance: u.attendance_enabled,
+      active: u.active,
+    })
+  }
+
+  const salvarEdicao = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!edicao) return
+    setOcupado(edicao.id)
+    const r = await updateManagedUser({
+      userId: edicao.id,
+      fullName: edicao.fullName,
+      email: edicao.email,
+      role: edicao.role,
+      consultantTag: edicao.consultantTag,
+      includeInAttendance: edicao.includeInAttendance,
+    })
+    mostrar(r)
+    if (r.ok) {
+      setEdicao(null)
+      await carregar()
+    }
+    setOcupado(null)
+  }
+
   const excluir = async (u: ManagedUser) => {
     const confirmou = window.confirm(
-      `Excluir definitivamente o acesso de ${u.full_name} (${u.email})?\n\n` +
+      `Excluir definitivamente o acesso de ${u.display_name} (${u.email})?\n\n` +
       "• O usuário perderá o login no UniConecta.\n" +
       "• Ele será retirado do Atendimento e das atribuições futuras.\n" +
       "• Convites futuros vinculados a ele serão cancelados.\n" +
@@ -152,8 +195,8 @@ export function GerenciarUsuarios({ perfil }: { perfil: Usuario }) {
             </select>
           </label>
           <label className="flex flex-col gap-1">
-            <span className="text-[11px] font-medium text-slate-600">Tag (opcional)</span>
-            <input className={`${input} font-mono text-xs`} value={tag} onChange={(e) => setTag(e.target.value)} placeholder="automática" />
+            <span className="text-[11px] font-medium text-slate-600">Nome no CRM (Tag)</span>
+            <input className={`${input} font-mono text-xs`} value={tag} onChange={(e) => setTag(e.target.value)} placeholder="Ex.: Madu, Junior França" />
           </label>
           <label className="flex min-h-9 items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-700">
             <input type="checkbox" checked={incluirAtendimento} onChange={(e) => setIncluirAtendimento(e.target.checked)} className="h-4 w-4 accent-[#88005b]" />
@@ -168,7 +211,7 @@ export function GerenciarUsuarios({ perfil }: { perfil: Usuario }) {
       )}
 
       <p className="mt-2 text-[11px] text-slate-500">
-        O e-mail cadastrado no usuário é o e-mail usado para convites de Atendimento, ações de empresas e ações de escolas. Marcar “Incluir no Atendimento” apenas o habilita para a escala — não cria compromissos automaticamente.
+        O Nome no CRM (Tag) é como a pessoa aparece operacionalmente em filtros, responsáveis, agendas e registros. Se ficar vazio, o sistema gera uma Tag a partir do nome. O nome completo continua preservado no cadastro. O e-mail cadastrado é usado para convites de Atendimento, ações de empresas e ações de escolas.
       </p>
 
       <div className="mt-4 uni-scroll-region overflow-x-auto rounded-md border border-slate-200" tabIndex={0} role="region" aria-label="Conteúdo com rolagem horizontal">
@@ -190,7 +233,8 @@ export function GerenciarUsuarios({ perfil }: { perfil: Usuario }) {
               return (
                 <tr key={u.id}>
                   <td className="px-3 py-2">
-                    <div className="text-slate-900">{u.full_name}</div>
+                    <div className="font-medium text-slate-900">{u.display_name}</div>
+                    {u.full_name !== u.display_name && <div className="text-[11px] text-slate-500">{u.full_name}</div>}
                     <div className="font-mono text-[11px] text-slate-400">{u.email}</div>
                   </td>
                   <td className="px-3 py-2">
@@ -218,6 +262,7 @@ export function GerenciarUsuarios({ perfil }: { perfil: Usuario }) {
                   </td>
                   <td className="uni-table-actions px-3 py-2">
                     <div className="flex flex-wrap justify-end gap-1.5">
+                      <button type="button" className={btnNeutro} disabled={busy || (!ehAdministrador && u.role === "gerente")} onClick={() => abrirEdicao(u)}>Editar</button>
                       <button type="button" className={btnNeutro} disabled={busy || u.id === perfil.id} onClick={() => acao(u.id, () => setActive(u.id, !u.active))}>{u.active ? "Desativar" : "Ativar"}</button>
                       {ehAdministrador && <UserAccessActions userId={u.id} name={u.full_name} self={u.id === perfil.id} disabled={busy || !u.active || !u.email} feedback={mostrar} />}
                       {ehAdministrador && u.id !== perfil.id && <button type="button" className={btnDanger} disabled={busy} onClick={() => excluir(u)}>Excluir</button>}
@@ -232,6 +277,75 @@ export function GerenciarUsuarios({ perfil }: { perfil: Usuario }) {
       </div>
 
       {ehAdministrador && <UserAccessHistory />}
+
+      {edicao && (
+        <div className="uni-modal-overlay bg-slate-950/45" role="dialog" aria-modal="true" aria-labelledby="editar-usuario-titulo">
+          <form onSubmit={salvarEdicao} className="uni-dialog uni-dialog-scroll w-full max-w-2xl rounded-xl border border-slate-200 bg-white p-4 shadow-2xl sm:p-5">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h4 id="editar-usuario-titulo" className="text-base font-semibold text-slate-900">Editar usuário</h4>
+                <p className="mt-1 text-xs text-slate-500">Atualize cadastro, nome operacional e acesso sem perder o histórico do CRM.</p>
+              </div>
+              <button type="button" className="rounded-md px-2 py-1 text-xl leading-none text-slate-400 hover:bg-slate-100 hover:text-slate-700" onClick={() => setEdicao(null)} disabled={ocupado === edicao.id} aria-label="Fechar">×</button>
+            </div>
+
+            <div className="mt-5 grid gap-4 sm:grid-cols-2">
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-medium text-slate-700">Nome completo</span>
+                <input className={input} value={edicao.fullName} onChange={(e) => setEdicao({ ...edicao, fullName: e.target.value })} required />
+              </label>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-medium text-slate-700">Nome no CRM (Tag)</span>
+                <input className={input} value={edicao.consultantTag} onChange={(e) => setEdicao({ ...edicao, consultantTag: e.target.value })} placeholder="Ex.: Madu, Junior França" />
+                <span className="text-[11px] text-slate-400">É o nome exibido em filtros, responsáveis, agendas e registros.</span>
+              </label>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-medium text-slate-700">E-mail corporativo</span>
+                <input className={input} type="email" disabled={!ehAdministrador} value={edicao.email} onChange={(e) => setEdicao({ ...edicao, email: e.target.value })} required />
+                <span className="text-[11px] text-slate-400">Também é usado no login, recuperação de senha e convites de calendário.</span>
+              </label>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-medium text-slate-700">Perfil de acesso</span>
+                <select
+                  className={input}
+                  value={edicao.role}
+                  disabled={edicao.id === perfil.id || (!ehAdministrador && edicao.role === "gerente")}
+                  onChange={(e) => setEdicao({ ...edicao, role: e.target.value as Role })}
+                >
+                  <option value="consultor_b2b">{rotuloRole("consultor_b2b")}</option>
+                  <option value="high_school">{rotuloRole("high_school")}</option>
+                  <option value="supervisor">{rotuloRole("supervisor")}</option>
+                  {ehAdministrador && <option value="gerente">{rotuloRole("gerente")}</option>}
+                </select>
+                {edicao.id === perfil.id && <span className="text-[11px] text-amber-600">Seu próprio perfil de acesso não pode ser alterado aqui.</span>}
+              </label>
+            </div>
+
+            <label className={`mt-4 flex items-center gap-3 rounded-lg border px-3 py-3 text-sm ${edicao.active ? "border-slate-200 bg-slate-50 text-slate-700" : "border-amber-200 bg-amber-50 text-amber-800"}`}>
+              <input
+                type="checkbox"
+                checked={edicao.includeInAttendance}
+                disabled={!edicao.active}
+                onChange={(e) => setEdicao({ ...edicao, includeInAttendance: e.target.checked })}
+                className="h-4 w-4 accent-[#88005b]"
+              />
+              <span>
+                <span className="font-medium">Incluir no Atendimento</span>
+                <span className="ml-1 text-xs opacity-75">— deixa o usuário disponível para a escala operacional.</span>
+              </span>
+            </label>
+
+            {!edicao.active && (
+              <p className="mt-2 text-[11px] text-amber-700">Este usuário está desativado. Ative-o na tabela antes de incluí-lo novamente no Atendimento.</p>
+            )}
+
+            <div className="mt-5 flex justify-end gap-2 border-t border-slate-100 pt-4">
+              <button type="button" className={btnNeutro} disabled={ocupado === edicao.id} onClick={() => setEdicao(null)}>Cancelar</button>
+              <button type="submit" className={btn} disabled={ocupado === edicao.id}>{ocupado === edicao.id ? "Salvando…" : "Salvar alterações"}</button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {ehAdministrador && (
         <div className="mt-4 rounded-md border border-dashed border-slate-300 p-3">

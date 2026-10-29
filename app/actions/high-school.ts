@@ -7,10 +7,13 @@
    mensagem clara antes de tocar o banco. Consultor B2B tem hs.read mas NÃO
    hs.write — logo estas actions o bloqueiam. */
 
+import { validateSchedule, nonNegativeInteger } from "@/lib/domain/validation"
+import { cnpjValido } from "@/lib/domain/utils"
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
 import { requireCan } from "@/lib/auth/guards"
 import { REDES_ESCOLA, TODAS_ETAPAS_HS, STATUS_ACAO_HS, TIPOS_ACAO_HS } from "@/lib/domain/high-school"
+import { flushCalendarQueue } from "@/lib/calendar/calendar-dispatch"
 
 export interface ActionResult {
   ok: boolean
@@ -46,6 +49,7 @@ export async function upsertSchool(form: FormData): Promise<ActionResult> {
     const nome = s(form.get("nome"))
     if (!nome) return { ok: false, message: "Informe o nome da escola." }
 
+    if (s(form.get("cnpj")) && !cnpjValido(s(form.get("cnpj")))) return { ok: false, message: "CNPJ inválido." }
     const rede = s(form.get("rede")) || "Outra"
     if (!REDES_ESCOLA.includes(rede as (typeof REDES_ESCOLA)[number]))
       return { ok: false, message: "Rede inválida." }
@@ -112,11 +116,10 @@ export async function deleteSchool(id: string): Promise<ActionResult> {
     await requireCan("hs.write")
     if (!id) return { ok: false, message: "Escola não informada." }
     const supabase = await createClient()
-    // RLS permite DELETE apenas para gerência; se não for, o banco recusa.
-    const { error } = await supabase.from("schools").delete().eq("id", id)
+    const { error } = await supabase.rpc("set_commercial_archive", { p_type: "school", p_id: id, p_archived: true, p_reason: "Encerramento comercial" })
     if (error) return { ok: false, message: `Sem permissão para excluir ou falha: ${error.message}` }
     revalidarHS()
-    return { ok: true, message: "Escola removida." }
+    return { ok: true, message: "Escola arquivada; histórico preservado." }
   } catch (e) {
     return { ok: false, message: e instanceof Error ? e.message : "Erro inesperado." }
   }
@@ -242,7 +245,13 @@ export async function upsertAction(input: AcaoInput): Promise<ActionResult> {
     const supabase = await createClient()
 
     if (!input.escolaId) return { ok: false, message: "Escola não informada." }
-    if (!input.data) return { ok: false, message: "Informe a data da ação." }
+    const scheduled = ["agendada","confirmada","reagendada"].includes(input.status || "agendada")
+    const scheduleError = validateSchedule(input.data, input.inicio, input.fim, scheduled)
+    if (scheduleError) return { ok: false, message: scheduleError }
+    if (scheduled && !input.primaryOwnerId) return { ok:false,message:"Selecione o consultor responsável pelo agendamento." }
+    if (![input.estimativaAlunos,input.estimativaTurmas,...(input.resultados ?? []).flatMap(r => [r.turmas,r.impactados,r.leads,r.inscricoesSupervest])].every(v => nonNegativeInteger(v))) {
+      return { ok: false, message: "Quantidades devem ser inteiros não negativos." }
+    }
     const tipo = input.tipo || "Outra"
     if (!TIPOS_ACAO_HS.includes(tipo as (typeof TIPOS_ACAO_HS)[number]))
       return { ok: false, message: "Tipo de ação inválido." }
@@ -250,7 +259,6 @@ export async function upsertAction(input: AcaoInput): Promise<ActionResult> {
     if (!STATUS_ACAO_HS.includes(status as (typeof STATUS_ACAO_HS)[number]))
       return { ok: false, message: "Status inválido." }
 
-    const { data: actor } = await supabase.auth.getUser()
     const payload = {
       school_id: input.escolaId,
       action_date: input.data,
@@ -268,69 +276,25 @@ export async function upsertAction(input: AcaoInput): Promise<ActionResult> {
       commercial_cycle_id: input.comercialCicloId || null,
     }
 
-    let acaoId = input.id
-    if (acaoId) {
-      const { error } = await supabase.from("school_actions").update(payload).eq("id", acaoId)
-      if (error) return { ok: false, message: `Falha ao salvar ação: ${error.message}` }
-    } else {
-      const { data: row, error } = await supabase
-        .from("school_actions")
-        .insert({ ...payload, created_by: actor.user?.id ?? null })
-        .select("id")
-        .single()
-      if (error || !row) return { ok: false, message: `Falha ao criar ação: ${error?.message ?? "?"}` }
-      acaoId = String(row.id)
-    }
-
-    // participantes: substitui o conjunto (N:N real)
-    const parts = (input.participantes ?? []).filter((p) => p.userId)
-    await supabase.from("school_action_participants").delete().eq("school_action_id", acaoId)
-    if (parts.length > 0) {
-      const { error: pErr } = await supabase.from("school_action_participants").insert(
-        parts.map((p) => ({
-          school_action_id: acaoId,
-          user_id: p.userId,
-          role_in_action: p.papelNaAcao || null,
-        })),
-      )
-      if (pErr) return { ok: false, message: `Falha ao salvar participantes: ${pErr.message}` }
-    }
-
-    // resultados por série: valida elegibilidade lendo grade_levels
-    const resultados = (input.resultados ?? []).filter((r) => r.serie)
-    await supabase.from("school_action_grade_results").delete().eq("school_action_id", acaoId)
-    if (resultados.length > 0) {
-      const { data: grades } = await supabase
-        .from("grade_levels")
-        .select("code,supervest_eligible")
-      const elig = new Map((grades ?? []).map((g) => [String(g.code), Boolean(g.supervest_eligible)]))
-
-      const linhas = resultados.map((r) => {
-        const eligivel = elig.get(r.serie) ?? false
-        const leads = Math.max(0, Number(r.leads ?? 0) || 0)
-        // Série não elegível → inscrições forçadas a 0 (também no banco via trigger).
-        const insc = eligivel ? Math.max(0, Number(r.inscricoesSupervest ?? 0) || 0) : 0
-        return {
-          school_action_id: acaoId,
-          grade: r.serie,
-          classes_count: r.turmas ?? null,
-          estimated_impacted: r.impactados ?? null,
-          leads,
-          supervest_registrations: insc,
-        }
-      })
-      const { error: rErr } = await supabase.from("school_action_grade_results").insert(linhas)
-      if (rErr) return { ok: false, message: `Falha ao salvar resultados: ${rErr.message}` }
-    }
-
-    // ação realizada atualiza "última ação" da escola
-    if (status === "realizada") {
-      await supabase.from("schools").update({ last_action_at: input.data }).eq("id", input.escolaId)
-    }
+    const { data: acaoId, error } = await supabase.rpc("save_school_action_atomic", {
+      p_id: input.id || null,
+      p_action: payload,
+      p_participants: (input.participantes ?? []).map(p => ({ user_id: p.userId, role_in_action: p.papelNaAcao || null })),
+      p_results: (input.resultados ?? []).map(r => ({ grade: r.serie, classes_count: r.turmas ?? null,
+        estimated_impacted: r.impactados ?? null, leads: r.leads ?? 0, supervest_registrations: r.inscricoesSupervest ?? 0 })),
+    })
+    if (error || !acaoId) return { ok: false, message: `Não foi possível salvar a ação: ${error?.message ?? "gravação não confirmada"}` }
 
     revalidarHS()
     revalidatePath(`/high-school/escolas/${input.escolaId}`)
-    return { ok: true, message: "Ação salva.", id: acaoId }
+    const dispatch = await flushCalendarQueue(supabase, { batches: 2, limit: 25 })
+    const calendarCandidate = Boolean(input.primaryOwnerId && input.inicio && input.fim && ["agendada", "confirmada", "reagendada"].includes(status))
+    const message = calendarCandidate && !dispatch.configured
+      ? "Ação salva. O convite ficou pendente até o provedor de e-mail ser configurado."
+      : calendarCandidate && dispatch.sent > 0
+        ? "Ação salva. Convite enviado ao provedor de e-mail."
+        : "Ação salva."
+    return { ok: true, message, id: acaoId }
   } catch (e) {
     return { ok: false, message: e instanceof Error ? e.message : "Erro inesperado." }
   }
@@ -342,11 +306,12 @@ export async function setActionStatus(id: string, status: string, escolaId?: str
     if (!STATUS_ACAO_HS.includes(status as (typeof STATUS_ACAO_HS)[number]))
       return { ok: false, message: "Status inválido." }
     const supabase = await createClient()
-    const { error } = await supabase.from("school_actions").update({ status }).eq("id", id)
+    const { error } = await supabase.from("school_actions").update({ status }).eq("id", id).select("id").single()
     if (error) return { ok: false, message: `Falha ao atualizar: ${error.message}` }
     revalidarHS()
     if (escolaId) revalidatePath(`/high-school/escolas/${escolaId}`)
-    return { ok: true, message: "Status atualizado." }
+    await flushCalendarQueue(supabase, { batches: 2, limit: 25 })
+    return { ok: true, message: "Status atualizado. Alterações de calendário foram processadas quando aplicável." }
   } catch (e) {
     return { ok: false, message: e instanceof Error ? e.message : "Erro inesperado." }
   }
@@ -356,11 +321,12 @@ export async function deleteAction(id: string, escolaId?: string): Promise<Actio
   try {
     await requireCan("hs.write")
     const supabase = await createClient()
-    const { error } = await supabase.from("school_actions").delete().eq("id", id)
+    const { error } = await supabase.from("school_actions").delete().eq("id", id).select("id").single()
     if (error) return { ok: false, message: `Falha ao remover: ${error.message}` }
     revalidarHS()
     if (escolaId) revalidatePath(`/high-school/escolas/${escolaId}`)
-    return { ok: true, message: "Ação removida." }
+    await flushCalendarQueue(supabase, { batches: 2, limit: 25 })
+    return { ok: true, message: "Ação removida. O cancelamento de calendário foi processado quando aplicável." }
   } catch (e) {
     return { ok: false, message: e instanceof Error ? e.message : "Erro inesperado." }
   }

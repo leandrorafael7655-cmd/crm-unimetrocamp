@@ -87,19 +87,20 @@ function InviteBadge({ invite, status }: { invite?: any; status: string }) {
 
 function OccurrenceCard({ occ, canManage, onEdit }: { occ: any; canManage: boolean; onEdit: (o: any) => void }) {
   const isSchool = occ.sourceType === "school_action"
+  const commercial = occ.sourceType?.startsWith("company_")
   return (
     <button
       type="button"
       data-school-action-id={isSchool ? occ.id : undefined}
-      onClick={() => (isSchool || canManage) && onEdit(occ)}
-      className={`w-full rounded-xl border p-2.5 text-left transition ${isSchool ? "border-emerald-200 bg-emerald-50 text-emerald-900" : ACTIVITY_STYLE[occ.activity as AttendanceActivity]} ${isSchool || canManage ? "hover:-translate-y-0.5 hover:shadow-sm" : "cursor-default"}`}
+      onClick={() => (isSchool || commercial || canManage) && onEdit(occ)}
+      className={`w-full rounded-xl border p-2.5 text-left transition ${isSchool ? "border-emerald-200 bg-emerald-50 text-emerald-900" : (ACTIVITY_STYLE[occ.activity as AttendanceActivity] || "border-slate-200 bg-slate-50 text-slate-900")} ${isSchool || commercial || canManage ? "hover:-translate-y-0.5 hover:shadow-sm" : "cursor-default"}`}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className={`text-xs font-semibold ${isSchool ? "break-words" : "truncate"}`}>{isSchool ? occ.schoolName : ACTIVITY_LABEL[occ.activity as AttendanceActivity]}</p>
-          <p className={`mt-0.5 text-[11px] opacity-80 ${isSchool ? "line-clamp-2 break-words" : ""}`}>{isSchool ? occ.actionType : occ.responsibleName}</p>
+          <p className={`text-xs font-semibold ${isSchool ? "break-words" : "truncate"}`}>{isSchool ? occ.schoolName : commercial ? occ.companyName : ACTIVITY_LABEL[occ.activity as AttendanceActivity]}</p>
+          <p className={`mt-0.5 text-[11px] opacity-80 ${isSchool ? "line-clamp-2 break-words" : ""}`}>{isSchool ? occ.actionType : commercial ? occ.title : occ.responsibleName}</p>
         </div>
-        {!isSchool && <span className="shrink-0 font-mono text-[10px]">{occ.startTime}–{occ.endTime}</span>}
+        {!isSchool && <span className="shrink-0 font-mono text-[10px]">{occ.startTime ? occ.startTime + (occ.endTime ? `–${occ.endTime}` : "") : "Dia inteiro"}</span>}
       </div>
       {occ.breakStart && occ.breakEnd && <p className="mt-1 text-[10px] opacity-75">Intervalo {occ.breakStart}–{occ.breakEnd}</p>}
       {isSchool ? <>
@@ -259,12 +260,24 @@ export function AttendanceBoard({ initial, personalOnly = false }: { initial: an
 
   return (
     <div className="w-full min-w-0">
+      {data.manager && data.providerStatus?.testMode && <p role="status" className="mb-4 rounded-lg border border-sky-200 bg-sky-50 p-3 text-sm text-sky-950">Validação de convites ativa: somente o perfil de teste configurado recebe e-mails. Revise a fila anterior antes de liberar o envio para a equipe.</p>}
+      {data.manager && data.planning && <section className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+        <h2 className="font-semibold">Revisão da escala · prévia, sem publicação</h2>
+        <p className="mt-1">Base de 42h por pessoa; almoço de 1h fora da carga. SM: 9h–20h com 3 pessoas; sábado 9h–13h com 2. GDC de 1h para todos na segunda exige pausa aprovada ou cobertura externa.</p>
+        <p className="mt-1">Equipe vinculada: {data.planning.capacity.people}. Capacidade: {data.planning.capacity.weeklyHours}h/semana; cobertura SM: {data.planning.capacity.smHours}h; GDC: {data.planning.capacity.gdcHours}h. Com 7 consultores: 294h brutas. Esta conta agregada não comprova viabilidade dos horários.</p>
+        <p className="mt-1">{data.planning.issues.filter((i: any)=>i.severity==="error").length} pendências impedem publicação. As preferências individuais e o horário do GDC precisam ser revisados antes de distribuir pessoas.</p>
+        <details className="mt-2"><summary className="cursor-pointer font-medium">Ver carga semanal e pendências</summary>
+          <ul className="mt-2 list-disc pl-5">{data.planning.weekly.map((w:any)=><li key={w.userId+w.week}>{w.name} · semana {formatDateBr(w.week)}: {(w.minutes/60).toFixed(1)}h; ajuste {(w.adjustmentMinutes/60).toFixed(1)}h.</li>)}</ul>
+          <ul className="mt-2 list-disc pl-5">{data.planning.issues.map((i:any,index:number)=><li key={index}>{i.message}</li>)}</ul>
+        </details>
+      </section>}
+
       <header className="mb-5 rounded-2xl border border-[#e6d7e1] bg-white p-4 shadow-sm sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="mb-2 h-1 w-9 rounded-full" style={{ background: orange }} />
             <div className="flex items-center gap-2"><CalendarDays className="h-5 w-5 text-[#88005b]" /><h1 className="text-2xl font-bold tracking-[-0.03em] text-slate-950">{personalOnly ? "Minha agenda" : "Atendimento"}</h1></div>
-            <p className="mt-1 max-w-2xl text-sm text-slate-500">{personalOnly ? "Seus atendimentos e ações nas escolas." : "Escala operacional da sala de matrícula, conversão e atividade externa."}</p>
+            <p className="mt-1 max-w-2xl text-sm text-slate-500">{personalOnly ? "Seus atendimentos, ações nas escolas, reuniões e próximos passos B2B." : "Escala operacional da sala de matrícula, conversão e atividade externa."}</p>
           </div>
           <div className="flex flex-wrap gap-2">
             {!personalOnly && <Link href="/atendimento/minha-agenda" className={btnSecondary}><UserRound className="h-4 w-4" />Minha agenda</Link>}
@@ -285,6 +298,11 @@ export function AttendanceBoard({ initial, personalOnly = false }: { initial: an
               : "A escala pode ser publicada, mas os convites dependem da configuração de um serviço de e-mail e de um remetente autorizado."}</p>
             {Array.isArray(data.providerStatus?.missing) && data.providerStatus.missing.length > 0 && (
               <p className="mt-2 text-xs leading-relaxed">Falta configurar: {data.providerStatus.missing.map((key: string) => ({
+                SMTP_HOST: "servidor de envio",
+                SMTP_PORT: "porta de envio",
+                SMTP_USER: "usuário do remetente",
+                SMTP_PASS: "senha de app no Vercel",
+                EMAIL_FROM: "remetente",
                 CALENDAR_SMTP_HOST: "servidor de envio",
                 CALENDAR_SMTP_PASS: "credencial do serviço de envio",
                 CALENDAR_SMTP_USER: "usuário do serviço de envio",
@@ -320,7 +338,7 @@ export function AttendanceBoard({ initial, personalOnly = false }: { initial: an
           </div>
           {view !== "list" && <div className="flex items-center gap-1"><button className={btnSecondary} onClick={() => navigate(-1)} aria-label="Anterior"><ChevronLeft className="h-4 w-4" /></button><button className={btnSecondary} onClick={() => navigate(1)} aria-label="Próximo"><ChevronRight className="h-4 w-4" /></button></div>}
           <div className="uni-filter-field"><label className={labelCls}>Consultor</label><select aria-label="Consultor" className={inputCls} value={userFilter} disabled={personalOnly} onChange={(e) => setUserFilter(e.target.value)}><option value="">Todos</option>{(data.members ?? []).map((m: any) => <option key={m.id} value={m.id}>{m.full_name}</option>)}</select></div>
-          <div className="uni-filter-field"><label className={labelCls}>Atividade</label><select aria-label="Atividade" className={inputCls} value={activityFilter} onChange={(e) => setActivityFilter(e.target.value)}><option value="">Todas</option><option value="room">Sala de matrícula</option><option value="conversion">Conversão</option><option value="external">Atividade externa</option><option value="school">Divulgação em escola</option></select></div>
+          <div className="uni-filter-field"><label className={labelCls}>Atividade</label><select aria-label="Atividade" className={inputCls} value={activityFilter} onChange={(e) => setActivityFilter(e.target.value)}><option value="">Todas</option><option value="room">Sala de matrícula</option><option value="conversion">Conversão</option><option value="external">Atividade externa</option><option value="gdc">GDC</option><option value="event">Evento</option><option value="school">Divulgação em escola</option><option value="internal">Tarefas internas / follow-ups</option></select></div>
           <div className="uni-filter-field"><label className={labelCls}>Situação</label><select aria-label="Situação" className={inputCls} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}><option value="">Todas</option><option value="draft">Rascunho</option><option value="published">Publicado</option><option value="cancelled">Cancelado</option><option value="agendada">Agendada</option><option value="confirmada">Confirmada</option><option value="reagendada">Reagendada</option><option value="realizada">Realizada</option></select></div>
           <div className="uni-filter-field"><label className={labelCls}>Escola</label><select aria-label="Escola" className={inputCls} value={schoolFilter} onChange={(e) => setSchoolFilter(e.target.value)}><option value="">Todas</option>{(data.schoolOptions ?? []).map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></div>
           <div className="uni-filter-field"><label className={labelCls}>Edição do SuperVestibular</label><select aria-label="Edição do SuperVestibular" className={inputCls} value={schoolCycleFilter} onChange={(e) => setSchoolCycleFilter(e.target.value)}><option value="">Todas</option>{(data.schoolCycleOptions ?? []).map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
@@ -334,12 +352,14 @@ export function AttendanceBoard({ initial, personalOnly = false }: { initial: an
       {(view === "list") && <ListView occurrences={filtered} canManage={canManage} onEdit={(o) => setModal({ edit: o })} />}
       {view !== "list" && <div className="mt-4 md:hidden"><ListView occurrences={filtered} canManage={canManage} onEdit={(o) => setModal({ edit: o })} /></div>}
 
+      {data.manager && data.failedInvites?.length > 0 && <section className="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm" aria-label="Falhas de convites"><h2 className="font-semibold">Convites com falha de envio</h2><p>Os compromissos continuam salvos. Confira as variáveis no Vercel e reprocesse a fila.</p><ul className="mt-2 list-disc pl-5">{data.failedInvites.map((job: any) => <li key={job.id}>{job.operation === "CANCEL" ? "Cancelamento" : "Convite"}: {job.last_error}</li>)}</ul></section>}
       <p className="mt-4 text-xs leading-relaxed text-slate-400">O status “Enviado ao provedor” confirma somente o envio pelo servidor de e-mail. A inclusão/aceitação no Outlook depende das configurações e da ação do destinatário; esta versão não lê respostas Aceito/Recusado nem conflitos do calendário externo.</p>
 
       {modal === "suggest" && <SuggestModal data={data} pending={pending} onClose={() => setModal(null)} onFeedback={setFeedback} onReload={async (start: string, end: string) => { setAnchor(start); const fresh = await loadAttendanceRange({ start, end }); setData(fresh) }} />}
       {modal === "new" && <OccurrenceEditor data={data} pending={pending} onClose={() => setModal(null)} onSave={(payload: Parameters<typeof saveOccurrence>[0]) => action(() => saveOccurrence(payload), () => setModal(null))} />}
-      {typeof modal === "object" && modal?.edit && modal.edit.sourceType !== "school_action" && <OccurrenceEditor data={data} occurrence={modal.edit} pending={pending} onClose={() => setModal(null)} onSave={(payload: Parameters<typeof saveOccurrence>[0]) => action(() => saveOccurrence(payload), () => setModal(null))} onCancel={() => action(() => cancelOccurrence(modal.edit.id), () => setModal(null))} />}
+      {typeof modal === "object" && modal?.edit && modal.edit.sourceType === "attendance" && <OccurrenceEditor data={data} occurrence={modal.edit} pending={pending} onClose={() => setModal(null)} onSave={(payload: Parameters<typeof saveOccurrence>[0]) => action(() => saveOccurrence(payload), () => setModal(null))} onCancel={() => action(() => cancelOccurrence(modal.edit.id), () => setModal(null))} />}
       {typeof modal === "object" && modal?.edit?.sourceType === "school_action" && <SchoolActionDetails occ={modal.edit} onClose={() => setModal(null)} />}
+      {typeof modal === "object" && modal?.edit?.sourceType?.startsWith("company_") && <Modal title={modal.edit.title} onClose={() => setModal(null)}><p className="text-sm">{modal.edit.companyName} · {modal.edit.responsibleName}</p><p className="mt-2 text-sm">{modal.edit.companyStatus} · {modal.edit.location || "Local não informado"}</p>{modal.edit.inviteError && <p role="status" className="mt-2 text-sm text-rose-700">{modal.edit.inviteError}</p>}<Link href={`/?empresa=${modal.edit.companyId}`} className={`${btnPrimary} mt-4`}>Abrir empresa e histórico</Link></Modal>}
       {modal === "settings" && <SettingsModal data={data} pending={pending} onClose={() => setModal(null)} action={action} openModel={() => setModal("model")} openException={() => setModal("exception")} openAbsence={() => setModal("absence")} />}
       {modal === "model" && <ModelModal data={data} pending={pending} onClose={() => setModal("settings")} action={action} />}
       {modal === "exception" && <ExceptionModal pending={pending} onClose={() => setModal("settings")} action={action} />}
@@ -396,7 +416,7 @@ function OccurrenceEditor({ data, occurrence, pending, onClose, onSave, onCancel
   return (
     <Modal title={isEdit ? "Editar compromisso" : "Novo compromisso"} onClose={onClose}>
       <form onSubmit={submit} className="space-y-4">
-        <div className="grid gap-3 sm:grid-cols-2"><div><label className={labelCls}>Responsável</label><select className={inputCls} value={userId} onChange={(e) => setUserId(e.target.value)}><option value="">Sem vínculo</option>{data.members.filter((m: any) => m.attendanceEnabled).map((m: any) => <option key={m.id} value={m.id}>{m.full_name} · {m.email}</option>)}</select></div><div><label className={labelCls}>Atividade</label><select className={inputCls} value={activity} onChange={(e) => setActivity(e.target.value as AttendanceActivity)}><option value="room">Sala de matrícula</option><option value="conversion">Conversão</option><option value="external">Atividade externa</option></select></div></div>
+        <div className="grid gap-3 sm:grid-cols-2"><div><label className={labelCls}>Responsável</label><select className={inputCls} value={userId} onChange={(e) => setUserId(e.target.value)}><option value="">Sem vínculo</option>{data.members.filter((m: any) => m.attendanceEnabled).map((m: any) => <option key={m.id} value={m.id}>{m.full_name} · {m.email}</option>)}</select></div><div><label className={labelCls}>Atividade</label><select className={inputCls} value={activity} onChange={(e) => setActivity(e.target.value as AttendanceActivity)}><option value="room">Sala de matrícula</option><option value="conversion">Conversão</option><option value="external">Atividade externa</option><option value="gdc">GDC</option><option value="event">Evento</option></select></div></div>
         <div className="grid gap-3 sm:grid-cols-3"><div><label className={labelCls}>Data</label><input type="date" min={data.settings.scheduleStartDate} className={inputCls} value={date} onChange={(e) => setDate(e.target.value)} /></div><div><label className={labelCls}>Início</label><input type="time" className={inputCls} value={startTime} onChange={(e) => setStartTime(e.target.value)} /></div><div><label className={labelCls}>Fim</label><input type="time" className={inputCls} value={endTime} onChange={(e) => setEndTime(e.target.value)} /></div></div>
         <div className="grid gap-3 sm:grid-cols-2"><div><label className={labelCls}>Intervalo início</label><input type="time" className={inputCls} value={breakStart} onChange={(e) => setBreakStart(e.target.value)} /></div><div><label className={labelCls}>Intervalo fim</label><input type="time" className={inputCls} value={breakEnd} onChange={(e) => setBreakEnd(e.target.value)} /></div></div>
         <div><label className={labelCls}>Local</label><input className={inputCls} value={location} onChange={(e) => setLocation(e.target.value)} /></div>
@@ -420,6 +440,11 @@ function SettingsModal({ data, pending, onClose, action, openModel, openExceptio
         <section className="rounded-xl border border-slate-200 p-4"><h3 className="text-sm font-semibold">Conversão e externa</h3><div className="mt-3 grid grid-cols-2 gap-3"><TimeField label="Manhã início" value={s.morningStart} onChange={(v) => change("morningStart", v)} /><TimeField label="Manhã fim" value={s.morningEnd} onChange={(v) => change("morningEnd", v)} /><TimeField label="Tarde início" value={s.afternoonStart} onChange={(v) => change("afternoonStart", v)} /><TimeField label="Tarde fim" value={s.afternoonEnd} onChange={(v) => change("afternoonEnd", v)} /></div><div className="mt-3 grid gap-3"><div><label className={labelCls}>Local conversão</label><input className={inputCls} value={s.conversionLocation} onChange={(e) => change("conversionLocation", e.target.value)} /></div><div><label className={labelCls}>Local externa</label><input className={inputCls} value={s.externalLocation} onChange={(e) => change("externalLocation", e.target.value)} /></div></div></section>
       </div>
       <section className="mt-4 rounded-xl border border-slate-200 p-4"><h3 className="text-sm font-semibold">Intervalos escalonados da sala</h3><p className="mt-1 text-xs text-slate-500">O cálculo de cobertura desconta estes intervalos e exige no mínimo {s.minRoomCoverage} pessoas disponíveis.</p><div className="mt-3 grid gap-3 sm:grid-cols-4">{[0,1].map((idx) => <div key={`e-${idx}`} className="rounded-lg bg-slate-50 p-2"><p className="mb-2 text-[11px] font-semibold text-slate-600">9h–18h · pessoa {idx + 1}</p><div className="grid grid-cols-2 gap-2"><TimeField label="Início" value={s.roomEarlyBreaks[idx]?.start || ""} onChange={(v) => { const arr=[...s.roomEarlyBreaks]; arr[idx]={ position:idx+1,start:v,end:arr[idx]?.end||"" }; change("roomEarlyBreaks",arr) }} /><TimeField label="Fim" value={s.roomEarlyBreaks[idx]?.end || ""} onChange={(v) => { const arr=[...s.roomEarlyBreaks]; arr[idx]={ position:idx+1,start:arr[idx]?.start||"",end:v }; change("roomEarlyBreaks",arr) }} /></div></div>)}{[0,1].map((idx) => <div key={`l-${idx}`} className="rounded-lg bg-slate-50 p-2"><p className="mb-2 text-[11px] font-semibold text-slate-600">11h–20h · pessoa {idx + 1}</p><div className="grid grid-cols-2 gap-2"><TimeField label="Início" value={s.roomLateBreaks[idx]?.start || ""} onChange={(v) => { const arr=[...s.roomLateBreaks]; arr[idx]={ position:idx+1,start:v,end:arr[idx]?.end||"" }; change("roomLateBreaks",arr) }} /><TimeField label="Fim" value={s.roomLateBreaks[idx]?.end || ""} onChange={(v) => { const arr=[...s.roomLateBreaks]; arr[idx]={ position:idx+1,start:arr[idx]?.start||"",end:v }; change("roomLateBreaks",arr) }} /></div></div>)}</div></section>
+      <section className="mt-4 rounded-xl border border-slate-200 p-4"><h3 className="font-semibold">GDC · segunda-feira · 1h com todos</h3>
+        <p className="mt-1 text-xs text-slate-600">Sem equipe externa à reunião, a cobertura durante o GDC é zero. A escala ficará pendente até definir horário, intervalos e cobertura ou pausa aprovada. O sétimo consultor também participa do GDC.</p>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2"><TimeField label="Início do GDC (a definir)" value={s.gdcStart || ""} onChange={v=>change("gdcStart",v||null)} />
+          <div><label className={labelCls}>Atendimento durante o GDC</label><select className={inputCls} value={s.gdcCoverageMode || "pending"} onChange={e=>change("gdcCoverageMode",e.target.value)}><option value="pending">Decisão pendente</option><option value="pause">Pausa de 1h da SM aprovada pela gestão</option><option value="backup">Cobertura externa (planejamento a validar)</option></select></div></div>
+      </section>
       <div className="mt-4 flex justify-end gap-2"><button className={btnSecondary} onClick={onClose}>Cancelar</button><button className={btnPrimary} disabled={pending} onClick={save}>Salvar configurações</button></div>
     </Modal>
   )

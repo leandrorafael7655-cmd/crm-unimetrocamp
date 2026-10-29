@@ -1,0 +1,15 @@
+{
+  "original_pair_check": [
+    {
+      "school_reservation_conflicts": 0,
+      "scheduled_school_actions_incomplete": 0,
+      "invalid_route_intervals": 4
+    }
+  ],
+  "route_detail": {
+    "departure_only": 4,
+    "return_only": 0,
+    "inverted_or_equal": 0
+  },
+  "interpretation": "The four partial pairs are permitted open-return routes, not confirmed invalid records; migration 8 preserves them."
+}

@@ -1,0 +1,172 @@
+{
+  "migrations": [
+    {
+      "version": "20260805192942",
+      "name": "crm_unimetrocamp_schema"
+    },
+    {
+      "version": "20260805205006",
+      "name": "auth_hardening_v2"
+    },
+    {
+      "version": "20260819152817",
+      "name": "address_geo"
+    },
+    {
+      "version": "20260819152859",
+      "name": "activities_status"
+    },
+    {
+      "version": "20260819152929",
+      "name": "attachments"
+    },
+    {
+      "version": "20260819153205",
+      "name": "crm_media_bucket"
+    },
+    {
+      "version": "20260820165850",
+      "name": "handle_new_user_4roles"
+    },
+    {
+      "version": "20260820165947",
+      "name": "profiles_role_4values"
+    },
+    {
+      "version": "20260820172438",
+      "name": "hs_004_schools_and_history"
+    },
+    {
+      "version": "20260821121934",
+      "name": "hs_005_relationship_and_actions"
+    },
+    {
+      "version": "20260821123713",
+      "name": "hs_006_harden_definer_functions"
+    },
+    {
+      "version": "20260821162051",
+      "name": "f3_012_cycles_and_supervest"
+    },
+    {
+      "version": "20260821162128",
+      "name": "f3_014_goals_system"
+    },
+    {
+      "version": "20260821162421",
+      "name": "f3_017_goal_history_reason_guc"
+    },
+    {
+      "version": "20260821162441",
+      "name": "f3_018_update_goal_rpc"
+    },
+    {
+      "version": "20260821185238",
+      "name": "f4_019_geocode_hash"
+    },
+    {
+      "version": "20260821193612",
+      "name": "f5_020_routes"
+    },
+    {
+      "version": "20260906233947",
+      "name": "crm_security_hardening_and_initial_goals"
+    },
+    {
+      "version": "20260906234038",
+      "name": "split_overlapping_write_policies"
+    },
+    {
+      "version": "20260915141032",
+      "name": "profile_home_address_for_route_origin"
+    },
+    {
+      "version": "20260915141156",
+      "name": "secure_route_user_preferences"
+    },
+    {
+      "version": "20260915170116",
+      "name": "add_route_plan_name"
+    },
+    {
+      "version": "20260915211104",
+      "name": "attendance_schedule_module"
+    },
+    {
+      "version": "20260915211334",
+      "name": "attendance_members_and_calendar_invites"
+    },
+    {
+      "version": "20260915214619",
+      "name": "calendar_sync_school_company_actions"
+    },
+    {
+      "version": "20260915220147",
+      "name": "harden_attendance_trigger_function_privileges"
+    },
+    {
+      "version": "20260915220331",
+      "name": "split_attendance_calendar_manage_rls_policies"
+    },
+    {
+      "version": "20260929181527",
+      "name": "b2b_outlook_teams"
+    },
+    {
+      "version": "20260929184919",
+      "name": "b2b_email_calendar_invites"
+    },
+    {
+      "version": "20261001194227",
+      "name": "company_action_history"
+    },
+    {
+      "version": "20261002013714",
+      "name": "school_capture_by_supervest_edition"
+    },
+    {
+      "version": "20261002145415",
+      "name": "school_actions_personal_agenda"
+    },
+    {
+      "version": "20261002180014",
+      "name": "b2b_portfolio_relationship"
+    },
+    {
+      "version": "20261002191852",
+      "name": "user_password_access"
+    },
+    {
+      "version": "20261027204357",
+      "name": "audit_access_security"
+    },
+    {
+      "version": "20261027204641",
+      "name": "audit_atomic_writes"
+    },
+    {
+      "version": "20261027204658",
+      "name": "audit_business_validation"
+    },
+    {
+      "version": "20261027204755",
+      "name": "audit_b2b_writes"
+    },
+    {
+      "version": "20261027204806",
+      "name": "audit_attendance_rules"
+    },
+    {
+      "version": "20261027205646",
+      "name": "audit_explicit_runtime_grants"
+    },
+    {
+      "version": "20261027210239",
+      "name": "audit_schedule_identity_guards"
+    },
+    {
+      "version": "20261027212751",
+      "name": "audit_optional_route_return"
+    }
+  ]
+}

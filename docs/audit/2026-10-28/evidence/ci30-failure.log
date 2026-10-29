@@ -1,0 +1,18 @@
+CI #30, commit 1ddffc5; 261 Vitest + 10 Node passed; visual regression still failed.
+2026-10-28T19:34:18.8023299Z FAIL Manual B2B result form after rejected save 320 ["Page overflow: 854 > 320"]
+2026-10-28T19:34:18.9362769Z FAIL Manual B2B result history 320 ["Page overflow: 854 > 320"]
+2026-10-28T19:34:36.9547712Z FAIL Manual B2B result form after rejected save 375 ["Page overflow: 854 > 375"]
+2026-10-28T19:34:37.0779561Z FAIL Manual B2B result history 375 ["Page overflow: 854 > 375"]
+2026-10-28T19:34:59.2235846Z FAIL Manual B2B result form after rejected save 768 ["Page overflow: 1239 > 768"]
+2026-10-28T19:34:59.3653911Z FAIL Manual B2B result history 768 ["Page overflow: 1239 > 768"]
+2026-10-28T19:35:19.2967659Z FAIL Manual B2B result form after rejected save 1024 ["Page overflow: 1367 > 1024"]
+2026-10-28T19:35:19.4236270Z FAIL Manual B2B result history 1024 ["Page overflow: 1367 > 1024"]
+2026-10-28T19:35:40.1595794Z FAIL Manual B2B result form after rejected save 1280 ["Page overflow: 1495 > 1280"]
+2026-10-28T19:35:40.2914688Z FAIL Manual B2B result history 1280 ["Page overflow: 1495 > 1280"]
+2026-10-28T19:36:02.7226651Z FAIL Manual B2B result form after rejected save 1366 ["Page overflow: 1538 > 1366"]
+2026-10-28T19:36:02.8510302Z FAIL Manual B2B result history 1366 ["Page overflow: 1538 > 1366"]
+2026-10-28T19:36:24.7903501Z FAIL Manual B2B result form after rejected save 1440 ["Page overflow: 1575 > 1440"]
+2026-10-28T19:36:24.9266879Z FAIL Manual B2B result history 1440 ["Page overflow: 1575 > 1440"]
+2026-10-28T19:36:55.7644588Z Responsive layout: 2474 checks, 14 failures
+2026-10-28T19:36:55.7679797Z 14 !== 0
+2026-10-28T19:36:55.7937374Z ##[error]Process completed with exit code 1.

@@ -43,12 +43,13 @@ export function GoalCard({
 }: {
   titulo: string
   alvo: number
-  atual: number
+  atual: number | null
   unidade?: string
   detalhe?: ReactNode
   acao?: ReactNode
 }) {
-  const p = calcularProgresso(alvo, atual)
+  if (atual===null) return <Card className="p-4"><p className="font-medium">{titulo}</p>{acao}<p className="text-sm text-amber-700">Não disponível · apuração pendente</p>{detalhe && <p className="mt-2 text-xs text-slate-500">{detalhe}</p>}</Card>
+  const p = calcularProgresso(alvo, atual ?? 0)
   return (
     <Card className="p-4">
       <div className="flex items-start justify-between gap-2">

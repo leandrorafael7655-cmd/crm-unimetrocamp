@@ -1,3 +1,4 @@
+import { readAllRows } from "./pagination"
 import "server-only"
 import { createClient } from "@/lib/supabase/server"
 import { getActor, type ActorProfile } from "@/lib/auth/guards"
@@ -34,6 +35,7 @@ export interface ParadaCarregada {
 
 export interface PlanoCarregado {
   id: string
+  route_name: string | null
   owner_id: string
   plan_date: string
   origin_label: string | null
@@ -75,23 +77,23 @@ export async function pontosDisponiveis(busca?: string): Promise<PontoDisponivel
    
   let qc: any = supabase
     .from("companies")
-    .select("id, razao_social, nome_fantasia, cidade, bairro, latitude, longitude, etapa, classificacao, owner_id")
+    .select("id, razao_social, nome_fantasia, cidade, bairro, latitude, longitude, etapa, classificacao, owner_id").is("archived_at", null)
     .not("latitude", "is", null)
-    .limit(200)
+    .order("id")
   if (!gestor) qc = qc.eq("owner_id", actor.id)
   if (termo) qc = qc.or(`razao_social.ilike.%${termo}%,nome_fantasia.ilike.%${termo}%`)
 
    
   let qs: any = supabase
     .from("schools")
-    .select("id, name, cidade, bairro, latitude, longitude, relationship_stage, classification, primary_owner_id")
+    .select("id, name, cidade, bairro, latitude, longitude, relationship_stage, classification, primary_owner_id").is("archived_at", null)
     .not("latitude", "is", null)
-    .limit(200)
+    .order("id")
   if (!gestor) qs = qs.eq("primary_owner_id", actor.id)
   if (termo) qs = qs.ilike("name", `%${termo}%`)
 
-  const [rc, rs] = await Promise.all([qc, qs])
-  const empresas: PontoDisponivel[] = (rc.data ?? []).map((r: Record<string, unknown>) => ({
+  const [companyRows, schoolRows] = await Promise.all([readAllRows<Record<string,unknown>>((from,to)=>qc.range(from,to)),readAllRows<Record<string,unknown>>((from,to)=>qs.range(from,to))])
+  const empresas: PontoDisponivel[] = companyRows.map((r: Record<string, unknown>) => ({
     id: r.id as string,
     tipo: "company" as const,
     nome: (r.nome_fantasia as string) || (r.razao_social as string) || "Empresa",
@@ -103,7 +105,7 @@ export async function pontosDisponiveis(busca?: string): Promise<PontoDisponivel
     classificacao: (r.classificacao as string) ?? null,
     dono: (r.owner_id as string) ?? null,
   }))
-  const escolas: PontoDisponivel[] = (rs.data ?? []).map((r: Record<string, unknown>) => ({
+  const escolas: PontoDisponivel[] = schoolRows.map((r: Record<string, unknown>) => ({
     id: r.id as string,
     tipo: "school" as const,
     nome: (r.name as string) || "Escola",
@@ -198,7 +200,7 @@ export async function sugerirProximidade(params: {
    
   let qc: any = supabase
     .from("companies")
-    .select("id, razao_social, nome_fantasia, cidade, latitude, longitude, etapa, classificacao, proxima_acao, data_proxima_acao, ultimo_contato, possui_beneficio, owner_id")
+    .select("id, razao_social, nome_fantasia, cidade, latitude, longitude, etapa, classificacao, proxima_acao, data_proxima_acao, ultimo_contato, possui_beneficio, owner_id").is("archived_at", null)
     .not("latitude", "is", null)
     .limit(400)
   if (!gestor) qc = qc.eq("owner_id", actor.id)
@@ -206,12 +208,12 @@ export async function sugerirProximidade(params: {
    
   let qs: any = supabase
     .from("schools")
-    .select("id, name, cidade, latitude, longitude, relationship_stage, classification, next_action, next_action_at, last_action_at, primary_owner_id")
+    .select("id, name, cidade, latitude, longitude, relationship_stage, classification, next_action, next_action_at, last_action_at, primary_owner_id").is("archived_at", null)
     .not("latitude", "is", null)
     .limit(400)
   if (!gestor) qs = qs.eq("primary_owner_id", actor.id)
 
-  const [rc, rs] = await Promise.all([qc, qs])
+  const [companyRows, schoolRows] = await Promise.all([readAllRows<Record<string,unknown>>((from,to)=>qc.range(from,to)),readAllRows<Record<string,unknown>>((from,to)=>qs.range(from,to))])
 
   const dias = (d?: string | null) => (d ? Math.floor((Date.parse(hoje) - Date.parse(d)) / 86400000) : null)
   const distMin = (lat: number, lng: number) =>
@@ -219,7 +221,7 @@ export async function sugerirProximidade(params: {
 
   const cand: (SugestaoProximidade & { peso: number })[] = []
 
-  for (const r of (rc.data ?? []) as Record<string, unknown>[]) {
+  for (const r of (companyRows) as Record<string, unknown>[]) {
     if (excluir.has(r.id as string)) continue
     const d = distMin(r.latitude as number, r.longitude as number)
     if (d > raio) continue
@@ -259,7 +261,7 @@ export async function sugerirProximidade(params: {
     })
   }
 
-  for (const r of (rs.data ?? []) as Record<string, unknown>[]) {
+  for (const r of (schoolRows) as Record<string, unknown>[]) {
     if (excluir.has(r.id as string)) continue
     const d = distMin(r.latitude as number, r.longitude as number)
     if (d > raio) continue

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { requireCan } from "@/lib/auth/guards"
+import { flushCalendarQueue } from "@/lib/calendar/calendar-dispatch"
 import { createClient } from "@/lib/supabase/server"
 import { mapGradeRow } from "@/lib/domain/high-school"
 import {
@@ -62,6 +63,7 @@ export async function saveSchoolCapture(input: {
       p_payload: payload,
     })
     if (error) throw new Error(error.message)
+    if (input.command === "action") await flushCalendarQueue(supabase)
     refreshSchoolCapture(input.schoolId)
     return {
       ok: true,

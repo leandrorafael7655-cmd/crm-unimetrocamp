@@ -1,5 +1,6 @@
 "use server"
 
+import { isCivilDate, validateRouteSchedule, nonNegativeInteger, isUuid, isClockTime } from "@/lib/domain/validation"
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
 import { requireCan } from "@/lib/auth/guards"
@@ -74,6 +75,7 @@ export interface StopSalvar {
 
 export interface SalvarPlanoPayload {
   id?: string | null
+  route_name?: string | null
   plan_date: string
   origin_label?: string | null
   origin_lat?: number | null
@@ -96,9 +98,21 @@ export interface SalvarPlanoPayload {
 export async function salvarPlanoAction(payload: SalvarPlanoPayload): Promise<{ ok: boolean; id?: string; message?: string }> {
   try {
     const actor = await requireCan("routes.plan")
+    if (!isCivilDate(payload.plan_date)) return { ok: false, message: "Data da rota inválida." }
+    const scheduleError = validateRouteSchedule(payload.plan_date,payload.departure_time,payload.return_time)
+    if (scheduleError) return { ok: false, message: scheduleError }
+    if (!Array.isArray(payload.stops) || payload.stops.some(s => !isUuid(s.entity_id) || !["company","school"].includes(s.entity_type)
+      || !nonNegativeInteger(s.sort_order,false) || !nonNegativeInteger(s.visit_minutes) || (s.visit_minutes ?? 0)>600
+      || s.fixed_time && !isClockTime(s.fixed_time) || s.estimated_arrival && !isClockTime(s.estimated_arrival))) {
+      return { ok: false, message: "Paradas inválidas." }
+    }
     const supabase = await createClient()
+    const routeName = payload.route_name?.trim() ?? ""
+    if (!routeName) return { ok: false, message: "Dê um nome para a rota antes de salvar." }
+    if (routeName.length > 120) return { ok: false, message: "O nome da rota deve ter no máximo 120 caracteres." }
 
     const base = {
+      route_name: routeName,
       owner_id: actor.id,
       plan_date: payload.plan_date,
       origin_label: payload.origin_label ?? null,
@@ -117,31 +131,10 @@ export async function salvarPlanoAction(payload: SalvarPlanoPayload): Promise<{ 
       notes: payload.notes ?? null,
     }
 
-    let planId = payload.id ?? null
-    if (planId) {
-      const { error } = await supabase.from("route_plans").update(base).eq("id", planId)
-      if (error) return { ok: false, message: error.message }
-      await supabase.from("route_stops").delete().eq("route_plan_id", planId)
-    } else {
-      const { data, error } = await supabase.from("route_plans").insert(base).select("id").single()
-      if (error || !data) return { ok: false, message: error?.message ?? "Erro ao criar plano." }
-      planId = data.id
-    }
-
-    if (payload.stops.length) {
-      const rows = payload.stops.map((s) => ({
-        route_plan_id: planId,
-        entity_type: s.entity_type,
-        entity_id: s.entity_id,
-        sort_order: s.sort_order,
-        fixed_time: s.fixed_time ?? null,
-        estimated_arrival: s.estimated_arrival ?? null,
-        visit_minutes: s.visit_minutes ?? null,
-        notes: s.notes ?? null,
-      }))
-      const { error } = await supabase.from("route_stops").insert(rows)
-      if (error) return { ok: false, message: error.message }
-    }
+    const { data: planId, error } = await supabase.rpc("save_route_plan_atomic", {
+      p_id: payload.id || null, p_plan: base, p_stops: payload.stops,
+    })
+    if (error || !planId) return { ok: false, message: error?.message ?? "Gravação não confirmada." }
 
     revalidatePath("/mapa/rotas")
     return { ok: true, id: planId! }

@@ -1,0 +1,48 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> my-project@0.1.0 test
+> vitest run && node --test tests/*.test.mjs
+
+
+ RUN  v4.1.11 /workspace/scratch/86c3d523b438/uniconecta-fixes
+
+
+ Test Files  31 passed (31)
+      Tests  225 passed (225)
+   Start at  18:36:54
+   Duration  18.24s (transform 2.51s, setup 0ms, import 4.23s, tests 55.26s, environment 5ms)
+
+(node:340) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ new installation asks for SMTP credentials, not Microsoft administration (4.341772ms)
+✔ SMTP config needs no OAuth and organizer defaults to sender (2.696962ms)
+✔ legacy OAuth setup retains its provider (0.928518ms)
+✔ unknown provider, bad port and malformed sender are rejected (2.494291ms)
+✔ status does not send email or expose secrets (6.184947ms)
+✔ missing settings keep queue untouched (1.51637ms)
+✔ SMTP sends meeting request, retains recipient acceptance and records provider acknowledgment (17.026663ms)
+✔ server rejection is recorded as failure, not successful delivery (2.868386ms)
+✔ 465 uses implicit TLS (2.368825ms)
+✔ updates and cancellations retain event identity (1.957494ms)
+✔ system caller with a service_role JWT different from the injected key is accepted after admin probe (1.593114ms)
+✔ forged service_role claim without admin privilege is rejected (3.890844ms)
+✔ new-format secret key is accepted as system caller (1.469901ms)
+✔ B2B job uses the central sender and includes the consultant as an attendee without OAuth (3.45031ms)
+(node:341) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///workspace/scratch/86c3d523b438/uniconecta-fixes/lib/auth/site-redirect.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /workspace/scratch/86c3d523b438/uniconecta-fixes/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ legacy navigation preserves route and query on the configured domain (1.453126ms)
+✔ migration is inactive until explicitly enabled (0.28954ms)
+✔ existing auth links and API calls stay on their original origin (0.263942ms)
+✔ new domain and preview URLs never redirect (0.236511ms)
+✔ invalid destinations and loops leave the legacy site working (0.355438ms)
+✔ password recovery callback follows the origin where the user requested it (0.375858ms)
+ℹ tests 20
+ℹ suites 0
+ℹ pass 20
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 240.111145

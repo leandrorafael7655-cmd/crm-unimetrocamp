@@ -13,5 +13,10 @@
       "path": "/api/cron/calendar-invites",
       "schedule": "15 10 * * *"
     }
-  ]
+  ],
+  "git": {
+    "deploymentEnabled": {
+      "codex/fix-audit-20261027": false
+    }
+  }
 }

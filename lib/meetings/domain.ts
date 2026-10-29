@@ -35,7 +35,7 @@ export function normalizeParticipants(
 export function validateMeetingInput(input: MeetingInput) {
   assertUuid(input.id)
   assertUuid(input.companyId)
-  assertUuid(input.contactId)
+  if (input.contactId) assertUuid(input.contactId)
   if (!Number.isInteger(input.revision) || input.revision < 0)
     throw new Error("Versão inválida. Recarregue a ficha.")
   if (!input.title?.trim() || input.title.length > 180)
