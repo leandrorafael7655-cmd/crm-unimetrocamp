@@ -72,6 +72,18 @@ describe("Contact invitations against full audited PostgreSQL + all 12 migration
     expect(payload.meeting_url).toBe("https://teams.microsoft.com/test")
     expect((await db.query("select location from school_actions")).rows).toEqual([{ location: "Sala presencial fictícia" }])
   })
+  it("operational support moving between legacy/new school actions never creates a legacy invitation for a new meeting", async () => {
+    await save("create", 0, [], "school")
+    const legacy = "40000000-0000-4000-8000-000000000009"
+    await db.query("insert into school_actions(id,school_id,action_date,start_time,end_time,action_type,status,primary_owner_id) values($1,$2,'2098-11-03','15:00','16:00','Visita de relacionamento','agendada',$3)", [legacy, S, U.hs])
+    await db.query("insert into school_action_participants(school_action_id,user_id,role_in_action) values($1,$2,'Apoio')", [M, U.outro])
+    await db.query("update school_action_participants set school_action_id=$1 where school_action_id=$2 and user_id=$3", [legacy, M, U.outro])
+    expect((await db.query("select id from calendar_events where source_id=$1", [M])).rows).toHaveLength(0)
+    await db.query("update school_action_participants set school_action_id=$1 where school_action_id=$2 and user_id=$3", [M, legacy, U.outro])
+    expect((await db.query("select id from calendar_events where source_id=$1", [M])).rows).toHaveLength(0)
+    expect((await db.query("select status from calendar_events where source_id=$1 and recipient_user_id=$2", [legacy, U.outro])).rows).toEqual([{status:"cancelled"}])
+    expect((await db.query("select recipient_email from contact_meeting_jobs")).rows).toEqual([{recipient_email:"b2b@example.invalid"}])
+  })
   it("cannot swap recipient IDs on reschedule; rejects wrong actor, stale revision and duplicate create", async () => {
     await save()
     await expect(save("update", 1, [CC])).rejects.toThrow(/destinatários/)

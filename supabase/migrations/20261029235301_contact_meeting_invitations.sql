@@ -108,13 +108,13 @@ begin
   else
     if tg_op='DELETE' then action_id:=old.school_action_id; else action_id:=new.school_action_id; end if;
   end if;
-  if exists(select 1 from public.contact_meetings m where m.id=action_id) then return null; end if;
-  if tg_table_name='school_actions' then
-    perform private.sync_school_action_calendar(action_id);
-  else
-    if tg_op='UPDATE' and old.school_action_id is distinct from new.school_action_id then
+  if tg_table_name<>'school_actions' and tg_op='UPDATE' then
+    if old.school_action_id is distinct from new.school_action_id and
+      not exists(select 1 from public.contact_meetings m where m.id=old.school_action_id) then
       perform private.sync_school_action_calendar(old.school_action_id);
     end if;
+  end if;
+  if not exists(select 1 from public.contact_meetings m where m.id=action_id) then
     perform private.sync_school_action_calendar(action_id);
   end if;
   return null;
