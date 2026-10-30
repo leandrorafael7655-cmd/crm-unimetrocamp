@@ -39,13 +39,16 @@ describe("Contact invitations against full audited PostgreSQL + all 12 migration
     expect((await db.query("select * from calendar_invite_jobs")).rows).toHaveLength(0)
     expect((await db.query(`select id,contact_meeting_id from ${entity === "company" ? "activities" : "school_actions"}`)).rows).toEqual([{ id: M, contact_meeting_id: M }])
     expect((await claim()).rows).toHaveLength(0)
+    if(entity === "school") expect((await db.query("select supervest_cycle_id from school_actions")).rows).toEqual([{supervest_cycle_id:null}])
   })
-  it("allows no contacts, preserves original addresses across edits, increments sequence and keeps UID through cancellation", async () => {
-    await save("create", 0, [])
+  it.each(["company", "school"])("%s allows no contacts, preserves original addresses across edits, increments sequence and keeps UID through cancellation", async entity => {
+    await save("create", 0, [], entity)
     const before = (await db.query<{ event_uid: string }>("select event_uid from contact_meetings")).rows[0]
     await db.exec("update profiles set email='changed@example.invalid' where id='" + U.b2b + "'")
-    await save("update", 1, [], "company", data("2098-11-03T14:00:00Z"))
-    await save("cancel", 2, [])
+    await save("update", 1, [], entity, data("2098-11-03T14:00:00Z"))
+    await save("cancel", 2, [], entity)
+    expect((await db.query("select id from calendar_invite_jobs")).rows).toHaveLength(0)
+    expect((await db.query(`select status from ${entity === "company" ? "activities" : "school_actions"}`)).rows).toEqual([{status:"cancelada"}])
     expect((await db.query("select event_uid,revision,status from contact_meetings")).rows[0]).toEqual({ ...before, revision: 3, status: "cancelada" })
     expect((await db.query("select recipient_email,event_sequence,operation,status from contact_meeting_jobs order by event_sequence")).rows).toEqual([
       { recipient_email: "b2b@example.invalid", event_sequence: 0, operation: "REQUEST", status: "superseded" },
@@ -61,6 +64,13 @@ describe("Contact invitations against full audited PostgreSQL + all 12 migration
     await expect(save("create", 0, [CC])).rejects.toThrow()
     expect((await db.query("select * from contact_meetings")).rows).toHaveLength(0)
     expect((await db.query("select * from activities")).rows).toHaveLength(0)
+  })
+  it("preserves a presencial address alongside an optional Teams URL in the queued invitation", async () => {
+    await save("create", 0, [], "school", { ...data(), mode: "presencial", location: "Sala presencial fictícia" })
+    const payload = (await db.query<{ payload: any }>("select payload from contact_meeting_jobs")).rows[0].payload
+    expect(payload.location).toBe("Sala presencial fictícia\nhttps://teams.microsoft.com/test")
+    expect(payload.meeting_url).toBe("https://teams.microsoft.com/test")
+    expect((await db.query("select location from school_actions")).rows).toEqual([{ location: "Sala presencial fictícia" }])
   })
   it("cannot swap recipient IDs on reschedule; rejects wrong actor, stale revision and duplicate create", async () => {
     await save()
@@ -86,6 +96,7 @@ describe("Contact invitations against full audited PostgreSQL + all 12 migration
     await db.exec(`update company_contacts set email='external@example.invalid' where id='${CC2}'`)
     await save()
     await db.exec(`update contact_meetings set delivery_enabled=true where id='${M}'`)
+    expect((await claim(M, "b2b@example.invalid")).rows).toHaveLength(0)
     const first = (await claim()).rows[0]
     await db.query("update contact_meeting_jobs set status='sent_provider',lease_token=null,sent_at=now() where id=$1", [first.id])
     const second = (await claim()).rows[0]

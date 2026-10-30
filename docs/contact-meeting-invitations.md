@@ -35,7 +35,7 @@ A migração não executa `DROP`, `DELETE`, `UPDATE` ou `TRUNCATE` sobre registr
 
 - Cada mensagem inclui só seu destinatário nos ATTENDEE; nenhum contato de outra ficha ou endereço livre pode ser adicionado. A validação ocorre na action e novamente no banco.
 - O assunto é armazenado sem o prefixo e o nome da ficha. O título enviado é montado uma vez: `UniConecta | [assunto] | [empresa/escola]`.
-- Link HTTPS validado tanto para Online (obrigatório) quanto para Presencial (opcional). Ele aparece no HTML clicável, no texto/descrição, LOCATION e URL do `.ics`. Nenhum servidor busca o link.
+- Link HTTPS validado tanto para Online (obrigatório) quanto para Presencial (opcional). Ele aparece no HTML clicável, no texto/descrição, LOCATION e URL do `.ics`; em Presencial, o endereço físico também é preservado. Nenhum servidor busca o link.
 - UID e remetente estáveis; SEQUENCE 0 no primeiro convite, depois 1, 2… Atualização/cancelamento preservam destinatários e endereços. Para trocar a lista, cancele e crie outra reunião.
 - Fila persistida mesmo com envio pausado. O worker verifica a variável antes de reservar jobs ou abrir SMTP. Com `CALENDAR_TEST_USER_ID`, exige o perfil correto **e todos os endereços iguais ao e-mail desse perfil**.
 - Novos agendamentos começam com envio individual bloqueado. Alterar só a variável global não libera essa fila. O teste real terá aprovação dos IDs exatos primeiro.

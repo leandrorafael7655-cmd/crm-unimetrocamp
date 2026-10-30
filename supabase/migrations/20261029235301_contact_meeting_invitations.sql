@@ -173,7 +173,7 @@ begin
     if p_operation='create' then
       insert into public.contact_meetings(id,company_id,school_id,entity_name,responsible_user_id,subject,description,mode,meeting_url,location,start_at,end_at,organizer_email)
       values(p_id,case when p_entity='company' then p_entity_id end,case when p_entity='school' then p_entity_id end,
-        entity_name,p_actor,btrim(p_data->>'subject'),coalesce(p_data->>'description',''),p_data->>'mode',nullif(btrim(p_data->>'meeting_url'),''),coalesce(p_data->>'location',''),starts,ends,lower(nullif(btrim(p_sender),'')));
+        entity_name,p_actor,btrim(p_data->>'subject'),coalesce(p_data->>'description',''),p_data->>'mode',nullif(btrim(p_data->>'meeting_url'),''),case when p_data->>'mode'='online' then '' else coalesce(p_data->>'location','') end,starts,ends,lower(nullif(btrim(p_sender),'')));
       insert into public.contact_meeting_recipients(meeting_id,kind,name,email)
         values(p_id,'consultant',actor.full_name,lower(btrim(actor.email)));
       if coalesce(cardinality(p_contacts),0)>100 then raise exception 'Selecione até 100 contatos.'; end if;
@@ -189,7 +189,7 @@ begin
       end loop;
     else
       update public.contact_meetings set subject=btrim(p_data->>'subject'),description=coalesce(p_data->>'description',''),
-        mode=p_data->>'mode',meeting_url=nullif(btrim(p_data->>'meeting_url'),''),location=coalesce(p_data->>'location',''),
+        mode=p_data->>'mode',meeting_url=nullif(btrim(p_data->>'meeting_url'),''),location=case when p_data->>'mode'='online' then '' else coalesce(p_data->>'location','') end,
         start_at=starts,end_at=ends,revision=revision+1,updated_at=now() where id=p_id;
     end if;
   else
@@ -216,11 +216,11 @@ begin
       insert into public.school_actions(id,school_id,action_date,start_time,end_time,action_type,objective,status,notes,primary_owner_id,primary_owner_name,created_by,location,contact_meeting_id)
       values(p_id,p_entity_id,(m.start_at at time zone 'America/Sao_Paulo')::date,(m.start_at at time zone 'America/Sao_Paulo')::time,
         (m.end_at at time zone 'America/Sao_Paulo')::time,'Reunião',m.subject,'agendada',m.description,p_actor,actor.full_name,p_actor,
-        coalesce(m.meeting_url,nullif(m.location,'')),p_id);
+        case when m.mode='online' then m.meeting_url else nullif(m.location,'') end,p_id);
     else
       update public.school_actions set action_date=(m.start_at at time zone 'America/Sao_Paulo')::date,
         start_time=(m.start_at at time zone 'America/Sao_Paulo')::time,end_time=(m.end_at at time zone 'America/Sao_Paulo')::time,
-        objective=m.subject,notes=m.description,status=m.status,location=coalesce(m.meeting_url,nullif(m.location,'')),updated_at=now() where id=p_id;
+        objective=m.subject,notes=m.description,status=m.status,location=case when m.mode='online' then m.meeting_url else nullif(m.location,'') end,updated_at=now() where id=p_id;
     end if;
   end if;
   -- Snapshot recipients once. Deduplicate transport by address, retain every selected contact in history.
@@ -236,7 +236,7 @@ begin
     insert into public.contact_meeting_jobs(meeting_id,recipient_email,operation,event_sequence,payload)
     values(p_id,person->>'email',operation,m.revision-1,jsonb_build_object('event_uid',m.event_uid,
       'title','UniConecta | '||m.subject||' | '||m.entity_name,'description',description_text,
-      'start_at',m.start_at,'end_at',m.end_at,'location',coalesce(m.meeting_url,nullif(m.location,'')),
+      'start_at',m.start_at,'end_at',m.end_at,'location',case when m.mode='online' then m.meeting_url else concat_ws(E'\n',nullif(m.location,''),m.meeting_url) end,
       'meeting_url',m.meeting_url,'organizer',m.organizer_email,'recipient',person,
       -- Separate messages disclose no other attendee addresses.
       'attendees',jsonb_build_array(person))) on conflict do nothing;

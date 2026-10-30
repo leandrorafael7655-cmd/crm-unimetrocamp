@@ -58,9 +58,10 @@ export function ContactMeetings({ entity, entityId, onChanged }: {
       contactIds: meeting.contact_meeting_recipients.flatMap(r => r.contact_id ? [r.contact_id] : []) })
   }
   const isEdit = draft ? !!data?.meetings.some(m => m.id === draft.id) : false
+  const originalConsultant = draft && data?.meetings.find(m => m.id === draft.id)?.contact_meeting_recipients.find(r => r.kind === "consultant")
   function submit(event: FormEvent) { event.preventDefault(); if (draft) void run(() => saveContactMeeting(draft)) }
   return <section id="reunioes-convites" aria-label="Reuniões e convites" className="min-w-0 space-y-4 rounded-xl border border-slate-200 bg-white p-3 sm:p-4">
-    <div className="flex flex-wrap items-start justify-between gap-3">
+    <div className="flex flex-col items-start justify-between gap-3 sm:flex-row">
       <div className="min-w-0 flex-1">
         <h3 className="font-semibold text-slate-900">Reuniões e convites</h3>
         <p className="mt-1 text-xs text-slate-600">O consultor responsável sempre recebe. Você escolhe quais contatos desta ficha também serão convidados. Não é obrigatório selecionar um contato.</p>
@@ -90,7 +91,7 @@ export function ContactMeetings({ entity, entityId, onChanged }: {
         <label className="block text-sm">Pauta<textarea maxLength={10000} rows={3} className={field} value={draft.description} onChange={e => setDraft({ ...draft, description: e.target.value })} /></label>
         <fieldset className="min-w-0 space-y-2 rounded-lg border p-3">
           <legend className="px-1 text-sm font-medium">Destinatários</legend>
-          <p className="break-all text-xs">✓ {data.actor.name} · {data.actor.email} (consultor, sempre convidado)</p>
+          <p className="break-words text-xs">✓ {originalConsultant?.name || data.actor.name} · <span className="break-all">{originalConsultant?.email || data.actor.email}</span> (consultor, sempre convidado)</p>
           {isEdit && <p className="text-xs text-slate-500">Remarcação e cancelamento usam os destinatários e endereços originais. Para trocar a lista, cancele e crie outra reunião.</p>}
           {!data.contacts.length && <p className="text-xs text-slate-500">Nenhum contato cadastrado. Você pode agendar somente para o consultor.</p>}
           {data.contacts.map(contact => <label key={contact.id} className="flex min-h-10 items-start gap-2 text-sm">
@@ -108,6 +109,7 @@ export function ContactMeetings({ entity, entityId, onChanged }: {
       <ul className="min-w-0 space-y-3">{data.meetings.map(meeting => <li key={meeting.id} data-contact-meeting-id={meeting.id} className="min-w-0 space-y-2 rounded-lg border border-slate-200 p-3">
         <h4 className="break-words font-semibold">{meeting.subject}</h4>
         <p className="text-xs text-slate-600">{local(meeting.start_at).split(" ").join(" · ")}–{local(meeting.end_at).slice(11, 16)} · {meeting.status === "cancelada" ? "Cancelada" : "Agendada"}</p>
+        <p className="break-words text-xs text-slate-600">{meeting.mode === "online" ? "Online" : `Presencial · ${meeting.location}`}</p>
         {meeting.meeting_url && <a className="block break-all text-sm text-[#88005b] underline" href={meeting.meeting_url} target="_blank" rel="noreferrer">Entrar na reunião (Teams)</a>}
         {!meeting.delivery_enabled && <p className="text-xs text-amber-800">Envio desta reunião aguardando liberação.</p>}
         <details><summary className="cursor-pointer text-sm font-medium">Histórico por destinatário</summary>

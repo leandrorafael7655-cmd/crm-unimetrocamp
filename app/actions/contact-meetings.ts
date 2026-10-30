@@ -62,7 +62,7 @@ export async function saveContactMeeting(input: ContactMeetingInput) {
       p_entity: input.entity, p_entity_id: input.entityId, p_operation: input.revision ? "update" : "create",
       p_contacts: input.contactIds, p_sender: calendarEmailStatus().organizerEmail,
       p_data: { subject: input.title.trim(), description: input.description.trim(), mode: input.mode,
-        location: input.location.trim(), ...times },
+        location: input.mode === "online" ? "" : input.location.trim(), ...times },
     })
     if (error) throw new Error(error.message)
     // SQL persists the source, snapshots and jobs even when communications are disabled.
