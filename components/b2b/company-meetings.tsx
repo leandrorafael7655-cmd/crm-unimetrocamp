@@ -1,5 +1,7 @@
 "use client"
 
+import { ContactMeetings } from "@/components/meetings/contact-meetings"
+
 import { useCallback, useEffect, useState } from "react"
 import { CalendarPlus, Check, Loader2, Pencil, Plus, RefreshCw, Trash2, Video, X } from "lucide-react"
 import {
@@ -137,26 +139,6 @@ export function CompanyMeetings({
       setBusy(false)
     }
   }
-  function newMeeting() {
-    if (!data) return
-    const principal = data.contacts.find((c) => c.is_primary) || data.contacts[0]
-    setMeeting({
-      id: crypto.randomUUID(),
-      companyId,
-      contactId: principal?.id || "",
-      revision: 0,
-      date: "",
-      startTime: "09:00",
-      endTime: "10:00",
-      title: "",
-      description: "",
-      meetingType: "presencial",
-      calendarProvider: "email",
-      meetingUrl: "",
-      location: "",
-      participants: [],
-    })
-  }
   function editMeeting(row: MeetingRow) {
     const start = localParts(row.start_at),
       end = localParts(row.end_at)
@@ -188,19 +170,12 @@ export function CompanyMeetings({
         <div>
           <h3 className="text-base font-semibold text-slate-900">Responsáveis e reuniões</h3>
           <p className="mt-1 text-xs text-slate-500">
-            O convite é enviado automaticamente ao responsável do CRM, que pode aceitar na própria agenda.
+            Contatos da ficha e histórico de reuniões anteriores. Novos convites são configurados no painel abaixo.
           </p>
         </div>
-        <button
-          type="button"
-          className={primary}
-          onClick={newMeeting}
-          disabled={busy || !data?.canEdit || !data.organizer.email}
-        >
-          <CalendarPlus size={16} />
-          Agendar reunião
-        </button>
+
       </div>
+      <ContactMeetings key={snapshotAt} entity="company" entityId={companyId} onChanged={onChanged} />
       {notice && (
         <p
           role="status"
@@ -230,7 +205,7 @@ export function CompanyMeetings({
               </p>
               <p className="mt-1 text-slate-500">
                 {data.emailInvitations.configured
-                  ? "Convites por e-mail disponíveis para o responsável do CRM."
+                  ? "Reuniões antigas mantêm os destinatários originais. Novas reuniões permitem escolher os contatos da ficha."
                   : "Você pode salvar o agendamento. O envio aguarda a configuração do remetente de e-mail pela gerência."}
               </p>
             </div>
@@ -257,7 +232,7 @@ export function CompanyMeetings({
             </div>
             {!data.contacts.length && (
               <p className="rounded-lg border border-dashed p-3 text-xs text-slate-500">
-                Cadastre os contatos da empresa para manter o histórico comercial. O convite vai ao usuário do CRM.
+                Cadastre os contatos da empresa. No novo formulário, escolha quais receberão o convite junto com o consultor.
               </p>
             )}
             <ul className="grid gap-2 sm:grid-cols-2">
@@ -494,7 +469,7 @@ export function CompanyMeetings({
               </label>
               {meeting.meetingType === "online" && (
                 <label className="space-y-1 text-xs sm:col-span-2">
-                  Link da reunião (Teams, Meet ou outro)
+                  Link da reunião (Teams)
                   <input type="url" required maxLength={2000} className={field}
                     placeholder="https://…" value={meeting.meetingUrl || ""}
                     onChange={(e) => setMeeting({ ...meeting, meetingUrl: e.target.value })} />
@@ -538,7 +513,7 @@ export function CompanyMeetings({
                 <button type="button" className={secondary} disabled={busy} onClick={() => setMeeting(null)}>
                   Fechar
                 </button>
-                <button className={primary} disabled={busy || !selected?.email}>
+                <button className={primary} disabled={busy}>
                   {busy ? <Loader2 className="animate-spin" size={16} /> : <CalendarPlus size={16} />}{" "}
                   {meeting.revision ? "Salvar e atualizar convite" : "Agendar e enviar convites"}
                 </button>
@@ -556,11 +531,16 @@ export function CompanyMeetings({
                 Atualizar ficha
               </button>
             </div>
+            <p className="mb-2 text-xs text-slate-500">Reuniões novas: <a href="#reunioes-convites" className="text-violet-700 underline">registrar resultado ou alterar em Reuniões e convites</a>. As ações abaixo atendem somente aos agendamentos antigos.</p>
             {!data.meetings.length && (
               <p className="text-xs text-slate-500">Nenhuma reunião agendada para esta empresa.</p>
             )}
             <ol className="space-y-3">
               {data.meetings.map((row) => {
+                if (row.contact_meeting_id) return <li key={row.id} data-linked-meeting-redirect className="space-y-2 rounded-xl border border-slate-200 p-3 text-xs">
+                  <p className="break-words font-semibold">{row.title}</p>
+                  <a href="#reunioes-convites" className="text-violet-700 underline">Abrir no painel Reuniões e convites</a>
+                </li>
                 const mine = row.organizer_user_id === data.organizer.id,
                   ended = ["cancelada", "realizada", "nao_compareceu"].includes(row.status)
                 const participants = row.calendar_provider === "email" && row.email_queued_revision === 0

@@ -71,14 +71,16 @@ function Modal({ title, children, onClose, wide = false }: { title: string; chil
 
 function InviteBadge({ invite, status }: { invite?: any; status: string }) {
   if (status === "draft") return <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500">Rascunho</span>
-  if (status === "cancelled") return <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-medium text-rose-700">Cancelado</span>
-  if (!invite) return <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700">Convite pendente</span>
+  if (status === "cancelled" && !invite) return <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-medium text-rose-700">Cancelado</span>
+  if (!invite) return <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700">Envio pendente</span>
   const operation = invite.operation
   const st = invite.status
-  let label = "Pendente"
+  let label = invite.label || "Pendente"
   let cls = "bg-amber-50 text-amber-700"
+  if (st === "partial") { label = invite.label || "Envio parcial"; cls = "bg-amber-50 text-amber-800" }
   if (st === "processing") { label = "Em processamento"; cls = "bg-sky-50 text-sky-700" }
-  if (st === "sent_provider") { label = "Enviado ao provedor"; cls = "bg-emerald-50 text-emerald-700" }
+  if (st === "sent_provider") { label = operation === "CANCEL" ? "Cancelamento enviado" : "Enviado · aguardando resposta"; cls = "bg-emerald-50 text-emerald-700" }
+  if (st === "delivery_unknown") { label = "Entrega incerta"; cls = "bg-rose-50 text-rose-700" }
   if (st === "failed") { label = "Falha"; cls = "bg-rose-50 text-rose-700" }
   if (st === "pending" && operation === "CANCEL") label = "Cancelamento pendente"
   else if (st === "pending" && Number(invite.event_sequence || 0) > 0) label = "Atualização pendente"
@@ -107,6 +109,7 @@ function OccurrenceCard({ occ, canManage, onEdit }: { occ: any; canManage: boole
         <p className="mt-1 font-mono text-[10px]">{occ.startTime}–{occ.endTime}</p>
         <p className="mt-1 line-clamp-2 break-words text-[10px] opacity-80">{occ.location}</p>
         <p className="mt-1 text-[10px] capitalize">{occ.schoolStatus}</p>
+        {occ.invite && <InviteBadge invite={occ.invite} status={occ.status} />}
         <p className="mt-1 line-clamp-2 text-[10px] opacity-80">{occ.participants.map((p: any) => p.name).join(", ")}</p>
       </> : <div className="mt-1.5"><InviteBadge invite={occ.invite} status={occ.status} /></div>}
     </button>
@@ -339,7 +342,7 @@ export function AttendanceBoard({ initial, personalOnly = false }: { initial: an
           {view !== "list" && <div className="flex items-center gap-1"><button className={btnSecondary} onClick={() => navigate(-1)} aria-label="Anterior"><ChevronLeft className="h-4 w-4" /></button><button className={btnSecondary} onClick={() => navigate(1)} aria-label="Próximo"><ChevronRight className="h-4 w-4" /></button></div>}
           <div className="uni-filter-field"><label className={labelCls}>Consultor</label><select aria-label="Consultor" className={inputCls} value={userFilter} disabled={personalOnly} onChange={(e) => setUserFilter(e.target.value)}><option value="">Todos</option>{(data.members ?? []).map((m: any) => <option key={m.id} value={m.id}>{m.full_name}</option>)}</select></div>
           <div className="uni-filter-field"><label className={labelCls}>Atividade</label><select aria-label="Atividade" className={inputCls} value={activityFilter} onChange={(e) => setActivityFilter(e.target.value)}><option value="">Todas</option><option value="room">Sala de matrícula</option><option value="conversion">Conversão</option><option value="external">Atividade externa</option><option value="gdc">GDC</option><option value="event">Evento</option><option value="school">Divulgação em escola</option><option value="internal">Tarefas internas / follow-ups</option></select></div>
-          <div className="uni-filter-field"><label className={labelCls}>Situação</label><select aria-label="Situação" className={inputCls} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}><option value="">Todas</option><option value="draft">Rascunho</option><option value="published">Publicado</option><option value="cancelled">Cancelado</option><option value="agendada">Agendada</option><option value="confirmada">Confirmada</option><option value="reagendada">Reagendada</option><option value="realizada">Realizada</option></select></div>
+          <div className="uni-filter-field"><label className={labelCls}>Situação</label><select aria-label="Situação" className={inputCls} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}><option value="">Todas</option><option value="draft">Rascunho</option><option value="published">Publicado</option><option value="cancelled">Cancelado</option><option value="agendada">Agendada</option><option value="confirmada">Confirmada</option><option value="reagendada">Reagendada</option><option value="realizada">Realizada</option><option value="nao_compareceu">Não compareceu</option></select></div>
           <div className="uni-filter-field"><label className={labelCls}>Escola</label><select aria-label="Escola" className={inputCls} value={schoolFilter} onChange={(e) => setSchoolFilter(e.target.value)}><option value="">Todas</option>{(data.schoolOptions ?? []).map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></div>
           <div className="uni-filter-field"><label className={labelCls}>Edição do SuperVestibular</label><select aria-label="Edição do SuperVestibular" className={inputCls} value={schoolCycleFilter} onChange={(e) => setSchoolCycleFilter(e.target.value)}><option value="">Todas</option>{(data.schoolCycleOptions ?? []).map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
           <button className={btnSecondary} disabled={pending} onClick={() => startTransition(async () => { await reload() })}><RefreshCw className={`h-4 w-4 ${pending ? "animate-spin" : ""}`} />Atualizar</button>

@@ -76,7 +76,7 @@ await fs.mkdir("responsive-results",{recursive:true})
 const results = []
 const errors = []
 const sizes = [[320,640],[375,812],[768,1024],[1024,768],[1280,720],[1366,768],[1440,900],[1920,1080]]
-const names = process.env.RESPONSIVE_SCENARIOS?.split(",") || ["dashboard","b2b","hs","escolas","escola","captacao-escolas","pipeline","agenda","atendimento","minha-agenda","metas","metas-b2b","supervest","rotas","mapa","mapa-interativo","usuarios","reunioes","acoes-empresa","configuracoes","login","senha","setup"]
+const names = process.env.RESPONSIVE_SCENARIOS?.split(",") || ["dashboard","b2b","hs","escolas","escola","captacao-escolas","pipeline","agenda","atendimento","minha-agenda","metas","metas-b2b","supervest","rotas","mapa","mapa-interativo","usuarios","reunioes","convites-escola","acoes-empresa","configuracoes","login","senha","setup"]
 let browser, page
 async function settle() { await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))) }
 async function check(label) {
@@ -271,7 +271,27 @@ try {
           for(const label of ["Painel","De quem é?","Todas as empresas","Agenda / Follow-ups","Pipeline B2B","Convênios","Gestão de usuários"]) {
             await selectB2B(label, width)
             await shellStates("B2B "+label+" "+width,width)
+            if(label === "Agenda / Follow-ups") {
+              const meetings=page.getByRole("region",{name:"Reuniões B2B com convites",exact:true})
+              await meetings.getByText("Envio parcial · 1/2",{exact:true}).waitFor()
+              assert.equal(await meetings.getByRole("link",{name:"Entrar na reunião (Teams)",exact:true}).getAttribute("href"),"https://teams.microsoft.com/agenda-test")
+            }
           }
+          await selectB2B("Todas as empresas", width)
+          await page.getByRole("checkbox",{name:"Arquivadas",exact:true}).check()
+          const archivedRow=page.locator(".uni-main tbody tr").filter({hasText:"TESTE Empresa arquivada sem ciclo"})
+          await archivedRow.waitFor()
+          assert.equal(pageErrors.length,before,"Archived company without portfolio cycle must render")
+          await check("Archived company listing "+width)
+          await archivedRow.click()
+          await page.getByRole("dialog").getByRole("button",{name:"Editar",exact:true}).click()
+          await page.getByRole("dialog").getByRole("button",{name:"Reativar empresa",exact:true}).click()
+          await page.getByRole("dialog").getByRole("button",{name:"Sim, confirmar",exact:true}).click()
+          await page.waitForSelector('[role="dialog"]',{state:"detached"})
+          assert.equal(await archivedRow.count(),0,"Reactivated company leaves archived filter")
+          await page.getByRole("checkbox",{name:"Arquivadas",exact:true}).uncheck()
+          await archivedRow.waitFor()
+          await check("Reactivated company listing "+width)
           await clickText("Nova empresa")
           await dialogCheck("B2B form "+width)
           await selectB2B("Todas as empresas", width)
@@ -287,6 +307,11 @@ try {
           await dialog.getByText("Falha controlada ao salvar escola.",{exact:true}).waitFor()
           assert.equal(await nameInput.inputValue(),"Escola fictícia com dados preservados","School fields must survive failed save")
           await dialogCheck("School form after save error "+width)
+        }
+        if(name==="agenda") {
+          await page.getByText("Envio parcial · 1/2",{exact:true}).waitFor()
+          assert.equal(await page.getByRole("link",{name:"Entrar na reunião (Teams)",exact:true}).getAttribute("href"),"https://teams.microsoft.com/school-agenda-test")
+          assert.equal(await page.locator('[data-school-action-id="action-0"]').count(),1,"One school action per meeting")
         }
         if(name==="escola") {
           for(const text of ["Editar escola","Estimar","Novo"]) {
@@ -394,10 +419,87 @@ try {
           await page.locator(".uni-main tbody").getByRole("button",{name:"Editar",exact:true}).first().click()
           await dialogCheck("User edit "+width)
         }
-        if(name==="reunioes") {
-          await clickText("Agendar reunião")
-          assert.equal(await page.getByRole("button", { name: "Adicionar participante +", exact: true }).count(), 0, "Only the responsible CRM user receives the automatic invitation")
-          await check("Company meeting form "+width)
+        if(name==="reunioes" || name==="convites-escola") {
+          if(name==="reunioes") {
+            const legacy=page.locator("[data-linked-meeting-redirect]")
+            assert.equal(await legacy.getByRole("link",{name:"Abrir no painel Reuniões e convites",exact:true}).getAttribute("href"),"#reunioes-convites")
+            assert.equal(await legacy.getByRole("button").count(),0)
+            assert.equal(await legacy.getByRole("combobox").count(),0)
+          } else {
+            const legacy=page.getByRole("region",{name:"Lista antiga de ações escolares",exact:true})
+            assert.equal(await legacy.getByRole("link",{name:"Registrar resultado ou alterar em Reuniões e convites",exact:true}).getAttribute("href"),"/high-school/escolas/school-0#reunioes-convites")
+            assert.equal(await legacy.getByRole("combobox").count(),0)
+            assert.equal(await legacy.getByRole("button",{name:"Remover ação",exact:true}).count(),0)
+          }
+          const panel=page.getByRole("region",{name:"Reuniões e convites",exact:true})
+          const colors=await panel.getByRole("button",{name:"Agendar reunião",exact:true}).evaluate(el=>({text:getComputedStyle(el).color,background:getComputedStyle(el).backgroundColor}))
+          assert.notEqual(colors.text,colors.background,"Meeting action label must be visible")
+          await panel.getByRole("button",{name:"Agendar reunião",exact:true}).click()
+          let form=panel.getByRole("form")
+          const contact= form.getByRole("checkbox",{name:/Contato com e-mail/})
+          assert.equal(await form.getByText(/Para trocar a lista, cancele e crie outra reunião/).count(),1)
+          assert.equal(await form.getByRole("checkbox",{name:/Contato sem e-mail/}).isDisabled(),true)
+          assert.equal(await form.getByRole("button",{name:"Salvar reunião",exact:true}).isEnabled(),true,"No contact is required")
+          await form.getByLabel("Assunto",{exact:true}).fill("TESTE convite com Teams")
+          await form.getByLabel("Data",{exact:true}).fill("2098-11-03")
+          await form.getByLabel("Início",{exact:true}).fill("10:00")
+          await form.getByLabel("Término",{exact:true}).fill("10:15")
+          await form.getByLabel(/^Link da reunião/).fill("https://teams.microsoft.com/test?context=a&b=c")
+          await contact.check()
+          await check(name+" contact selection "+width)
+          if(width===375 || width===1366) await page.screenshot({path:`responsive-results/${engine}-${name}-${width}.png`,fullPage:true})
+          await form.getByRole("button",{name:"Salvar reunião",exact:true}).click()
+          await panel.getByRole("heading",{name:"UniConecta | TESTE convite com Teams | Ficha fictícia",exact:true}).waitFor()
+          await panel.getByText("Histórico por destinatário",{exact:true}).click()
+          assert.equal(await panel.getByRole("link",{name:"Entrar na reunião (Teams)",exact:true}).getAttribute("href"),"https://teams.microsoft.com/test?context=a&b=c")
+          await check(name+" recipient history "+width)
+          await panel.getByRole("button",{name:"Registrar resultado",exact:true}).click()
+          const resultForm=panel.getByRole("form",{name:"Registrar resultado da reunião",exact:true})
+          assert.deepEqual(await resultForm.getByRole("option").allTextContents(),["Confirmada","Realizada","Não compareceu"])
+          // Inspect the native option state separately from the enabled parent select.
+          assert.equal(await resultForm.getByRole("option",{name:"Realizada",exact:true}).evaluate(option=>option.disabled),true)
+          assert.equal(await resultForm.getByRole("option",{name:"Não compareceu",exact:true}).evaluate(option=>option.disabled),true)
+          await check(name+" record outcome "+width)
+          await resultForm.getByRole("button",{name:"Salvar resultado",exact:true}).click()
+          await panel.getByText(/· Confirmada$/).waitFor()
+          assert.equal(await panel.getByText(/REQUEST · sequência 0/).count(),2,"Confirmation must not add a delivery or advance the ICS sequence")
+          await panel.getByText(/Nenhum e-mail enviado/).waitFor()
+          await panel.getByRole("button",{name:"Remarcar",exact:true}).click()
+          form=panel.getByRole("form")
+          assert.equal(await form.getByRole("checkbox",{name:/Contato com e-mail/}).isDisabled(),true)
+          await form.getByLabel("Início",{exact:true}).fill("11:00")
+          await form.getByLabel("Término",{exact:true}).fill("11:15")
+          await form.getByRole("button",{name:"Salvar remarcação",exact:true}).click()
+          await panel.getByText(/11:00–11:15/).waitFor()
+          await panel.getByRole("button",{name:"Cancelar reunião",exact:true}).click()
+          assert.equal(await panel.getByRole("alertdialog").getByText("Contato com e-mail",{exact:false}).count(),1)
+          await check(name+" cancellation confirmation "+width)
+          await panel.getByRole("button",{name:"Confirmar cancelamento",exact:true}).click()
+          await panel.getByText(/Cancelada/,{exact:false}).first().waitFor()
+          assert.equal(await panel.getByRole("heading",{name:"UniConecta | TESTE convite com Teams | Ficha fictícia",exact:true}).count(),1)
+          await check(name+" cancelled history "+width)
+          await page.evaluate(()=>window.seedEndedContactMeetingFixture())
+          await panel.getByRole("button",{name:"Atualizar reuniões",exact:true}).click()
+          await panel.getByRole("heading",{name:"UniConecta | TESTE reunião encerrada | Ficha fictícia",exact:true}).waitFor()
+          for(const [outcome,label] of [["nao_compareceu","Não compareceu"],["realizada","Realizada"]]) {
+            assert.equal(await panel.getByRole("button",{name:"Remarcar",exact:true}).count(),0)
+            assert.equal(await panel.getByRole("button",{name:"Cancelar reunião",exact:true}).count(),0)
+            await panel.getByRole("button",{name:"Registrar resultado",exact:true}).click()
+            const correction=panel.getByRole("form",{name:"Registrar resultado da reunião",exact:true})
+            assert.equal(await correction.getByRole("option",{name:"Confirmada",exact:true}).evaluate(option=>option.disabled),true)
+            assert.equal(await correction.getByRole("option",{name:"Realizada",exact:true}).evaluate(option=>option.disabled),false)
+            assert.equal(await correction.getByRole("option",{name:"Não compareceu",exact:true}).evaluate(option=>option.disabled),false)
+            await correction.getByRole("combobox").selectOption(outcome)
+            await check(name+" correct ended outcome "+outcome+" "+width)
+            await correction.getByRole("button",{name:"Salvar resultado",exact:true}).click()
+            await panel.getByText(new RegExp("· "+label+"$")).waitFor()
+            const history=panel.locator('[data-contact-meeting-id="ended-fixture"]')
+            if(!(await history.locator("details").evaluate(el=>el.open))) await history.getByText("Histórico por destinatário",{exact:true}).click()
+            assert.equal(await history.getByText(/REQUEST · sequência 0/).count(),2)
+            assert.equal(await history.getByText(/sequência [1-9]/).count(),0)
+            assert.equal(await panel.getByRole("button",{name:"Remarcar",exact:true}).count(),0)
+            assert.equal(await panel.getByRole("button",{name:"Cancelar reunião",exact:true}).count(),0)
+          }
         }
         if(name==="acoes-empresa") {
           await page.getByRole("button",{name:"Registrar ação",exact:true}).click()

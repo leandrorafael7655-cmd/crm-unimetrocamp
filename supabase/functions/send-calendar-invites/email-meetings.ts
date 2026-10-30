@@ -36,6 +36,10 @@ export function meetingEmail(job: any, config: { from: string; organizer: string
     throw new Error("Destinatário não consta no convite.");
   if (!["REQUEST", "CANCEL"].includes(job.operation) || !/^[a-z0-9-]+@uniconecta$/i.test(p.event_uid))
     throw new Error("Identidade do convite inválida.");
+  const link = p.meeting_url ? new URL(p.meeting_url) : null;
+  if (link && (link.protocol !== "https:" || link.username || link.password || link.href.length > 2000))
+    throw new Error("Link da reunião inválido.");
+  const html = (value: unknown) => String(value ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
   const lines = [
     "BEGIN:VCALENDAR", "PRODID:-//UniConecta//Agenda Comercial//PT-BR", "VERSION:2.0",
     "CALSCALE:GREGORIAN", `METHOD:${job.operation}`,
@@ -45,6 +49,7 @@ export function meetingEmail(job: any, config: { from: string; organizer: string
     p.all_day ? `DTEND;VALUE=DATE:${localStamp(p.end_at).slice(0,8)}` : `DTEND;TZID=America/Sao_Paulo:${localStamp(p.end_at)}`,
     `SUMMARY:${textValue(p.title)}`, `DESCRIPTION:${textValue(p.description)}`,
     ...(p.location ? [`LOCATION:${textValue(p.location)}`] : []),
+    ...(link ? [`URL:${link.href}`] : []),
     `ORGANIZER;CN="UniConecta":mailto:${p.organizer}`,
     ...p.attendees.map((person: Person) => `ATTENDEE;CN=${parameter(person.name || person.email)};ROLE=${person.role === "OPT-PARTICIPANT" ? "OPT-PARTICIPANT" : "REQ-PARTICIPANT"};PARTSTAT=NEEDS-ACTION;RSVP=TRUE:mailto:${person.email}`),
     job.operation === "CANCEL" ? "STATUS:CANCELLED" : "STATUS:CONFIRMED",
@@ -57,6 +62,7 @@ export function meetingEmail(job: any, config: { from: string; organizer: string
     messageId: `<${job.id}@uniconecta>`,
     subject: job.operation === "CANCEL" ? `Cancelado: ${p.title}` : p.title,
     text: `${p.title}\n\n${p.description || ""}\n\n${p.location || ""}`,
+    ...(link ? { html: `<p>${html(p.title)}</p><p>${html(p.description).replace(/\n/g, "<br>")}</p><p><a href="${html(link.href)}">Entrar na reunião (Teams)</a></p>` } : {}),
     icalEvent: { filename: "uniconecta.ics", method: job.operation, content: lines.map(fold).join("\r\n") + "\r\n" },
   };
 }

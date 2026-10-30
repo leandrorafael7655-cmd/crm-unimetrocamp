@@ -7,7 +7,8 @@ import { setStorage } from "../../lib/data/storage-context"
 import { makeLocalStorage } from "../../lib/data/local-storage"
 import { CHAVES, EQUIPE_PADRAO, CONFIG_PADRAO } from "../../lib/domain/constants"
 import { dadosExemplo } from "../../lib/domain/seed"
-import { actor, owners, resetCompanyActionFixtures } from "./fixtures.mjs"
+import { actor, owners, actions, grades, resetCompanyActionFixtures } from "./fixtures.mjs"
+import { AcoesPanel } from "../../components/high-school/escola-360-panels"
 import { B2bManualResults } from "../../components/goals/b2b-manual-results"
 import { CompanyActions } from "../../components/b2b/company-actions"
 import Dashboard from "../../app/dashboard/page"
@@ -28,6 +29,8 @@ import ResetPassword from "../../app/auth/reset-password/page"
 import { SetupForm } from "../../components/auth/setup-form"
 import { AuthShell } from "../../components/auth/auth-shell"
 import { GerenciarUsuarios } from "../../components/team/gerenciar-usuarios"
+import { ContactMeetings } from "../../components/meetings/contact-meetings"
+import { resetContactMeetingFixtures, seedEndedContactMeetingFixture } from "./contact-meeting-fixtures.mjs"
 import { CompanyMeetings } from "../../components/b2b/company-meetings"
 import { MapView } from "../../components/maps/map-view"
 import { SchoolCapture } from "../../components/high-school/school-capture"
@@ -43,13 +46,15 @@ const paths = { dashboard: "/dashboard", hs: "/high-school", escolas: "/high-sch
   metas: "/gestao/metas", supervest: "/supervest", atendimento: "/atendimento", "minha-agenda": "/atendimento/minha-agenda",
   rotas: "/mapa/rotas", mapa: "/mapa", configuracoes: "/gestao/configuracoes" }
 const root = createRoot(document.getElementById("root"))
+window.seedEndedContactMeetingFixture=seedEndedContactMeetingFixture
 window.renderFixture = async (name, role = "gerente") => {
+  resetContactMeetingFixtures()
+  resetCaptureFixtures()
   window.refreshFixture = undefined
   window.fixturePath = paths[name] || "/"
   document.body.dataset.ready = ""
   if(name === "captacao-escolas") {
     window.fixturePath = "/high-school/captacao-escolas"
-    resetCaptureFixtures()
     const key = "capture:"+Date.now()
     window.refreshFixture = ()=>root.render(<React.Fragment key={key}><ResponsiveShell sidebar={<SystemSidebar role="gerente" userName={captureActor.name}/>} mainClassName="p-4 sm:p-6">
       <SchoolCapture data={captureFixtureData()} actor={captureActor} canWrite canConfigure now="2026-10-02T00:30:00.000Z"/>
@@ -72,6 +77,8 @@ window.renderFixture = async (name, role = "gerente") => {
     localStorage.setItem(CHAVES.empresas, JSON.stringify(dadosExemplo(EQUIPE_PADRAO).map((e, i) => ({
       ...e, nomeFantasia: e.nomeFantasia + (i === 0 ? " " + "EmpresaMuitoExtensa".repeat(10) : ""),
     }))))
+    const archived = {...dadosExemplo(EQUIPE_PADRAO)[0],id:"fixture-archived-company",nomeFantasia:"TESTE Empresa arquivada sem ciclo",razaoSocial:"TESTE Empresa arquivada sem ciclo",arquivada:true,portfolio:{agreement_status:"none"}}
+    const seeded = JSON.parse(localStorage.getItem(CHAVES.empresas)); seeded.push(archived); localStorage.setItem(CHAVES.empresas,JSON.stringify(seeded))
     localStorage.setItem(CHAVES.config, JSON.stringify(CONFIG_PADRAO))
     localStorage.setItem(CHAVES.atividades, JSON.stringify([]))
     setStorage(makeLocalStorage())
@@ -83,6 +90,7 @@ window.renderFixture = async (name, role = "gerente") => {
     let child
     if (name === "metas-b2b") child = <B2bManualResults canWrite={role === "gerente"} results={[{id:"result",company_id:"company",user_id:"consultor",commercial_cycle_id:"cc",target_value:10,registrations:0,revision:1,notes:"Teste fictício"}]} history={[{id:"history",result_id:"result",changed_by_name:"Gerente fictício",changed_at:"2026-10-28T12:00:00Z",new_values:{target_value:10,registrations:0}}]} companies={[{id:"company",name:"Empresa fictícia "+"NomeExtenso".repeat(8)}]} people={[{id:"consultor",name:"Consultor fictício"}]} cycles={[{id:"cc",name:"2027.1"}]} />
     else if (name === "usuarios") child = <GerenciarUsuarios perfil={perfil}/>
+    else if (name === "convites-escola") child = <><ContactMeetings entity="school" entityId="school-0"/><section aria-label="Lista antiga de ações escolares"><AcoesPanel escolaId="school-0" acoes={[{...actions[0],tipo:"Reunião",resultados:[],participantes:[]}]} grades={grades} owners={owners} podeEscrever/></section></>
     else if (name === "reunioes") child = <CompanyMeetings companyId="company" companyName="Empresa Campinas"/>
     else if (name === "acoes-empresa") {
       resetCompanyActionFixtures()

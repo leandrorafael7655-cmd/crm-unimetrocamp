@@ -1,3 +1,4 @@
+import { ContactMeetings } from "@/components/meetings/contact-meetings"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { ArrowLeft, MapPin, Phone, Mail, Globe } from "lucide-react"
@@ -96,6 +97,7 @@ export default async function Escola360Page({ params }: { params: Promise<{ id: 
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
+          <ContactMeetings entity="school" entityId={escola.id} />
           {actor&&<SchoolCapture compact data={capture} actor={{id:actor.id,name:actor.display_name,role:actor.role}} canWrite={can(actor.role,"hs.capture.write")} canConfigure={can(actor.role,"supervest.write")} now={new Date().toISOString()}/>}
           <EstimativasPanel escolaId={escola.id} estimativas={estimativas} grades={grades} podeEscrever={podeEscrever} />
         </div>

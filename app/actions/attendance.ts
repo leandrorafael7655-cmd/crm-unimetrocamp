@@ -34,6 +34,7 @@ import { mapSchoolAgendaOccurrence, matchesAgendaFilters, saoPauloToday } from "
 import { isUuid } from "@/lib/school-capture/domain"
 import { companyAgendaItem, companyActionAgendaItem } from "@/lib/domain/company-agenda"
 import { readAllRows } from "@/lib/data/pagination"
+import { summarizeMeetingDeliveries } from "@/lib/meetings/contact-domain"
 import { calendarEmailStatus } from "@/lib/calendar/smtp-config"
 import { processSmtpQueue } from "@/lib/calendar/smtp-worker"
 
@@ -480,6 +481,23 @@ export async function getAttendanceData(input?: { start?: string; end?: string; 
     ...meetingRows.map(row => companyAgendaItem({ ...row, responsible_name: profileById.get(row.organizer_user_id)?.full_name }, true)),
     ...actionRows.map(row => companyActionAgendaItem(row)),
   ].filter(row => matchesAgendaFilters(row, { ...input, userId: scopedUserId }))
+  const sourceIds = [...meetingRows.map(row => row.id), ...schoolOccurrences.map(row => row.id)]
+  const [contactJobs, legacyMeetingJobs] = sourceIds.length ? await Promise.all([
+    admin.from("contact_meeting_jobs").select("meeting_id,status,operation,event_sequence,last_error,sent_at")
+      .in("meeting_id", sourceIds).order("event_sequence", { ascending: false }),
+    admin.from("calendar_invite_jobs").select("meeting_activity_id,status,operation,event_sequence,last_error,sent_at,provider")
+      .in("meeting_activity_id", sourceIds).order("event_sequence", { ascending: false }),
+  ]) : [{ data: [], error: null }, { data: [], error: null }]
+  if (contactJobs.error || legacyMeetingJobs.error) throw new Error("Não foi possível conferir o envio das reuniões.")
+  const jobsByMeeting = new Map<string, any[]>()
+  for (const job of [...(contactJobs.data || []), ...(legacyMeetingJobs.data || [])]) {
+    const id = (job as any).meeting_id || (job as any).meeting_activity_id
+    if ((job as any).provider === "superseded") continue
+    jobsByMeeting.set(id, [...(jobsByMeeting.get(id) || []), job])
+  }
+  for (const occurrence of [...commercialOccurrences, ...schoolOccurrences]) {
+    Object.assign(occurrence, { invite: summarizeMeetingDeliveries(jobsByMeeting.get(occurrence.id) || []) })
+  }
   const providerStatus = await getCalendarProviderStatus(false)
   const schoolOptions = [...new Map(schoolOccurrences.map((o) => [o.schoolId, { id: o.schoolId, name: o.schoolName }])).values()]
   const schoolCycleOptions = [...new Map(schoolOccurrences.filter((o) => o.schoolCycleId).map((o) => [o.schoolCycleId, { id: o.schoolCycleId, name: o.schoolCycleName }])).values()]

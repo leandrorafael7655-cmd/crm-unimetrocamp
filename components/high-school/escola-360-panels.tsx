@@ -3,6 +3,7 @@
 import { validateSchedule } from "@/lib/domain/validation"
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { X, Plus, Trash2, Star } from "lucide-react"
 import {
   upsertContact,
@@ -17,6 +18,7 @@ import {
   TIPOS_ACAO_HS,
   STATUS_ACAO_HS,
   CORES_STATUS_ACAO,
+  ROTULOS_STATUS_ACAO,
   type ContatoEscola,
   type AcaoEscola,
   type GradeLevel,
@@ -415,7 +417,7 @@ export function AcoesPanel({
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-medium text-slate-800">{a.tipo}</p>
                       <Chip className={CORES_STATUS_ACAO[a.status]}>
-                        <span className="capitalize">{a.status}</span>
+                        <span>{ROTULOS_STATUS_ACAO[a.status]}</span>
                       </Chip>
                     </div>
                     <p className="mt-0.5 text-xs text-slate-500">
@@ -424,7 +426,7 @@ export function AcoesPanel({
                       {a.objetivo ? ` · ${a.objetivo}` : ""}
                     </p>
                   </div>
-                  {podeEscrever && (
+                  {a.contactMeetingId ? <Link className="text-xs text-brand underline" href={`/high-school/escolas/${escolaId}#reunioes-convites`}>Registrar resultado ou alterar em Reuniões e convites</Link> : podeEscrever && (
                     <div className="flex items-center gap-1.5">
                       <select
                         value={a.status}

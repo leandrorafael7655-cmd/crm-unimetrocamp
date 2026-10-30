@@ -49,8 +49,13 @@ export const TIPOS_ACAO_HS = [
   "Outra",
 ] as const
 
+// Legacy editors keep their supported statuses. New meeting outcomes use their own authorized flow.
 export const STATUS_ACAO_HS = ["agendada", "confirmada", "realizada", "cancelada", "reagendada"] as const
-export type StatusAcaoHS = (typeof STATUS_ACAO_HS)[number]
+export const STATUS_ACAO_HS_FILTROS = [...STATUS_ACAO_HS, "nao_compareceu"] as const
+export type StatusAcaoHS = (typeof STATUS_ACAO_HS_FILTROS)[number]
+export const ROTULOS_STATUS_ACAO: Record<StatusAcaoHS, string> = {
+  agendada: "Agendada", confirmada: "Confirmada", realizada: "Realizada", cancelada: "Cancelada", reagendada: "Reagendada", nao_compareceu: "Não compareceu",
+}
 
 export const POTENCIAIS_HS = ["Alto", "Médio", "Baixo"] as const
 
@@ -137,6 +142,9 @@ export interface ParticipanteAcao {
 }
 
 export interface AcaoEscola {
+  meetingUrl?: string | null
+  meetingDelivery?: import("@/lib/meetings/contact-domain").MeetingDeliverySummary | null
+  contactMeetingId?: string | null
   id: string
   escolaId: string
   escolaNome?: string
@@ -294,6 +302,9 @@ export function mapAcaoRow(
 ): AcaoEscola {
   return {
     id: String(r.id),
+    contactMeetingId: (r.contact_meeting_id as string) ?? null,
+    meetingUrl: (r.meeting_url as string) ?? null,
+    meetingDelivery: (r.meeting_delivery as AcaoEscola["meetingDelivery"]) ?? null,
     escolaId: String(r.school_id),
     escolaNome: (r.school_name as string) ?? undefined,
     data: String(r.action_date ?? ""),
@@ -464,6 +475,7 @@ export const CORES_STATUS_ACAO: Record<StatusAcaoHS, string> = {
   agendada: "bg-sky-50 text-sky-800 border-sky-200",
   confirmada: "bg-indigo-50 text-indigo-800 border-indigo-200",
   realizada: "bg-emerald-50 text-emerald-800 border-emerald-200",
+  nao_compareceu: "bg-rose-50 text-rose-800 border-rose-200",
   cancelada: "bg-slate-100 text-slate-500 border-slate-200",
   reagendada: "bg-amber-100 text-amber-900 border-amber-300",
 }

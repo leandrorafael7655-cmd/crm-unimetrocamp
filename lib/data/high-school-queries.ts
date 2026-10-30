@@ -8,6 +8,7 @@ import "server-only"
 import { createClient } from "@/lib/supabase/server"
 import { requireCan } from "@/lib/auth/guards"
 import { profileDisplayName } from "@/lib/domain/user-display"
+import { readContactMeetingStates } from "@/lib/meetings/queries"
 import {
   type Escola,
   type ContatoEscola,
@@ -158,10 +159,12 @@ export async function listActions(filtros: ActionFilters = {}): Promise<AcaoEsco
   const rows = data ?? []
   const ids = rows.map((r) => String(r.id))
   const { parts, res } = await carregarParticipantesEResultados(supabase, ids)
+  const meetingStates = await readContactMeetingStates(supabase, rows.filter(r => r.contact_meeting_id).map(r => r.contact_meeting_id))
 
   return rows.map((r) =>
     mapAcaoRow(
-      { ...r, school_name: (r.schools as { name?: string } | null)?.name },
+      { ...r, school_name: (r.schools as { name?: string } | null)?.name,
+        meeting_url: meetingStates.get(String(r.id))?.url, meeting_delivery: meetingStates.get(String(r.id))?.delivery },
       parts.get(String(r.id)) ?? [],
       res.get(String(r.id)) ?? [],
     ),

@@ -1,3 +1,4 @@
+import { contactMeetingMocks } from "./contact-meeting-fixtures.mjs"
 // Dados sintéticos: a validação visual não usa contas, banco ou credenciais reais.
 import { validateCompanyAction } from "../../lib/company-actions/domain.ts"
 import { captureMocks, captureFixtureData, isCaptureAgendaFixture, listCaptureFixtureActions } from "./school-capture-fixtures.mjs"
@@ -28,6 +29,7 @@ export const actions = schools.map((e, i) => ({
   objetivo: "Apresentar oportunidades de graduação", participantes: [{ userId: "hs", nome: "Consultora HS" }],
   primaryOwnerId: "hs", resultados: [{ serie: "3em", turmas: 3, impactados: 100, leads: 70, inscricoesSupervest: 40 }],
 }))
+Object.assign(actions[0],{contactMeetingId:actions[0].id,meetingUrl:"https://teams.microsoft.com/school-agenda-test",meetingDelivery:{status:"partial",operation:"REQUEST",event_sequence:1,label:"Envio parcial · 1/2",sent:1,total:2}})
 export const cycle = { id: "sv", name: "SuperVestibular 2027", edition: "2027", status: "ativo",
   registrationsTarget: 7500, eventAt: "2026-10-24T17:00:00Z" }
 export const goals = [{
@@ -59,10 +61,11 @@ export const contact = { id: "contact", company_id: "company", nome: "Responsáv
   cargo: "Diretor Comercial", email: "responsavel" + "contato".repeat(10) + "@example.test",
   telefone: "(19) 99999-9999", is_primary: true }
 export const meetingPanel = {
-  ok: true, canEdit: true, contacts: [contact], meetings: [], organizer: { id: actor.id, name: actor.full_name, email: actor.email },
+  ok: true, canEdit: true, contacts: [contact], meetings: [{id:"redirect-linked",contact_meeting_id:"redirect-linked",title:"Reunião nova da lista antiga"}], organizer: { id: actor.id, name: actor.full_name, email: actor.email },
   microsoft: { connected: false }, connection: { connected: false }, emailConfigured: true, emailInvitations: { configured: true },
 }
 export const mockQueries = {
+  ...contactMeetingMocks,
   ...captureMocks,
   getActor: async () => actor, requireActor: async () => actor, requireManager: async () => actor, requireCan: async () => actor,
   listSchools: async () => schools, listOwners: async () => owners, listActions: async (filters) => isCaptureAgendaFixture() ? listCaptureFixtureActions(filters) : actions,
