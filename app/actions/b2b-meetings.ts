@@ -46,7 +46,7 @@ async function ownedMeeting(id: string, actor: ActorProfile) {
     .from("activities")
     .select("*,activity_participants(name,email)")
     .eq("id", id)
-    .not("meeting_type", "is", null)
+    .not("meeting_type", "is", null).is("contact_meeting_id", null)
     .maybeSingle()
   if (error || !data || data.organizer_user_id !== actor.id)
     throw new Error("Somente o organizador pode alterar ou cancelar esta reunião.")
@@ -68,7 +68,7 @@ export async function loadCompanyMeetings(companyId: string) {
         .from("activities")
         .select("*,activity_participants(name,email)")
         .eq("company_id", companyId)
-        .not("meeting_type", "is", null)
+        .not("meeting_type", "is", null).is("contact_meeting_id", null)
         .order("start_at", { ascending: false }),
       Promise.resolve({configured:false,connected:false,email:null,missing:[]}),
       emailInvitationStatus(),
@@ -124,6 +124,7 @@ export async function saveCompanyContact(companyId: string, contact: Partial<Com
 }
 export async function saveCompanyMeeting(input: MeetingInput) {
   try {
+    if (!input.revision) throw new Error("Use o painel Reuniões e convites para novos agendamentos.")
     const actor = await requireCan("b2b.write"),
       times = validateMeetingInput(input)
     const company = await companyForActor(input.companyId, actor, true)

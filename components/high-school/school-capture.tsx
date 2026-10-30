@@ -339,6 +339,7 @@ export function SchoolCapture({
           <CalendarPlus className="h-3.5 w-3.5" />
           Agendar divulgação
         </button>
+        <Link className={buttonCls} href={`/high-school/escolas/${id}#reunioes-convites`}>Agendar reunião</Link>
         <button className={buttonCls} onClick={() => open("performed", id)}>
           <CheckCircle2 className="h-3.5 w-3.5" />
           Registrar ação realizada
@@ -638,6 +639,7 @@ export function SchoolCapture({
                       {entry.action.participantes.map((p) => p.nome).join(", ")}
                     </p>
                   )}
+                  {entry.action.contactMeetingId && <Link className={buttonCls} href={`/high-school/escolas/${targetSchoolId}#reunioes-convites`}>Ver reunião e convites</Link>}
                   <p className="mt-2 text-sm">{entry.action.objetivo}</p>
                   {entry.action.local && (
                     <p className="mt-1 text-sm">Local: {entry.action.local}</p>
@@ -706,7 +708,7 @@ export function SchoolCapture({
                       </p>
                     ))}
                   {canWrite &&
-                    entry.action.supervestCicloId &&
+                    !entry.action.contactMeetingId && entry.action.supervestCicloId &&
                     (managerial ||
                       institutionalWriter ||
                       entry.action.createdBy === actor.id ||
@@ -761,7 +763,7 @@ export function SchoolCapture({
                         )}
                       </div>
                     )}
-                  {!entry.action.supervestCicloId && managerial && cycle && (
+                  {!entry.action.contactMeetingId && !entry.action.supervestCicloId && managerial && cycle && (
                     <button
                       className={`${buttonCls} mt-3`}
                       onClick={() =>
@@ -2052,7 +2054,7 @@ function CaptureForm({
                     defaultValue={action?.tipo ?? "Divulgação SuperVestibular"}
                     className={inputCls}
                   >
-                    {TIPOS_ACAO_HS.map((t) => (
+                    {TIPOS_ACAO_HS.filter(t => action || modal.kind === "performed" || !t.startsWith("Reunião")).map((t) => (
                       <option key={t}>{t}</option>
                     ))}
                   </select>

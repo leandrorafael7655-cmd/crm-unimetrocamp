@@ -76,7 +76,7 @@ await fs.mkdir("responsive-results",{recursive:true})
 const results = []
 const errors = []
 const sizes = [[320,640],[375,812],[768,1024],[1024,768],[1280,720],[1366,768],[1440,900],[1920,1080]]
-const names = process.env.RESPONSIVE_SCENARIOS?.split(",") || ["dashboard","b2b","hs","escolas","escola","captacao-escolas","pipeline","agenda","atendimento","minha-agenda","metas","metas-b2b","supervest","rotas","mapa","mapa-interativo","usuarios","reunioes","acoes-empresa","configuracoes","login","senha","setup"]
+const names = process.env.RESPONSIVE_SCENARIOS?.split(",") || ["dashboard","b2b","hs","escolas","escola","captacao-escolas","pipeline","agenda","atendimento","minha-agenda","metas","metas-b2b","supervest","rotas","mapa","mapa-interativo","usuarios","reunioes","convites-escola","acoes-empresa","configuracoes","login","senha","setup"]
 let browser, page
 async function settle() { await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))) }
 async function check(label) {
@@ -272,6 +272,21 @@ try {
             await selectB2B(label, width)
             await shellStates("B2B "+label+" "+width,width)
           }
+          await selectB2B("Todas as empresas", width)
+          await page.getByRole("checkbox",{name:"Arquivadas",exact:true}).check()
+          const archivedRow=page.locator(".uni-main tbody tr").filter({hasText:"TESTE Empresa arquivada sem ciclo"})
+          await archivedRow.waitFor()
+          assert.equal(pageErrors.length,before,"Archived company without portfolio cycle must render")
+          await check("Archived company listing "+width)
+          await archivedRow.click()
+          await page.getByRole("dialog").getByRole("button",{name:"Editar",exact:true}).click()
+          await page.getByRole("dialog").getByRole("button",{name:"Reativar empresa",exact:true}).click()
+          await page.getByRole("dialog").getByRole("button",{name:"Sim, confirmar",exact:true}).click()
+          await page.waitForSelector('[role="dialog"]',{state:"detached"})
+          assert.equal(await archivedRow.count(),0,"Reactivated company leaves archived filter")
+          await page.getByRole("checkbox",{name:"Arquivadas",exact:true}).uncheck()
+          await archivedRow.waitFor()
+          await check("Reactivated company listing "+width)
           await clickText("Nova empresa")
           await dialogCheck("B2B form "+width)
           await selectB2B("Todas as empresas", width)
@@ -394,10 +409,41 @@ try {
           await page.locator(".uni-main tbody").getByRole("button",{name:"Editar",exact:true}).first().click()
           await dialogCheck("User edit "+width)
         }
-        if(name==="reunioes") {
-          await clickText("Agendar reunião")
-          assert.equal(await page.getByRole("button", { name: "Adicionar participante +", exact: true }).count(), 0, "Only the responsible CRM user receives the automatic invitation")
-          await check("Company meeting form "+width)
+        if(name==="reunioes" || name==="convites-escola") {
+          const panel=page.getByRole("region",{name:"Reuniões e convites",exact:true})
+          const colors=await panel.getByRole("button",{name:"Agendar reunião",exact:true}).evaluate(el=>({text:getComputedStyle(el).color,background:getComputedStyle(el).backgroundColor}))
+          assert.notEqual(colors.text,colors.background,"Meeting action label must be visible")
+          await panel.getByRole("button",{name:"Agendar reunião",exact:true}).click()
+          let form=panel.getByRole("form")
+          const contact= form.getByRole("checkbox",{name:/Contato com e-mail/})
+          assert.equal(await form.getByRole("checkbox",{name:/Contato sem e-mail/}).isDisabled(),true)
+          assert.equal(await form.getByRole("button",{name:"Salvar reunião",exact:true}).isEnabled(),true,"No contact is required")
+          await form.getByLabel("Assunto",{exact:true}).fill("TESTE convite com Teams")
+          await form.getByLabel("Data",{exact:true}).fill("2098-11-03")
+          await form.getByLabel("Início",{exact:true}).fill("10:00")
+          await form.getByLabel("Término",{exact:true}).fill("10:15")
+          await form.getByLabel(/^Link da reunião/).fill("https://teams.microsoft.com/test?context=a&b=c")
+          await contact.check()
+          await check(name+" contact selection "+width)
+          if(width===375 || width===1366) await page.screenshot({path:`responsive-results/${engine}-${name}-${width}.png`,fullPage:true})
+          await form.getByRole("button",{name:"Salvar reunião",exact:true}).click()
+          await panel.getByRole("heading",{name:"TESTE convite com Teams",exact:true}).waitFor()
+          await panel.getByText("Histórico por destinatário",{exact:true}).click()
+          assert.equal(await panel.getByRole("link",{name:"Entrar na reunião (Teams)",exact:true}).getAttribute("href"),"https://teams.microsoft.com/test?context=a&b=c")
+          await check(name+" recipient history "+width)
+          await panel.getByRole("button",{name:"Remarcar",exact:true}).click()
+          form=panel.getByRole("form")
+          assert.equal(await form.getByRole("checkbox",{name:/Contato com e-mail/}).isDisabled(),true)
+          await form.getByLabel("Início",{exact:true}).fill("11:00")
+          await form.getByLabel("Término",{exact:true}).fill("11:15")
+          await form.getByRole("button",{name:"Salvar remarcação",exact:true}).click()
+          await panel.getByText(/11:00–11:15/).waitFor()
+          await panel.getByRole("button",{name:"Cancelar reunião",exact:true}).click()
+          await check(name+" cancellation confirmation "+width)
+          await panel.getByRole("button",{name:"Confirmar cancelamento",exact:true}).click()
+          await panel.getByText(/Cancelada/,{exact:false}).first().waitFor()
+          assert.equal(await panel.getByRole("heading",{name:"TESTE convite com Teams",exact:true}).count(),1)
+          await check(name+" cancelled history "+width)
         }
         if(name==="acoes-empresa") {
           await page.getByRole("button",{name:"Registrar ação",exact:true}).click()

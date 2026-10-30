@@ -1,3 +1,4 @@
+import { contactMeetingMocks } from "./contact-meeting-fixtures.mjs"
 // Dados sintéticos: a validação visual não usa contas, banco ou credenciais reais.
 import { validateCompanyAction } from "../../lib/company-actions/domain.ts"
 import { captureMocks, captureFixtureData, isCaptureAgendaFixture, listCaptureFixtureActions } from "./school-capture-fixtures.mjs"
@@ -63,6 +64,7 @@ export const meetingPanel = {
   microsoft: { connected: false }, connection: { connected: false }, emailConfigured: true, emailInvitations: { configured: true },
 }
 export const mockQueries = {
+  ...contactMeetingMocks,
   ...captureMocks,
   getActor: async () => actor, requireActor: async () => actor, requireManager: async () => actor, requireCan: async () => actor,
   listSchools: async () => schools, listOwners: async () => owners, listActions: async (filters) => isCaptureAgendaFixture() ? listCaptureFixtureActions(filters) : actions,

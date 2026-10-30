@@ -1136,7 +1136,7 @@ function TabelaEmpresas({ empresas, aoAbrir, hoje }) {
                   <span className="block font-mono text-[11px] text-slate-400">{e.cidade} · {e.segmento}</span>
                 </td>
                 <td className="px-3 py-2"><ChipClasse valor={e.classificacao} /></td>
-                <td className="px-3 py-2 text-xs text-slate-700">{e.etapa === "Relacionamento ativo" ? "Conveniada (etapa legada)" : e.etapa}{e.portfolio && <span className="mt-1 block text-[10px] text-slate-500">Convênio: {e.portfolio.agreement_status} · {e.portfolio.effective_relationship === "active" ? "Relacionamento ativo" : "Sem relacionamento ativo"} · Ciclo {e.portfolio.current_cycle.code}</span>}</td>
+                <td className="px-3 py-2 text-xs text-slate-700">{e.etapa === "Relacionamento ativo" ? "Conveniada (etapa legada)" : e.etapa}{e.portfolio?.current_cycle?.code && <span className="mt-1 block text-[10px] text-slate-500">Convênio: {e.portfolio.agreement_status} · {e.portfolio.effective_relationship === "active" ? "Relacionamento ativo" : "Sem relacionamento ativo"} · Ciclo {e.portfolio?.current_cycle?.code}</span>}</td>
                 <td className="px-3 py-2 font-mono text-xs tabular-nums">
                   <span className={sem === null || sem > 30 ? "text-rose-600" : "text-slate-600"}>
                     {e.ultimoContato ? `${brData(e.ultimoContato)} · ${sem}d` : "nunca"}
@@ -1629,7 +1629,7 @@ function Funil({ empresas, aoAbrir }) {
                     <span className="block truncate text-xs font-medium text-slate-900">{e.nomeFantasia || e.razaoSocial}</span>
                     <span className="mt-0.5 flex items-center justify-between gap-1">
                       <ChipClasse valor={e.classificacao} />
-                      <span className="block break-words text-[10px] text-slate-600">Responsável: {e.consultor}</span>{e.portfolio && <span className="mt-1 block text-[10px] text-slate-500">Convênio: {e.portfolio.agreement_status} · {e.portfolio.effective_relationship === "active" ? "Relacionamento ativo" : "Sem relacionamento ativo"} · {e.portfolio.current_cycle.code}</span>}
+                      <span className="block break-words text-[10px] text-slate-600">Responsável: {e.consultor}</span>{e.portfolio?.current_cycle?.code && <span className="mt-1 block text-[10px] text-slate-500">Convênio: {e.portfolio.agreement_status} · {e.portfolio.effective_relationship === "active" ? "Relacionamento ativo" : "Sem relacionamento ativo"} · {e.portfolio?.current_cycle?.code}</span>}
                     </span>
                   </button>
                 </li>

@@ -137,6 +137,7 @@ export interface ParticipanteAcao {
 }
 
 export interface AcaoEscola {
+  contactMeetingId?: string | null
   id: string
   escolaId: string
   escolaNome?: string
@@ -294,6 +295,7 @@ export function mapAcaoRow(
 ): AcaoEscola {
   return {
     id: String(r.id),
+    contactMeetingId: (r.contact_meeting_id as string) ?? null,
     escolaId: String(r.school_id),
     escolaNome: (r.school_name as string) ?? undefined,
     data: String(r.action_date ?? ""),
