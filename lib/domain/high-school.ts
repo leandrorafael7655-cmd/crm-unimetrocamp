@@ -137,6 +137,8 @@ export interface ParticipanteAcao {
 }
 
 export interface AcaoEscola {
+  meetingUrl?: string | null
+  meetingDelivery?: import("@/lib/meetings/contact-domain").MeetingDeliverySummary | null
   contactMeetingId?: string | null
   id: string
   escolaId: string
@@ -296,6 +298,8 @@ export function mapAcaoRow(
   return {
     id: String(r.id),
     contactMeetingId: (r.contact_meeting_id as string) ?? null,
+    meetingUrl: (r.meeting_url as string) ?? null,
+    meetingDelivery: (r.meeting_delivery as AcaoEscola["meetingDelivery"]) ?? null,
     escolaId: String(r.school_id),
     escolaNome: (r.school_name as string) ?? undefined,
     data: String(r.action_date ?? ""),

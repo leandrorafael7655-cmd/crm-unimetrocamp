@@ -29,6 +29,7 @@ export const actions = schools.map((e, i) => ({
   objetivo: "Apresentar oportunidades de graduação", participantes: [{ userId: "hs", nome: "Consultora HS" }],
   primaryOwnerId: "hs", resultados: [{ serie: "3em", turmas: 3, impactados: 100, leads: 70, inscricoesSupervest: 40 }],
 }))
+Object.assign(actions[0],{contactMeetingId:actions[0].id,meetingUrl:"https://teams.microsoft.com/school-agenda-test",meetingDelivery:{status:"partial",operation:"REQUEST",event_sequence:1,label:"Envio parcial · 1/2",sent:1,total:2}})
 export const cycle = { id: "sv", name: "SuperVestibular 2027", edition: "2027", status: "ativo",
   registrationsTarget: 7500, eventAt: "2026-10-24T17:00:00Z" }
 export const goals = [{

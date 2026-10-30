@@ -1,5 +1,7 @@
 "use client";
 
+import { CompanyMeetingAgenda } from "@/components/meetings/company-meeting-agenda";
+
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { ResponsiveShell } from "@/components/navigation/responsive-shell";
@@ -1580,6 +1582,7 @@ function Agenda({ empresas, aoAbrir }) {
   ];
   return (
     <div className="space-y-4">
+      <CompanyMeetingAgenda onOpen={aoAbrir} />
       {grupos.map((g) => (
         <section key={g.titulo}>
           <h3 className="mb-1.5 flex items-baseline gap-2 text-sm font-semibold text-slate-900">

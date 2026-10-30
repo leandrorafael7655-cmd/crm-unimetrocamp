@@ -271,6 +271,11 @@ try {
           for(const label of ["Painel","De quem é?","Todas as empresas","Agenda / Follow-ups","Pipeline B2B","Convênios","Gestão de usuários"]) {
             await selectB2B(label, width)
             await shellStates("B2B "+label+" "+width,width)
+            if(label === "Agenda / Follow-ups") {
+              const meetings=page.getByRole("region",{name:"Reuniões B2B com convites",exact:true})
+              await meetings.getByText("Envio parcial · 1/2",{exact:true}).waitFor()
+              assert.equal(await meetings.getByRole("link",{name:"Entrar na reunião (Teams)",exact:true}).getAttribute("href"),"https://teams.microsoft.com/agenda-test")
+            }
           }
           await selectB2B("Todas as empresas", width)
           await page.getByRole("checkbox",{name:"Arquivadas",exact:true}).check()
@@ -302,6 +307,11 @@ try {
           await dialog.getByText("Falha controlada ao salvar escola.",{exact:true}).waitFor()
           assert.equal(await nameInput.inputValue(),"Escola fictícia com dados preservados","School fields must survive failed save")
           await dialogCheck("School form after save error "+width)
+        }
+        if(name==="agenda") {
+          await page.getByText("Envio parcial · 1/2",{exact:true}).waitFor()
+          assert.equal(await page.getByRole("link",{name:"Entrar na reunião (Teams)",exact:true}).getAttribute("href"),"https://teams.microsoft.com/school-agenda-test")
+          assert.equal(await page.locator('[data-school-action-id="action-0"]').count(),1,"One school action per meeting")
         }
         if(name==="escola") {
           for(const text of ["Editar escola","Estimar","Novo"]) {
@@ -427,7 +437,7 @@ try {
           await check(name+" contact selection "+width)
           if(width===375 || width===1366) await page.screenshot({path:`responsive-results/${engine}-${name}-${width}.png`,fullPage:true})
           await form.getByRole("button",{name:"Salvar reunião",exact:true}).click()
-          await panel.getByRole("heading",{name:"TESTE convite com Teams",exact:true}).waitFor()
+          await panel.getByRole("heading",{name:"UniConecta | TESTE convite com Teams | Ficha fictícia",exact:true}).waitFor()
           await panel.getByText("Histórico por destinatário",{exact:true}).click()
           assert.equal(await panel.getByRole("link",{name:"Entrar na reunião (Teams)",exact:true}).getAttribute("href"),"https://teams.microsoft.com/test?context=a&b=c")
           await check(name+" recipient history "+width)
@@ -439,10 +449,11 @@ try {
           await form.getByRole("button",{name:"Salvar remarcação",exact:true}).click()
           await panel.getByText(/11:00–11:15/).waitFor()
           await panel.getByRole("button",{name:"Cancelar reunião",exact:true}).click()
+          assert.equal(await panel.getByRole("alertdialog").getByText("Contato com e-mail",{exact:false}).count(),1)
           await check(name+" cancellation confirmation "+width)
           await panel.getByRole("button",{name:"Confirmar cancelamento",exact:true}).click()
           await panel.getByText(/Cancelada/,{exact:false}).first().waitFor()
-          assert.equal(await panel.getByRole("heading",{name:"TESTE convite com Teams",exact:true}).count(),1)
+          assert.equal(await panel.getByRole("heading",{name:"UniConecta | TESTE convite com Teams | Ficha fictícia",exact:true}).count(),1)
           await check(name+" cancelled history "+width)
         }
         if(name==="acoes-empresa") {

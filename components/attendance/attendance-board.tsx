@@ -71,12 +71,13 @@ function Modal({ title, children, onClose, wide = false }: { title: string; chil
 
 function InviteBadge({ invite, status }: { invite?: any; status: string }) {
   if (status === "draft") return <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500">Rascunho</span>
-  if (status === "cancelled") return <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-medium text-rose-700">Cancelado</span>
+  if (status === "cancelled" && !invite) return <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-medium text-rose-700">Cancelado</span>
   if (!invite) return <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700">Envio pendente</span>
   const operation = invite.operation
   const st = invite.status
-  let label = "Pendente"
+  let label = invite.label || "Pendente"
   let cls = "bg-amber-50 text-amber-700"
+  if (st === "partial") { label = invite.label || "Envio parcial"; cls = "bg-amber-50 text-amber-800" }
   if (st === "processing") { label = "Em processamento"; cls = "bg-sky-50 text-sky-700" }
   if (st === "sent_provider") { label = operation === "CANCEL" ? "Cancelamento enviado" : "Enviado · aguardando resposta"; cls = "bg-emerald-50 text-emerald-700" }
   if (st === "delivery_unknown") { label = "Entrega incerta"; cls = "bg-rose-50 text-rose-700" }

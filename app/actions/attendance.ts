@@ -34,6 +34,7 @@ import { mapSchoolAgendaOccurrence, matchesAgendaFilters, saoPauloToday } from "
 import { isUuid } from "@/lib/school-capture/domain"
 import { companyAgendaItem, companyActionAgendaItem } from "@/lib/domain/company-agenda"
 import { readAllRows } from "@/lib/data/pagination"
+import { summarizeMeetingDeliveries } from "@/lib/meetings/contact-domain"
 import { calendarEmailStatus } from "@/lib/calendar/smtp-config"
 import { processSmtpQueue } from "@/lib/calendar/smtp-worker"
 
@@ -488,17 +489,14 @@ export async function getAttendanceData(input?: { start?: string; end?: string; 
       .in("meeting_activity_id", sourceIds).order("event_sequence", { ascending: false }),
   ]) : [{ data: [], error: null }, { data: [], error: null }]
   if (contactJobs.error || legacyMeetingJobs.error) throw new Error("Não foi possível conferir o envio das reuniões.")
-  const meetingInvite = new Map<string, any>()
+  const jobsByMeeting = new Map<string, any[]>()
   for (const job of [...(contactJobs.data || []), ...(legacyMeetingJobs.data || [])]) {
     const id = (job as any).meeting_id || (job as any).meeting_activity_id
     if ((job as any).provider === "superseded") continue
-    const previous = meetingInvite.get(id)
-    // A partial failure/pending delivery must not appear as fully sent.
-    const rank = (value: any) => (value.status === "failed" || value.status === "delivery_unknown") ? 3 : value.status === "pending" || value.status === "processing" ? 2 : value.status === "sent_provider" ? 1 : 0
-    if (!previous || previous.event_sequence < job.event_sequence || (previous.event_sequence === job.event_sequence && rank(previous) < rank(job))) meetingInvite.set(id, job)
+    jobsByMeeting.set(id, [...(jobsByMeeting.get(id) || []), job])
   }
   for (const occurrence of [...commercialOccurrences, ...schoolOccurrences]) {
-    Object.assign(occurrence, { invite: meetingInvite.get(occurrence.id) || null })
+    Object.assign(occurrence, { invite: summarizeMeetingDeliveries(jobsByMeeting.get(occurrence.id) || []) })
   }
   const providerStatus = await getCalendarProviderStatus(false)
   const schoolOptions = [...new Map(schoolOccurrences.map((o) => [o.schoolId, { id: o.schoolId, name: o.schoolName }])).values()]

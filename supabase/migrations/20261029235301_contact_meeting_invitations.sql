@@ -236,7 +236,7 @@ begin
     insert into public.contact_meeting_jobs(meeting_id,recipient_email,operation,event_sequence,payload)
     values(p_id,person->>'email',operation,m.revision-1,jsonb_build_object('event_uid',m.event_uid,
       'title','UniConecta | '||m.subject||' | '||m.entity_name,'description',description_text,
-      'start_at',m.start_at,'end_at',m.end_at,'location',case when m.mode='online' then m.meeting_url else concat_ws(E'\n',nullif(m.location,''),m.meeting_url) end,
+      'start_at',m.start_at,'end_at',m.end_at,'location',case when m.mode='online' then m.meeting_url else nullif(m.location,'') end,
       'meeting_url',m.meeting_url,'organizer',m.organizer_email,'recipient',person,
       -- Separate messages disclose no other attendee addresses.
       'attendees',jsonb_build_array(person))) on conflict do nothing;

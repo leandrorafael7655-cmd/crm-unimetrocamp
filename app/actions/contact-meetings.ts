@@ -20,22 +20,23 @@ async function context(entity: ContactMeetingEntity, id: string, write = false) 
   if (!can(actor.role, entity === "company" ? "b2b.read.all" : "hs.read")) throw new Error("Acesso não autorizado.")
   const client = await createClient()
   const { data, error } = await client.from(entity === "company" ? "companies" : "schools")
-    .select(entity === "company" ? "id,owner_id,archived_at" : "id,archived_at").eq("id", id).maybeSingle()
+    .select(entity === "company" ? "id,owner_id,archived_at,nome_fantasia,razao_social" : "id,archived_at,name").eq("id", id).maybeSingle()
   if (error || !data) throw new Error("Ficha não encontrada.")
   const writable = can(actor.role, entity === "company" ? "b2b.write" : "hs.capture.write") &&
     (entity === "school" || isManagerRole(actor.role) || (data as unknown as { owner_id: string }).owner_id === actor.id)
   if (write && !writable) throw new Error("Você não pode alterar reuniões desta ficha.")
-  return { actor, client, writable, archived: !!(data as unknown as { archived_at: string | null }).archived_at }
+  const named = data as unknown as { nome_fantasia?: string; razao_social?: string; name?: string; archived_at: string | null }
+  return { actor, client, writable, archived: !!named.archived_at, entityName: named.nome_fantasia || named.razao_social || named.name || "Ficha" }
 }
 
 export async function loadContactMeetings(entity: ContactMeetingEntity, entityId: string) {
   try {
-    const { actor, client, writable, archived } = await context(entity, entityId)
+    const { actor, client, writable, archived, entityName } = await context(entity, entityId)
     const column = entity === "company" ? "company_id" : "school_id"
     const [contacts, meetings] = await Promise.all([
       client.from(entity === "company" ? "company_contacts" : "school_contacts")
         .select(entity === "company" ? "id,nome,email" : "id,name,email").eq(column, entityId),
-      client.from("contact_meetings").select("*,contact_meeting_recipients(*),contact_meeting_jobs(id,meeting_id,recipient_email,operation,event_sequence,status,last_error,sent_at)")
+      client.from("contact_meetings").select("*,contact_meeting_recipients(*),contact_meeting_jobs(id,meeting_id,recipient_email,operation,event_sequence,status,last_error,sent_at,attempts,created_at,updated_at)")
         .eq(column, entityId).order("start_at", { ascending: false }),
     ])
     if (contacts.error || meetings.error) throw new Error("Não foi possível carregar os convites. Confira a migração do banco.")
@@ -43,7 +44,21 @@ export async function loadContactMeetings(entity: ContactMeetingEntity, entityId
       const contact = row as unknown as { id: string; nome?: string; name?: string; email: string | null }
       return { id: contact.id, name: contact.nome || contact.name || "Contato", email: contact.email }
     }) as MeetingContact[], meetings: meetings.data as ContactMeeting[],
-    actor: { id: actor.id, name: actor.full_name, email: actor.email }, writable, archived, paused: calendarEmailStatus().disabled }
+    actor: { id: actor.id, name: actor.full_name, email: actor.email }, writable, archived, entityName, paused: calendarEmailStatus().disabled }
+  } catch (error) { return { ok: false as const, message: errorMessage(error) } }
+}
+
+export async function loadCompanyMeetingAgenda() {
+  try {
+    const actor = await requireActor()
+    if (!can(actor.role, "b2b.read.all")) throw new Error("Acesso não autorizado.")
+    const client = await createClient()
+    const { data, error } = await client.from("contact_meetings")
+      .select("*,contact_meeting_recipients(*),contact_meeting_jobs(id,meeting_id,recipient_email,operation,event_sequence,status,last_error,sent_at,attempts,created_at,updated_at)")
+      .not("company_id", "is", null).gte("start_at", new Date(Date.now() - 86400000).toISOString())
+      .lte("start_at", new Date(Date.now() + 90 * 86400000).toISOString()).order("start_at").limit(250)
+    if (error) throw new Error("Não foi possível carregar os convites da agenda.")
+    return { ok: true as const, meetings: data as ContactMeeting[] }
   } catch (error) { return { ok: false as const, message: errorMessage(error) } }
 }
 

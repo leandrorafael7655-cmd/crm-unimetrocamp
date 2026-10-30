@@ -11,6 +11,7 @@ export type ContactDelivery = {
   id: string; meeting_id: string; recipient_email: string; operation: "REQUEST" | "CANCEL"
   event_sequence: number; status: "pending" | "processing" | "sent_provider" | "failed" | "superseded" | "delivery_unknown"
   last_error: string | null; sent_at: string | null
+  attempts?: number; created_at?: string; updated_at?: string
 }
 export type ContactRecipient = {
   id: string; kind: "consultant" | "contact"; contact_id: string | null; name: string; email: string
@@ -39,7 +40,7 @@ export function validateContactMeeting(input: ContactMeetingInput) {
     calendarProvider: "email", participants: [], meetingUrl: url })
   if (/^UniConecta\s*\|/i.test(input.title.trim()))
     throw new Error("Informe só o assunto, sem o prefixo UniConecta ou o nome da ficha.")
-  return { ...times, meeting_url: url || null }
+  return { ...times, meeting_url: url ? new URL(url).href : null }
 }
 
 export function selectedContacts(contacts: MeetingContact[], ids: string[]) {
@@ -63,4 +64,26 @@ export function deliveryLabel(job?: Pick<ContactDelivery, "status" | "operation"
 
 export function latestDelivery(jobs: ContactDelivery[], email: string) {
   return jobs.filter(j => j.recipient_email === email).sort((a, b) => b.event_sequence - a.event_sequence)[0]
+}
+
+export type MeetingDeliverySummary = { status: string; operation: string; event_sequence: number; label: string; sent: number; total: number }
+export function summarizeMeetingDeliveries(jobs: Pick<ContactDelivery, "status" | "operation" | "event_sequence">[]): MeetingDeliverySummary | null {
+  if (!jobs.length) return null
+  const sequence = Math.max(...jobs.map(job => job.event_sequence))
+  const current = jobs.filter(job => job.event_sequence === sequence)
+  const sent = current.filter(job => job.status === "sent_provider").length
+  const operation = current.some(job => job.operation === "CANCEL") ? "CANCEL" : "REQUEST"
+  const status = current.some(job => job.status === "delivery_unknown") ? "delivery_unknown"
+    : sent && sent < current.length ? "partial"
+    : current.some(job => job.status === "failed") ? "failed"
+    : current.some(job => job.status === "processing") ? "processing"
+    : current.every(job => job.status === "sent_provider") ? "sent_provider"
+    : current.every(job => job.status === "superseded") ? "superseded" : "pending"
+  const label = status === "partial" ? `Envio parcial · ${sent}/${current.length}`
+    : deliveryLabel({ status: status as ContactDelivery["status"], operation })
+  return { status, operation, event_sequence: sequence, label, sent, total: current.length }
+}
+
+export function contactMeetingTitle(meeting: Pick<ContactMeeting, "subject" | "entity_name">) {
+  return `UniConecta | ${meeting.subject} | ${meeting.entity_name}`
 }

@@ -68,7 +68,7 @@ describe("Contact invitations against full audited PostgreSQL + all 12 migration
   it("preserves a presencial address alongside an optional Teams URL in the queued invitation", async () => {
     await save("create", 0, [], "school", { ...data(), mode: "presencial", location: "Sala presencial fictícia" })
     const payload = (await db.query<{ payload: any }>("select payload from contact_meeting_jobs")).rows[0].payload
-    expect(payload.location).toBe("Sala presencial fictícia\nhttps://teams.microsoft.com/test")
+    expect(payload.location).toBe("Sala presencial fictícia")
     expect(payload.meeting_url).toBe("https://teams.microsoft.com/test")
     expect((await db.query("select location from school_actions")).rows).toEqual([{ location: "Sala presencial fictícia" }])
   })

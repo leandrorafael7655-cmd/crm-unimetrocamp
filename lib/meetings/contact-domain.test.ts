@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { deliveryLabel, selectedContacts, validateContactMeeting, type ContactMeetingInput } from "./contact-domain"
+import { deliveryLabel, selectedContacts, summarizeMeetingDeliveries, validateContactMeeting, type ContactMeetingInput } from "./contact-domain"
 import { meetingEmail } from "@/supabase/functions/send-calendar-invites/email-meetings"
 
 const input: ContactMeetingInput = { id: "10000000-0000-4000-8000-000000000001", entity: "company",
@@ -10,6 +10,7 @@ const input: ContactMeetingInput = { id: "10000000-0000-4000-8000-000000000001",
 describe("Contact meeting input and Outlook messages", () => {
   it("allows no contact, requires HTTPS online, validates optional presencial link too", () => {
     expect(validateContactMeeting(input).start_at).toBe("2098-11-03T13:00:00.000Z")
+    expect(validateContactMeeting({ ...input, meetingUrl: "HTTPS://teams.microsoft.com/test" }).meeting_url).toBe("https://teams.microsoft.com/test")
     expect(validateContactMeeting({ ...input, mode: "presencial", location: "Sala 1", meetingUrl: "" }).meeting_url).toBeNull()
     for (const url of ["", "http://teams.microsoft.com/test", "javascript:alert(1)", "https://user:password@example.invalid/x"]) {
       expect(() => validateContactMeeting({ ...input, meetingUrl: url })).toThrow(/HTTPS/)
@@ -41,5 +42,15 @@ describe("Contact meeting input and Outlook messages", () => {
     expect(deliveryLabel({ status: "sent_provider", operation: "REQUEST" })).toBe("Enviado · aguardando resposta")
     expect(deliveryLabel({ status: "sent_provider", operation: "CANCEL" })).toBe("Cancelamento enviado")
     expect(deliveryLabel()).toBe("Envio pendente")
+  })
+  it("summarizes only the latest sequence and distinguishes partial delivery and cancellation", () => {
+    expect(summarizeMeetingDeliveries([
+      {status:"sent_provider",operation:"REQUEST",event_sequence:0},
+      {status:"sent_provider",operation:"REQUEST",event_sequence:1},
+      {status:"failed",operation:"REQUEST",event_sequence:1},
+    ])).toMatchObject({status:"partial",sent:1,total:2,label:"Envio parcial · 1/2"})
+    expect(summarizeMeetingDeliveries([{status:"pending",operation:"CANCEL",event_sequence:2}])?.label).toBe("Cancelamento pendente")
+    expect(summarizeMeetingDeliveries([{status:"sent_provider",operation:"CANCEL",event_sequence:2}])?.label).toBe("Cancelamento enviado")
+    expect(summarizeMeetingDeliveries([])).toBeNull()
   })
 })

@@ -74,12 +74,12 @@ export default async function AgendaPage({
               </div>
               <div className="space-y-2">
                 {grupos.get(data)!.map((a) => (
-                  <Link key={a.id} data-school-action-id={a.id} href={`/high-school/escolas/${a.escolaId}`}>
+                  <div key={a.id} data-school-action-id={a.id}>
                     <Card className="flex flex-wrap items-center justify-between gap-3 p-3 transition hover:border-brand/40">
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-medium text-slate-800">
+                        <Link href={`/high-school/escolas/${a.escolaId}${a.contactMeetingId ? "#reunioes-convites" : ""}`} className="block truncate text-sm font-medium text-slate-800 underline-offset-2 hover:underline">
                           {a.escolaNome ?? "Escola"}
-                        </p>
+                        </Link>
                         <p className="text-xs text-slate-500">
                           {a.tipo}
                           {a.inicio ? ` · ${a.inicio.slice(0, 5)}${a.fim ? `–${a.fim.slice(0, 5)}` : ""}` : ""}
@@ -88,12 +88,14 @@ export default async function AgendaPage({
                         <p className="mt-1 text-xs text-slate-600">Local: {a.local || "Consultar a escola"}</p>
                         <p className="mt-1 text-xs text-slate-600">Participantes: {[a.consultorPrincipalNome, ...a.participantes.filter(p => p.userId !== a.primaryOwnerId).map(p => p.nome)].filter(Boolean).join(", ") || "Não informados"}</p>
                         <p className="mt-1 text-xs text-slate-500">{cycles.find(c=>c.id===a.supervestCicloId)?.name??"Sem edição vinculada"} · Fuso de São Paulo</p>
+                        {a.contactMeetingId && <p className="mt-1 text-xs font-medium">{a.meetingDelivery?.label || "Consulte o histórico com o responsável"}</p>}
+                        {a.meetingUrl && <a href={a.meetingUrl} target="_blank" rel="noreferrer" className="mt-1 block break-all text-xs text-brand underline">Entrar na reunião (Teams)</a>}
                       </div>
                       <Chip className={CORES_STATUS_ACAO[a.status]}>
                         <span className="capitalize">{a.status}</span>
                       </Chip>
                     </Card>
-                  </Link>
+                  </div>
                 ))}
               </div>
             </div>
