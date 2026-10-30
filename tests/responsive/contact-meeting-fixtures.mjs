@@ -1,6 +1,13 @@
 // UI-only fixtures; PostgreSQL invariants and real message rendering have separate tests.
 let meetings = []
 export function resetContactMeetingFixtures() { meetings = [] }
+export function seedEndedContactMeetingFixture() {
+  const template=meetings[0]
+  if(!template) throw new Error("Create the synthetic meeting before seeding its finished state")
+  meetings=[{...template,id:"ended-fixture",subject:"TESTE reunião encerrada",status:"realizada",
+    start_at:"2020-11-03T13:00:00Z",end_at:"2020-11-03T13:15:00Z",revision:1,write_version:2,
+    contact_meeting_jobs:[{id:"ended-job",recipient_email:email,event_sequence:0,operation:"REQUEST",status:"sent_provider"}]}]
+}
 const email = "rafa@example.test"
 export const contactMeetingMocks = {
   loadCompanyMeetingAgenda: async () => ({ok:true,meetings:[{
@@ -35,6 +42,7 @@ export const contactMeetingMocks = {
   recordContactMeetingResult: async (_entity, _entityId, id, version, status) => {
     const meeting=meetings.find(m=>m.id===id)
     if(meeting.write_version!==version) return {ok:false,message:"Reunião alterada. Atualize a ficha."}
+    if(["realizada","nao_compareceu"].includes(meeting.status) && status==="confirmada") return {ok:false,message:"Reunião encerrada: corrija apenas entre Realizada e Não compareceu."}
     if(status!=="confirmada" && Date.parse(meeting.start_at)>Date.now()) return {ok:false,message:"Registre após o início."}
     meeting.status=status; meeting.write_version++; meeting.result_recorded_at=new Date().toISOString()
     return {ok:true,message:"Resultado registrado no CRM. Nenhum e-mail enviado."}

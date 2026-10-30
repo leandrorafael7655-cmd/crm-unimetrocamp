@@ -146,8 +146,9 @@ export function ContactMeetings({ entity, entityId, onChanged }: {
         <h4 className="break-words font-semibold">Resultado · {result.meeting.subject}</h4>
         <p className="text-xs text-slate-600">Atualiza a atividade e os indicadores do CRM. Nenhum e-mail será enviado. A sequência e os destinatários do convite permanecem iguais.</p>
         <label className="block">Resultado<select className={field} value={result.status} onChange={event => setResult({ ...result, status: event.target.value as ContactMeetingResult })}>
-          {CONTACT_MEETING_RESULTS.map(status => <option key={status} value={status} disabled={status !== "confirmada" && !result.canFinish}>{CONTACT_MEETING_STATUS_LABELS[status]}</option>)}
+          {CONTACT_MEETING_RESULTS.map(status => <option key={status} value={status} disabled={(status === "confirmada" && ["realizada", "nao_compareceu"].includes(result.meeting.status)) || (status !== "confirmada" && !result.canFinish)}>{CONTACT_MEETING_STATUS_LABELS[status]}</option>)}
         </select></label>
+        {["realizada", "nao_compareceu"].includes(result.meeting.status) && <p className="text-xs text-slate-600">Reunião encerrada: corrija apenas entre Realizada e Não compareceu.</p>}
         {!result.canFinish && <p className="text-xs text-slate-500">Realização e ausência só podem ser registradas após o início da reunião. Depois do início, reabra este formulário para atualizar as opções.</p>}
         <div className="flex flex-wrap gap-2"><button className={primary} disabled={busy}>Salvar resultado</button><button type="button" className={button} disabled={busy} onClick={() => setResult(null)}>Fechar resultado</button></div>
       </form>}

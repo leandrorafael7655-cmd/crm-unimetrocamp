@@ -478,6 +478,28 @@ try {
           await panel.getByText(/Cancelada/,{exact:false}).first().waitFor()
           assert.equal(await panel.getByRole("heading",{name:"UniConecta | TESTE convite com Teams | Ficha fictícia",exact:true}).count(),1)
           await check(name+" cancelled history "+width)
+          await page.evaluate(()=>window.seedEndedContactMeetingFixture())
+          await panel.getByRole("button",{name:"Atualizar reuniões",exact:true}).click()
+          await panel.getByRole("heading",{name:"UniConecta | TESTE reunião encerrada | Ficha fictícia",exact:true}).waitFor()
+          for(const [outcome,label] of [["nao_compareceu","Não compareceu"],["realizada","Realizada"]]) {
+            assert.equal(await panel.getByRole("button",{name:"Remarcar",exact:true}).count(),0)
+            assert.equal(await panel.getByRole("button",{name:"Cancelar reunião",exact:true}).count(),0)
+            await panel.getByRole("button",{name:"Registrar resultado",exact:true}).click()
+            const correction=panel.getByRole("form",{name:"Registrar resultado da reunião",exact:true})
+            assert.equal(await correction.getByRole("option",{name:"Confirmada",exact:true}).evaluate(option=>option.disabled),true)
+            assert.equal(await correction.getByRole("option",{name:"Realizada",exact:true}).evaluate(option=>option.disabled),false)
+            assert.equal(await correction.getByRole("option",{name:"Não compareceu",exact:true}).evaluate(option=>option.disabled),false)
+            await correction.getByRole("combobox").selectOption(outcome)
+            await check(name+" correct ended outcome "+outcome+" "+width)
+            await correction.getByRole("button",{name:"Salvar resultado",exact:true}).click()
+            await panel.getByText(new RegExp("· "+label+"$")).waitFor()
+            const history=panel.locator('[data-contact-meeting-id="ended-fixture"]')
+            if(!(await history.locator("details").evaluate(el=>el.open))) await history.getByText("Histórico por destinatário",{exact:true}).click()
+            assert.equal(await history.getByText(/REQUEST · sequência 0/).count(),2)
+            assert.equal(await history.getByText(/sequência [1-9]/).count(),0)
+            assert.equal(await panel.getByRole("button",{name:"Remarcar",exact:true}).count(),0)
+            assert.equal(await panel.getByRole("button",{name:"Cancelar reunião",exact:true}).count(),0)
+          }
         }
         if(name==="acoes-empresa") {
           await page.getByRole("button",{name:"Registrar ação",exact:true}).click()

@@ -15,7 +15,7 @@ Telas alteradas:
 
 O arquivo integral a revisar é [`20261029235301_contact_meeting_invitations.sql`](../supabase/migrations/20261029235301_contact_meeting_invitations.sql). **Não aplicado em produção.** Executar apenas após aprovação explícita deste arquivo e do seu SHA/checksum final.
 
-SHA-256 do arquivo SQL: `7273e0bb6f3c8f486577c6576c4e43df1a2bd9db732930d6537a300ab0996648`.
+SHA-256 do arquivo SQL: `5738ea79235403dd260ccd6b2fe7b98cf34412a4554194b7fc8682762c6bc0d2`.
 
 | Alteração | Impacto |
 |---|---|
@@ -49,7 +49,7 @@ Não há `DELETE`, `UPDATE` ou `TRUNCATE` executado sobre registros existentes a
 - Link HTTPS validado tanto para Online (obrigatório) quanto para Presencial (opcional). Ele aparece no HTML clicável, no texto/descrição, LOCATION e URL do `.ics`; em Presencial, LOCATION preserva o endereço físico e URL guarda o link opcional. Nenhum servidor busca o link.
 - UID e remetente estáveis; SEQUENCE 0 no primeiro convite, depois 1, 2… Atualização/cancelamento preservam destinatários e endereços. Para trocar a lista, cancele e crie outra reunião.
 - A limitação de destinatários aparece no formulário desde a criação, além da remarcação. Resultado não troca lista/endereço nem reabre/cancela o evento do Outlook. A confirmação é manual no CRM, sem importar RSVP.
-- Resultado incrementa apenas `write_version`; formulário desatualizado não sobrescreve resultado/remarcação. A sequência ICS, payloads, destinatários e ambas as filas ficam idênticos antes/depois. Realização/ausência exigem que a reunião já tenha iniciado; reunião cancelada não aceita resultado. Correções posteriores de resultado são permitidas, como no status legado, sem duplicar a origem ou as contagens.
+- Resultado incrementa apenas `write_version`; formulário desatualizado não sobrescreve resultado/remarcação. A sequência ICS, payloads, destinatários e ambas as filas ficam idênticos antes/depois. Realização/ausência exigem que a reunião já tenha iniciado; reunião cancelada não aceita resultado. Depois de Realizada ou Não compareceu, só é permitido corrigir entre esses dois resultados, sem duplicar a origem ou as contagens. Confirmada fica desabilitada na tela e é recusada no RPC com “Reunião encerrada: corrija apenas entre Realizada e Não compareceu.”; Remarcar/Cancelar não voltam a aparecer.
 - Fila persistida mesmo com envio pausado. O worker verifica a variável antes de reservar jobs ou abrir SMTP. Com `CALENDAR_TEST_USER_ID`, exige o perfil correto **e todos os endereços iguais ao e-mail desse perfil**.
 - Novos agendamentos começam com envio individual bloqueado. Alterar só a variável global não libera essa fila. O teste real terá aprovação dos IDs exatos primeiro.
 - Ao alterar a reunião, REQUESTs antigos ainda não enviados ficam `superseded` **somente na fila nova**. Requisições antigas nunca voltam a sair após o cancelamento. Histórico enviado permanece.
@@ -69,7 +69,7 @@ O resultado atualiza a **mesma linha** `activities` (empresa) ou `school_actions
 | Escolas: confirmação e agendas | A mesma ação fica Confirmada e deixa de disparar o alerta “ação amanhã ainda não confirmada”. Realizada/Não compareceu encerram a reserva de horário conforme os triggers de reserva; o convite não é reenviado por registrar resultado. |
 | Escolas: leads, inscrições SuperVest, conversão, participação/divulgação por edição e relacionamento | Nenhuma quantidade, série, participação em divulgação, edição ou etapa de relacionamento é presumida. Reunião institucional nova não exige nem recebe edição SuperVest automaticamente. Resultados numéricos e divulgação seguem os lançamentos próprios. A reunião continua no histórico geral da ficha/agenda ao trocar a edição ativa. [Painel HS](../app/high-school/page.tsx), [captação por edição](../lib/school-capture/domain.ts). |
 
-Os testes comparam os efeitos dos três resultados com as escritas nativas anteriores (update B2B e RPC atômico escolar), usando o mesmo banco isolado, origem e savepoint de referência. Conferem metas, flags, funil/campos comerciais, view/ciclo, histórico de relacionamento, última ação escolar e igualdade integral das duas filas. Conferem também rollback completo se houver falha após a escrita da origem, concorrência e correção de resultado sem dupla contagem.
+Os testes comparam os efeitos dos três resultados com as escritas nativas anteriores (update B2B e RPC atômico escolar), usando o mesmo banco isolado, origem e savepoint de referência. Conferem metas, flags, funil/campos comerciais, view/ciclo, histórico de relacionamento, última ação escolar e igualdade integral das duas filas. Conferem também rollback completo se houver falha após a escrita da origem, concorrência, recusa de Realizada/Não compareceu → Confirmada e correção entre resultados encerrados sem dupla contagem nem novo envio.
 
 Transferir a carteira de uma empresa, arquivar/reativar empresa ou escola, trocar a referência de responsável da escola ou configurar outra edição ativa do SuperVestibular não troca o responsável/destinatários de um convite existente. Os testes executam os RPCs reais de transferência, arquivamento e configuração de edição, mais a atualização autenticada do responsável escolar, com reunião nova vinculada. Comparam IDs, origem, destinatários e jobs. Não movem uma ação entre escolas/edições, operação que o guard anterior já proíbe.
 

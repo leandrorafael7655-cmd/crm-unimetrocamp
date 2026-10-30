@@ -163,6 +163,9 @@ begin
     if p_operation='result' then
       outcome:=p_data->>'status';
       if outcome is null or outcome not in ('confirmada','realizada','nao_compareceu') then raise exception 'Resultado inválido.'; end if;
+      if m.status in ('realizada','nao_compareceu') and outcome='confirmada' then
+        raise exception 'Reunião encerrada: corrija apenas entre Realizada e Não compareceu.';
+      end if;
       if outcome in ('realizada','nao_compareceu') and m.start_at>now() then
         raise exception 'Registre a realização ou ausência após o início da reunião.';
       end if;

@@ -30,7 +30,7 @@ import { SetupForm } from "../../components/auth/setup-form"
 import { AuthShell } from "../../components/auth/auth-shell"
 import { GerenciarUsuarios } from "../../components/team/gerenciar-usuarios"
 import { ContactMeetings } from "../../components/meetings/contact-meetings"
-import { resetContactMeetingFixtures } from "./contact-meeting-fixtures.mjs"
+import { resetContactMeetingFixtures, seedEndedContactMeetingFixture } from "./contact-meeting-fixtures.mjs"
 import { CompanyMeetings } from "../../components/b2b/company-meetings"
 import { MapView } from "../../components/maps/map-view"
 import { SchoolCapture } from "../../components/high-school/school-capture"
@@ -46,6 +46,7 @@ const paths = { dashboard: "/dashboard", hs: "/high-school", escolas: "/high-sch
   metas: "/gestao/metas", supervest: "/supervest", atendimento: "/atendimento", "minha-agenda": "/atendimento/minha-agenda",
   rotas: "/mapa/rotas", mapa: "/mapa", configuracoes: "/gestao/configuracoes" }
 const root = createRoot(document.getElementById("root"))
+window.seedEndedContactMeetingFixture=seedEndedContactMeetingFixture
 window.renderFixture = async (name, role = "gerente") => {
   resetContactMeetingFixtures()
   resetCaptureFixtures()
