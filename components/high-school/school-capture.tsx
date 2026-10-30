@@ -60,6 +60,7 @@ import {
   STATUS_ACAO_HS,
   TIPOS_ACAO_HS,
   CORES_STATUS_ACAO,
+  ROTULOS_STATUS_ACAO,
   CORES_CLASSIFICACAO_HS,
   type AcaoEscola,
 } from "@/lib/domain/high-school"
@@ -621,7 +622,7 @@ export function SchoolCapture({
                     <div className="flex flex-wrap gap-2">
                       {editionTag(entry.action.supervestCicloId)}
                       <Chip className={CORES_STATUS_ACAO[entry.action.status]}>
-                        {entry.action.status}
+                        {ROTULOS_STATUS_ACAO[entry.action.status]}
                       </Chip>
                     </div>
                   </div>

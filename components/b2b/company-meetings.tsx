@@ -531,11 +531,16 @@ export function CompanyMeetings({
                 Atualizar ficha
               </button>
             </div>
+            <p className="mb-2 text-xs text-slate-500">Reuniões novas: <a href="#reunioes-convites" className="text-violet-700 underline">registrar resultado ou alterar em Reuniões e convites</a>. As ações abaixo atendem somente aos agendamentos antigos.</p>
             {!data.meetings.length && (
               <p className="text-xs text-slate-500">Nenhuma reunião agendada para esta empresa.</p>
             )}
             <ol className="space-y-3">
               {data.meetings.map((row) => {
+                if (row.contact_meeting_id) return <li key={row.id} data-linked-meeting-redirect className="space-y-2 rounded-xl border border-slate-200 p-3 text-xs">
+                  <p className="break-words font-semibold">{row.title}</p>
+                  <a href="#reunioes-convites" className="text-violet-700 underline">Abrir no painel Reuniões e convites</a>
+                </li>
                 const mine = row.organizer_user_id === data.organizer.id,
                   ended = ["cancelada", "realizada", "nao_compareceu"].includes(row.status)
                 const participants = row.calendar_provider === "email" && row.email_queued_revision === 0

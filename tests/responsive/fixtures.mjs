@@ -61,7 +61,7 @@ export const contact = { id: "contact", company_id: "company", nome: "Responsáv
   cargo: "Diretor Comercial", email: "responsavel" + "contato".repeat(10) + "@example.test",
   telefone: "(19) 99999-9999", is_primary: true }
 export const meetingPanel = {
-  ok: true, canEdit: true, contacts: [contact], meetings: [], organizer: { id: actor.id, name: actor.full_name, email: actor.email },
+  ok: true, canEdit: true, contacts: [contact], meetings: [{id:"redirect-linked",contact_meeting_id:"redirect-linked",title:"Reunião nova da lista antiga"}], organizer: { id: actor.id, name: actor.full_name, email: actor.email },
   microsoft: { connected: false }, connection: { connected: false }, emailConfigured: true, emailInvitations: { configured: true },
 }
 export const mockQueries = {

@@ -1,6 +1,11 @@
 import { assertUuid, normalizeEmail, validEmail, validateMeetingInput } from "./domain"
 
 export type ContactMeetingEntity = "company" | "school"
+export const CONTACT_MEETING_RESULTS = ["confirmada", "realizada", "nao_compareceu"] as const
+export type ContactMeetingResult = typeof CONTACT_MEETING_RESULTS[number]
+export const CONTACT_MEETING_STATUS_LABELS = {
+  agendada: "Agendada", confirmada: "Confirmada", realizada: "Realizada", nao_compareceu: "Não compareceu", cancelada: "Cancelada",
+} as const
 export type ContactMeetingInput = {
   id: string; entity: ContactMeetingEntity; entityId: string; revision: number
   title: string; description: string; date: string; startTime: string; endTime: string
@@ -20,7 +25,8 @@ export type ContactMeeting = {
   id: string; company_id: string | null; school_id: string | null; entity_name: string
   responsible_user_id: string; subject: string; description: string; mode: "online" | "presencial"
   meeting_url: string | null; location: string; start_at: string; end_at: string
-  status: "agendada" | "cancelada"; revision: number; event_uid: string; delivery_enabled: boolean
+  status: keyof typeof CONTACT_MEETING_STATUS_LABELS; revision: number; write_version: number; event_uid: string; delivery_enabled: boolean
+  result_recorded_at?: string | null; result_recorded_by?: string | null
   contact_meeting_recipients: ContactRecipient[]; contact_meeting_jobs: ContactDelivery[]
 }
 

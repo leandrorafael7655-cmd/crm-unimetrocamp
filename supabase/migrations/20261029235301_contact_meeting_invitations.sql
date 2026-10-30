@@ -12,7 +12,10 @@ create table public.contact_meetings (
   meeting_url text check (meeting_url is null or (length(meeting_url)<=2000 and meeting_url ~ '^https://[^/@[:space:]]+([/:?#][^[:space:]]*)?$' and meeting_url !~ '^https://[^/]*@')),
   location text not null default '' check (length(location)<=300),
   start_at timestamptz not null, end_at timestamptz not null,
-  status text not null default 'agendada' check (status in ('agendada','cancelada')),
+  status text not null default 'agendada' check (status in ('agendada','confirmada','realizada','nao_compareceu','cancelada')),
+  -- Optimistic edit version is separate from the ICS sequence: recording an outcome never sends mail.
+  write_version integer not null default 1 check (write_version>=1),
+  result_recorded_at timestamptz, result_recorded_by uuid references public.profiles(id) on delete restrict,
   revision integer not null default 1 check (revision>=1),
   event_uid text not null unique default (gen_random_uuid()::text||'@uniconecta'),
   organizer_email text,
@@ -57,6 +60,10 @@ create unique index contact_meeting_jobs_processing on public.contact_meeting_jo
 
 alter table public.activities add column contact_meeting_id uuid unique references public.contact_meetings(id) on delete restrict;
 alter table public.school_actions add column contact_meeting_id uuid unique references public.contact_meetings(id) on delete restrict;
+-- Widen the existing CHECK only; no row is removed or rewritten.
+alter table public.school_actions drop constraint school_actions_status_check;
+alter table public.school_actions add constraint school_actions_status_check
+  check (status in ('agendada','confirmada','realizada','nao_compareceu','cancelada','reagendada'));
 
 alter table public.contact_meetings enable row level security;
 alter table public.contact_meeting_recipients enable row level security;
@@ -127,9 +134,9 @@ returns uuid language plpgsql security invoker set search_path='' as $$
 declare
   actor public.profiles; m public.contact_meetings; entity_name text; entity_owner uuid; archived timestamptz;
   c record; people jsonb; person jsonb; operation text; description_text text; same_contacts uuid[];
-  starts timestamptz; ends timestamptz;
+  starts timestamptz; ends timestamptz; outcome text; previous_gate text;
 begin
-  if p_operation not in ('create','update','cancel') or p_entity not in ('company','school') or p_revision<0 then raise exception 'Operação inválida.'; end if;
+  if p_operation is null or p_operation not in ('create','update','cancel','result') or p_entity is null or p_entity not in ('company','school') or p_revision is null or p_revision<0 then raise exception 'Operação inválida.'; end if;
   select * into actor from public.profiles where id=p_actor and active
     and not coalesce(must_change_password,false) and not coalesce(password_reset_pending,false);
   if not found then raise exception 'Consultor indisponível ou troca de senha pendente.'; end if;
@@ -137,7 +144,7 @@ begin
     if actor.role not in ('gerente','supervisor','consultor','consultor_b2b') then raise exception 'Sem permissão B2B.'; end if;
     select coalesce(nullif(nome_fantasia,''),razao_social),owner_id,archived_at into entity_name,entity_owner,archived
       from public.companies where id=p_entity_id for share;
-    if entity_name is null or (actor.role not in ('gerente','supervisor') and entity_owner is distinct from actor.id) then raise exception 'Empresa fora da sua carteira.'; end if;
+    if entity_name is null or (p_operation<>'result' and actor.role not in ('gerente','supervisor') and entity_owner is distinct from actor.id) then raise exception 'Empresa fora da sua carteira.'; end if;
   else
     if actor.role not in ('gerente','supervisor','consultor','consultor_b2b','high_school') then raise exception 'Sem permissão High School.'; end if;
     select name,archived_at into entity_name,archived from public.schools where id=p_entity_id for share;
@@ -151,8 +158,36 @@ begin
     if p_operation='create' then raise exception 'Reunião já registrada. Atualize a ficha.'; end if;
     if m.responsible_user_id<>p_actor or coalesce(m.company_id,m.school_id)<>p_entity_id or
       (m.company_id is not null)<>(p_entity='company') then raise exception 'Somente o consultor responsável pode alterar esta reunião.'; end if;
-    if m.revision<>p_revision then raise exception 'Reunião alterada. Atualize a ficha.'; end if;
+    if m.write_version<>p_revision then raise exception 'Reunião alterada. Atualize a ficha.'; end if;
     if m.status='cancelada' then raise exception 'Reunião já cancelada.'; end if;
+    if p_operation='result' then
+      outcome:=p_data->>'status';
+      if outcome is null or outcome not in ('confirmada','realizada','nao_compareceu') then raise exception 'Resultado inválido.'; end if;
+      if outcome in ('realizada','nao_compareceu') and m.start_at>now() then
+        raise exception 'Registre a realização ou ausência após o início da reunião.';
+      end if;
+      previous_gate:=current_setting('uniconecta.contact_meeting_write',true);
+      perform set_config('uniconecta.contact_meeting_write',p_id::text,true);
+      if p_entity='company' then
+        -- Same source/flags as setCompanyMeetingStatus; the existing relationship/audit triggers run.
+        update public.activities set status=outcome,conta_meta_semanal=(outcome='realizada'),
+          revision=revision+1,updated_at=now() where id=p_id and contact_meeting_id=p_id;
+      else
+        -- Same source and last-action recomputation as save_school_action_atomic.
+        update public.school_actions set status=outcome,updated_at=now() where id=p_id and contact_meeting_id=p_id;
+      end if;
+      if not found then raise exception 'Origem da reunião não encontrada.'; end if;
+      if p_entity='school' then
+        update public.schools set last_action_at=(select max(action_date) from public.school_actions
+          where school_id=p_entity_id and status='realizada') where id=p_entity_id;
+      end if;
+      update public.contact_meetings set status=outcome,write_version=write_version+1,
+        result_recorded_at=now(),result_recorded_by=p_actor,updated_at=now() where id=p_id;
+      perform set_config('uniconecta.contact_meeting_write',coalesce(previous_gate,''),true);
+      -- No worker, legacy queue, recipient change, payload rewrite or calendar revision here.
+      return p_id;
+    end if;
+    if m.status in ('realizada','nao_compareceu') then raise exception 'Esta reunião já foi encerrada.'; end if;
     if exists(select 1 from public.contact_meeting_jobs where meeting_id=p_id and status in ('processing','delivery_unknown')) then
       raise exception 'Envio em processamento ou sem confirmação. Confira o histórico antes de alterar a reunião.'; end if;
     select coalesce(array_agg(contact_id order by contact_id),'{}'::uuid[]) into same_contacts
@@ -169,7 +204,7 @@ begin
     if starts<=now() or starts is null or ends is null or ends<=starts then raise exception 'Horário futuro inválido.'; end if;
     if coalesce(p_data->>'subject','') ~* '^UniConecta\s*\|' then raise exception 'Informe só o assunto.'; end if;
     if exists(select 1 from public.contact_meetings other where other.responsible_user_id=p_actor and other.id<>p_id
-      and other.status='agendada' and other.start_at<ends and other.end_at>starts) then raise exception 'Há outra reunião neste horário.'; end if;
+      and other.status in ('agendada','confirmada') and other.start_at<ends and other.end_at>starts) then raise exception 'Há outra reunião neste horário.'; end if;
     if p_operation='create' then
       insert into public.contact_meetings(id,company_id,school_id,entity_name,responsible_user_id,subject,description,mode,meeting_url,location,start_at,end_at,organizer_email)
       values(p_id,case when p_entity='company' then p_entity_id end,case when p_entity='school' then p_entity_id end,
@@ -190,15 +225,16 @@ begin
     else
       update public.contact_meetings set subject=btrim(p_data->>'subject'),description=coalesce(p_data->>'description',''),
         mode=p_data->>'mode',meeting_url=nullif(btrim(p_data->>'meeting_url'),''),location=case when p_data->>'mode'='online' then '' else coalesce(p_data->>'location','') end,
-        start_at=starts,end_at=ends,revision=revision+1,updated_at=now() where id=p_id;
+        start_at=starts,end_at=ends,revision=revision+1,write_version=write_version+1,updated_at=now() where id=p_id;
     end if;
   else
-    update public.contact_meetings set status='cancelada',revision=revision+1,updated_at=now() where id=p_id;
+    update public.contact_meetings set status='cancelada',revision=revision+1,write_version=write_version+1,updated_at=now() where id=p_id;
   end if;
   select * into m from public.contact_meetings where id=p_id;
   if exists(select 1 from public.contact_meeting_recipients where meeting_id=p_id and email=m.organizer_email) then
     raise exception 'O remetente central deve ser diferente dos destinatários.';
   end if;
+  previous_gate:=current_setting('uniconecta.contact_meeting_write',true);
   perform set_config('uniconecta.contact_meeting_write',p_id::text,true);
   if p_entity='company' then
     if p_operation='create' then
@@ -209,7 +245,7 @@ begin
     else
       update public.activities set title=m.subject,description=m.description,observacao=m.description,meeting_type=m.mode,
         data=(m.start_at at time zone 'America/Sao_Paulo')::date,start_at=m.start_at,end_at=m.end_at,location=m.location,meeting_url=m.meeting_url,
-        status=m.status,revision=m.revision+1,email_queued_revision=m.revision+1,updated_at=now() where id=p_id;
+        status=m.status,revision=revision+1,email_queued_revision=revision+1,updated_at=now() where id=p_id;
     end if;
   else
     if p_operation='create' then
@@ -223,6 +259,7 @@ begin
         objective=m.subject,notes=m.description,status=m.status,location=case when m.mode='online' then m.meeting_url else nullif(m.location,'') end,updated_at=now() where id=p_id;
     end if;
   end if;
+  perform set_config('uniconecta.contact_meeting_write',coalesce(previous_gate,''),true);
   -- Snapshot recipients once. Deduplicate transport by address, retain every selected contact in history.
   select jsonb_agg(jsonb_build_object('name',name,'email',email) order by email) into people from
     (select distinct on (email) name,email from public.contact_meeting_recipients where meeting_id=p_id order by email,kind) unique_people;

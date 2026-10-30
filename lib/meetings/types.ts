@@ -60,6 +60,7 @@ export interface MeetingPayload {
 }
 export interface MeetingRow {
   id: string
+  contact_meeting_id?: string | null
   company_id: string
   contact_id: string
   contato: string

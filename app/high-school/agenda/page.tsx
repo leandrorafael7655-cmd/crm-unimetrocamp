@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { listActions } from "@/lib/data/high-school-queries"
 import { PageHeader, Card, Chip, EmptyState } from "@/components/high-school/hs-ui"
-import { STATUS_ACAO_HS, CORES_STATUS_ACAO } from "@/lib/domain/high-school"
+import { STATUS_ACAO_HS_FILTROS, ROTULOS_STATUS_ACAO, CORES_STATUS_ACAO } from "@/lib/domain/high-school"
 import { listSupervestCycles } from "@/lib/data/goals-queries"
 
 export const dynamic = "force-dynamic"
@@ -47,7 +47,7 @@ export default async function AgendaPage({
         >
           Todas
         </Link>
-        {STATUS_ACAO_HS.map((s) => (
+        {STATUS_ACAO_HS_FILTROS.map((s) => (
           <Link
             key={s}
             href={statusHref(s)}
@@ -55,7 +55,7 @@ export default async function AgendaPage({
               status === s ? "bg-brand text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
             }`}
           >
-            {s}
+            {ROTULOS_STATUS_ACAO[s]}
           </Link>
         ))}
       </div>
@@ -92,7 +92,7 @@ export default async function AgendaPage({
                         {a.meetingUrl && <a href={a.meetingUrl} target="_blank" rel="noreferrer" className="mt-1 block break-all text-xs text-brand underline">Entrar na reunião (Teams)</a>}
                       </div>
                       <Chip className={CORES_STATUS_ACAO[a.status]}>
-                        <span className="capitalize">{a.status}</span>
+                        <span>{ROTULOS_STATUS_ACAO[a.status]}</span>
                       </Chip>
                     </Card>
                   </div>

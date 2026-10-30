@@ -8,7 +8,7 @@ import { createAdminClient } from "@/lib/supabase/admin"
 import { assertUuid } from "@/lib/meetings/domain"
 import { calendarEmailStatus } from "@/lib/calendar/smtp-config"
 import { processContactMeetingQueue } from "@/lib/meetings/contact-worker"
-import { selectedContacts, validateContactMeeting, type ContactMeeting, type ContactMeetingEntity,
+import { CONTACT_MEETING_RESULTS, selectedContacts, validateContactMeeting, type ContactMeeting, type ContactMeetingEntity, type ContactMeetingResult,
   type ContactMeetingInput, type MeetingContact } from "@/lib/meetings/contact-domain"
 
 const errorMessage = (error: unknown) => error instanceof Error ? error.message : "Não foi possível concluir a operação."
@@ -44,7 +44,9 @@ export async function loadContactMeetings(entity: ContactMeetingEntity, entityId
       const contact = row as unknown as { id: string; nome?: string; name?: string; email: string | null }
       return { id: contact.id, name: contact.nome || contact.name || "Contato", email: contact.email }
     }) as MeetingContact[], meetings: meetings.data as ContactMeeting[],
-    actor: { id: actor.id, name: actor.full_name, email: actor.email }, writable, archived, entityName, paused: calendarEmailStatus().disabled }
+    actor: { id: actor.id, name: actor.full_name, email: actor.email }, writable,
+    canRecordResult: can(actor.role, entity === "company" ? "b2b.write" : "hs.capture.write"),
+    archived, entityName, paused: calendarEmailStatus().disabled }
   } catch (error) { return { ok: false as const, message: errorMessage(error) } }
 }
 
@@ -103,6 +105,24 @@ export async function cancelContactMeeting(entity: ContactMeetingEntity, entityI
     revalidatePath("/")
     revalidatePath(`/high-school/escolas/${entityId}`)
     return { ok: true as const, message: "Reunião cancelada. Histórico preservado; confira o envio do cancelamento por destinatário." }
+  } catch (error) { return { ok: false as const, message: errorMessage(error) } }
+}
+
+export async function recordContactMeetingResult(entity: ContactMeetingEntity, entityId: string, id: string, version: number, status: ContactMeetingResult) {
+  try {
+    assertUuid(id)
+    if (!CONTACT_MEETING_RESULTS.includes(status) || !Number.isInteger(version) || version < 1) throw new Error("Resultado inválido.")
+    const { actor } = await context(entity, entityId)
+    if (!can(actor.role, entity === "company" ? "b2b.write" : "hs.capture.write")) throw new Error("Você não pode registrar o resultado desta reunião.")
+    const { error } = await createAdminClient().rpc("save_contact_meeting", {
+      p_actor: actor.id, p_id: id, p_revision: version, p_entity: entity, p_entity_id: entityId,
+      p_operation: "result", p_data: { status }, p_contacts: [], p_sender: null,
+    })
+    if (error) throw new Error(error.message)
+    // Result-only operations must never invoke a queue worker, even when delivery is enabled.
+    for (const path of ["/", "/dashboard", "/b2b/carteira", "/gestao/metas", "/high-school", "/high-school/escolas", "/high-school/pipeline", "/high-school/agenda",
+      "/high-school/captacao-escolas", "/atendimento", "/atendimento/minha-agenda", `/high-school/escolas/${entityId}`]) revalidatePath(path)
+    return { ok: true as const, message: "Resultado registrado no CRM. Nenhum e-mail enviado." }
   } catch (error) { return { ok: false as const, message: errorMessage(error) } }
 }
 

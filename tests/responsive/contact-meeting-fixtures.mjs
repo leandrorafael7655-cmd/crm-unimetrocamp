@@ -8,7 +8,7 @@ export const contactMeetingMocks = {
     start_at:new Date(Date.now()+86400000).toISOString(),status:"agendada",meeting_url:"https://teams.microsoft.com/agenda-test",
     contact_meeting_jobs:[{status:"sent_provider",operation:"REQUEST",event_sequence:1},{status:"failed",operation:"REQUEST",event_sequence:1}],
   }]}),
-  loadContactMeetings: async () => ({ ok: true, writable: true, archived: false, paused: true,
+  loadContactMeetings: async () => ({ ok: true, writable: true, canRecordResult: true, archived: false, paused: true,
     entityName: "Ficha fictícia", actor: { id: "manager", name: "Rafael Xavier", email }, meetings: structuredClone(meetings),
     contacts: [{ id: "contact-with-email", name: "Contato com e-mail", email }, { id: "contact-without-email", name: "Contato sem e-mail", email: null }] }),
   saveContactMeeting: async input => {
@@ -17,20 +17,27 @@ export const contactMeetingMocks = {
       { id: "responsible", kind: "consultant", contact_id: null, name: "Rafael Xavier", email },
       ...input.contactIds.map(id => ({ id, kind: "contact", contact_id: id, name: "Contato com e-mail", email })),
     ]
-    const revision = input.revision + 1
+    const revision = (current?.revision || 0) + 1
     const jobs = [...(current?.contact_meeting_jobs || []), { id: crypto.randomUUID(), recipient_email: email, event_sequence: revision - 1, operation: "REQUEST", status: "pending" }]
     const saved = { ...current, entity_name:"Ficha fictícia", company_id:input.entity === "company" ? input.entityId : null, school_id:input.entity === "school" ? input.entityId : null, id: input.id, subject: input.title, description: input.description, responsible_user_id: "manager",
       start_at: `${input.date}T${input.startTime}:00-03:00`, end_at: `${input.date}T${input.endTime}:00-03:00`, status: "agendada",
-      mode: input.mode, meeting_url: input.meetingUrl, location: input.location, revision, event_uid: current?.event_uid || "fixture@uniconecta", delivery_enabled: false,
+      mode: input.mode, meeting_url: input.meetingUrl, location: input.location, revision, write_version: input.revision + 1, event_uid: current?.event_uid || "fixture@uniconecta", delivery_enabled: false,
       contact_meeting_recipients: recipients, contact_meeting_jobs: jobs }
     meetings = [...meetings.filter(m => m.id !== input.id), saved]
     return { ok: true, message: "Reunião salva. Envio pausado." }
   },
   cancelContactMeeting: async (_entity, _entityId, id) => {
     const meeting = meetings.find(m => m.id === id)
-    meeting.status = "cancelada"; meeting.revision++
+    meeting.status = "cancelada"; meeting.revision++; meeting.write_version++
     meeting.contact_meeting_jobs.push({ id: crypto.randomUUID(), recipient_email: email, event_sequence: meeting.revision - 1, operation: "CANCEL", status: "pending" })
     return { ok: true, message: "Reunião cancelada. Envio pausado." }
+  },
+  recordContactMeetingResult: async (_entity, _entityId, id, version, status) => {
+    const meeting=meetings.find(m=>m.id===id)
+    if(meeting.write_version!==version) return {ok:false,message:"Reunião alterada. Atualize a ficha."}
+    if(status!=="confirmada" && Date.parse(meeting.start_at)>Date.now()) return {ok:false,message:"Registre após o início."}
+    meeting.status=status; meeting.write_version++; meeting.result_recorded_at=new Date().toISOString()
+    return {ok:true,message:"Resultado registrado no CRM. Nenhum e-mail enviado."}
   },
   retryContactMeeting: async () => ({ ok: true, message: "Envio pausado." }),
 }

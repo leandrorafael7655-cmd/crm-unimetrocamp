@@ -7,7 +7,8 @@ import { setStorage } from "../../lib/data/storage-context"
 import { makeLocalStorage } from "../../lib/data/local-storage"
 import { CHAVES, EQUIPE_PADRAO, CONFIG_PADRAO } from "../../lib/domain/constants"
 import { dadosExemplo } from "../../lib/domain/seed"
-import { actor, owners, resetCompanyActionFixtures } from "./fixtures.mjs"
+import { actor, owners, actions, grades, resetCompanyActionFixtures } from "./fixtures.mjs"
+import { AcoesPanel } from "../../components/high-school/escola-360-panels"
 import { B2bManualResults } from "../../components/goals/b2b-manual-results"
 import { CompanyActions } from "../../components/b2b/company-actions"
 import Dashboard from "../../app/dashboard/page"
@@ -88,7 +89,7 @@ window.renderFixture = async (name, role = "gerente") => {
     let child
     if (name === "metas-b2b") child = <B2bManualResults canWrite={role === "gerente"} results={[{id:"result",company_id:"company",user_id:"consultor",commercial_cycle_id:"cc",target_value:10,registrations:0,revision:1,notes:"Teste fictício"}]} history={[{id:"history",result_id:"result",changed_by_name:"Gerente fictício",changed_at:"2026-10-28T12:00:00Z",new_values:{target_value:10,registrations:0}}]} companies={[{id:"company",name:"Empresa fictícia "+"NomeExtenso".repeat(8)}]} people={[{id:"consultor",name:"Consultor fictício"}]} cycles={[{id:"cc",name:"2027.1"}]} />
     else if (name === "usuarios") child = <GerenciarUsuarios perfil={perfil}/>
-    else if (name === "convites-escola") child = <ContactMeetings entity="school" entityId="school-0"/>
+    else if (name === "convites-escola") child = <><ContactMeetings entity="school" entityId="school-0"/><section aria-label="Lista antiga de ações escolares"><AcoesPanel escolaId="school-0" acoes={[{...actions[0],tipo:"Reunião",resultados:[],participantes:[]}]} grades={grades} owners={owners} podeEscrever/></section></>
     else if (name === "reunioes") child = <CompanyMeetings companyId="company" companyName="Empresa Campinas"/>
     else if (name === "acoes-empresa") {
       resetCompanyActionFixtures()

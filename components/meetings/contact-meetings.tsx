@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react"
 import { useRouter } from "next/navigation"
 import { validEmail } from "@/lib/meetings/domain"
-import { loadContactMeetings, saveContactMeeting, cancelContactMeeting, retryContactMeeting } from "@/app/actions/contact-meetings"
-import { contactMeetingTitle, deliveryLabel, latestDelivery, summarizeMeetingDeliveries, type ContactMeeting, type ContactMeetingEntity, type ContactMeetingInput } from "@/lib/meetings/contact-domain"
+import { loadContactMeetings, saveContactMeeting, cancelContactMeeting, retryContactMeeting, recordContactMeetingResult } from "@/app/actions/contact-meetings"
+import { CONTACT_MEETING_RESULTS, CONTACT_MEETING_STATUS_LABELS, contactMeetingTitle, deliveryLabel, latestDelivery, summarizeMeetingDeliveries, type ContactMeeting, type ContactMeetingEntity, type ContactMeetingInput, type ContactMeetingResult } from "@/lib/meetings/contact-domain"
 
 const field = "min-h-10 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
 const control = "inline-flex min-h-10 items-center justify-center rounded-lg border px-3 py-2 text-sm font-medium disabled:opacity-50"
@@ -24,6 +24,7 @@ export function ContactMeetings({ entity, entityId, onChanged }: {
   const [busy, setBusy] = useState(false)
   const [draft, setDraft] = useState<ContactMeetingInput | null>(null)
   const [cancel, setCancel] = useState<ContactMeeting | null>(null)
+  const [result, setResult] = useState<{ meeting: ContactMeeting; status: ContactMeetingResult; canFinish: boolean } | null>(null)
   const reload = useCallback(async () => {
     try {
       const result = await loadContactMeetings(entity, entityId)
@@ -45,7 +46,7 @@ export function ContactMeetings({ entity, entityId, onChanged }: {
     try {
       const result = await action()
       setNotice(result.message)
-      if (result.ok) { setDraft(null); setCancel(null); await reload(); router.refresh(); await onChanged?.() }
+      if (result.ok) { setDraft(null); setCancel(null); setResult(null); await reload(); router.refresh(); await onChanged?.() }
     } catch { setNotice("Sem confirmação. Atualize o histórico antes de repetir; o identificador da reunião foi preservado.") }
     finally { setBusy(false) }
   }
@@ -55,7 +56,7 @@ export function ContactMeetings({ entity, entityId, onChanged }: {
   }
   function edit(meeting: ContactMeeting) {
     const start = local(meeting.start_at), end = local(meeting.end_at)
-    setDraft({ id: meeting.id, entity, entityId, revision: meeting.revision, title: meeting.subject,
+    setDraft({ id: meeting.id, entity, entityId, revision: meeting.write_version, title: meeting.subject,
       description: meeting.description, date: start.slice(0, 10), startTime: start.slice(11, 16), endTime: end.slice(11, 16),
       mode: meeting.mode, meetingUrl: meeting.meeting_url || "", location: meeting.location,
       contactIds: meeting.contact_meeting_recipients.flatMap(r => r.contact_id ? [r.contact_id] : []) })
@@ -99,7 +100,7 @@ export function ContactMeetings({ entity, entityId, onChanged }: {
         <fieldset className="min-w-0 space-y-2 rounded-lg border p-3">
           <legend className="px-1 text-sm font-medium">Destinatários</legend>
           <p className="break-words text-xs">✓ {originalConsultant?.name || data.actor.name} · <span className="break-all">{originalConsultant?.email || data.actor.email}</span> (consultor, sempre convidado)</p>
-          {isEdit && <p className="text-xs text-slate-500">Remarcação e cancelamento usam os destinatários e endereços originais. Para trocar a lista, cancele e crie outra reunião.</p>}
+          <p className="text-xs text-slate-500">Remarcação e cancelamento usam os destinatários e endereços originais. Para trocar a lista, cancele e crie outra reunião.</p>
           {!data.contacts.length && <p className="text-xs text-slate-500">Nenhum contato cadastrado. Você pode agendar somente para o consultor.</p>}
           {data.contacts.map(contact => <label key={contact.id} className="flex min-h-10 items-start gap-2 text-sm">
             <input type="checkbox" className="mt-1 shrink-0" disabled={!validEmail(contact.email?.trim() || "") || isEdit} checked={draft.contactIds.includes(contact.id)}
@@ -116,7 +117,8 @@ export function ContactMeetings({ entity, entityId, onChanged }: {
       {!data.meetings.length && <p className="text-sm text-slate-500">Nenhuma reunião com contatos agendada.</p>}
       <ul className="min-w-0 space-y-3">{data.meetings.map(meeting => <li key={meeting.id} data-contact-meeting-id={meeting.id} className="min-w-0 space-y-2 rounded-lg border border-slate-200 p-3">
         <h4 className="break-words font-semibold">{contactMeetingTitle(meeting)}</h4>
-        <p className="text-xs text-slate-600">{local(meeting.start_at).split(" ").join(" · ")}–{local(meeting.end_at).slice(11, 16)} · {meeting.status === "cancelada" ? "Cancelada" : "Agendada"}</p>
+        <p className="text-xs text-slate-600">{local(meeting.start_at).split(" ").join(" · ")}–{local(meeting.end_at).slice(11, 16)} · {CONTACT_MEETING_STATUS_LABELS[meeting.status]}</p>
+        {meeting.result_recorded_at && <p className="text-xs text-slate-500">Resultado registrado em {local(meeting.result_recorded_at)} · sem envio de e-mail.</p>}
         <p className="break-words text-xs text-slate-600">{meeting.mode === "online" ? "Online" : `Presencial · ${meeting.location}`}</p>
         {meeting.meeting_url && <a className="block break-all text-sm text-[#88005b] underline" href={meeting.meeting_url} target="_blank" rel="noreferrer">Entrar na reunião (Teams)</a>}
         {!meeting.delivery_enabled && <p className="text-xs text-amber-800">Envio desta reunião aguardando liberação.</p>}
@@ -134,16 +136,26 @@ export function ContactMeetings({ entity, entityId, onChanged }: {
           })}</ul>
           <p className="mt-2 break-all text-[11px] text-slate-500">UID: {meeting.event_uid} · sequência {meeting.revision - 1}. O aceite é acompanhado manualmente; o SMTP confirma o envio, não a resposta.</p>
         </details>
-        {meeting.responsible_user_id === data.actor.id && data.writable && <div className="flex flex-wrap gap-2">
-          {meeting.status !== "cancelada" && <><button type="button" className={button} disabled={busy || data.archived} onClick={() => edit(meeting)}>Remarcar</button><button type="button" className={button} disabled={busy} onClick={() => setCancel(meeting)}>Cancelar reunião</button></>}
-          <button type="button" className={button} disabled={busy || data.paused || !meeting.delivery_enabled} onClick={() => void run(() => retryContactMeeting(entity, entityId, meeting.id))}>Tentar envio pendente</button>
+        {meeting.responsible_user_id === data.actor.id && <div className="flex flex-wrap gap-2">
+          {data.writable && ["agendada", "confirmada"].includes(meeting.status) && <><button type="button" className={button} disabled={busy || data.archived} onClick={() => edit(meeting)}>Remarcar</button><button type="button" className={button} disabled={busy} onClick={() => setCancel(meeting)}>Cancelar reunião</button></>}
+          {data.canRecordResult && meeting.status !== "cancelada" && <button type="button" className={button} disabled={busy} onClick={() => setResult({ meeting, status: CONTACT_MEETING_RESULTS.includes(meeting.status as ContactMeetingResult) ? meeting.status as ContactMeetingResult : "confirmada", canFinish: Date.parse(meeting.start_at) <= Date.now() })}>Registrar resultado</button>}
+          {data.writable && <button type="button" className={button} disabled={busy || data.paused || !meeting.delivery_enabled} onClick={() => void run(() => retryContactMeeting(entity, entityId, meeting.id))}>Tentar envio pendente</button>}
         </div>}
       </li>)}</ul>
+      {result && <form aria-label="Registrar resultado da reunião" className="space-y-3 rounded-lg border border-violet-200 p-3 text-sm" onSubmit={event => { event.preventDefault(); void run(() => recordContactMeetingResult(entity, entityId, result.meeting.id, result.meeting.write_version, result.status)) }}>
+        <h4 className="break-words font-semibold">Resultado · {result.meeting.subject}</h4>
+        <p className="text-xs text-slate-600">Atualiza a atividade e os indicadores do CRM. Nenhum e-mail será enviado. A sequência e os destinatários do convite permanecem iguais.</p>
+        <label className="block">Resultado<select className={field} value={result.status} onChange={event => setResult({ ...result, status: event.target.value as ContactMeetingResult })}>
+          {CONTACT_MEETING_RESULTS.map(status => <option key={status} value={status} disabled={status !== "confirmada" && !result.canFinish}>{CONTACT_MEETING_STATUS_LABELS[status]}</option>)}
+        </select></label>
+        {!result.canFinish && <p className="text-xs text-slate-500">Realização e ausência só podem ser registradas após o início da reunião. Depois do início, reabra este formulário para atualizar as opções.</p>}
+        <div className="flex flex-wrap gap-2"><button className={primary} disabled={busy}>Salvar resultado</button><button type="button" className={button} disabled={busy} onClick={() => setResult(null)}>Fechar resultado</button></div>
+      </form>}
       {cancel && <div role="alertdialog" aria-label="Confirmar cancelamento" className="space-y-3 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm">
         <p>Cancelar “{cancel.subject}”? O cancelamento fica no histórico e será destinado às mesmas pessoas. A pausa de envio será respeitada.</p>
         <ul className="space-y-1">{cancel.contact_meeting_recipients.map(recipient => <li className="break-words text-xs" key={recipient.id}>{recipient.name} · <span className="break-all">{recipient.email}</span></li>)}</ul>
         <p className="text-xs">Uma mensagem por endereço, preservando os destinatários originais.</p>
-        <div className="flex flex-wrap gap-2"><button type="button" disabled={busy} className={button} onClick={() => void run(() => cancelContactMeeting(entity, entityId, cancel.id, cancel.revision))}>Confirmar cancelamento</button><button type="button" disabled={busy} className={button} onClick={() => setCancel(null)}>Voltar</button></div>
+        <div className="flex flex-wrap gap-2"><button type="button" disabled={busy} className={button} onClick={() => void run(() => cancelContactMeeting(entity, entityId, cancel.id, cancel.write_version))}>Confirmar cancelamento</button><button type="button" disabled={busy} className={button} onClick={() => setCancel(null)}>Voltar</button></div>
       </div>}
     </>}
   </section>

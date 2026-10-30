@@ -420,12 +420,24 @@ try {
           await dialogCheck("User edit "+width)
         }
         if(name==="reunioes" || name==="convites-escola") {
+          if(name==="reunioes") {
+            const legacy=page.locator("[data-linked-meeting-redirect]")
+            assert.equal(await legacy.getByRole("link",{name:"Abrir no painel Reuniões e convites",exact:true}).getAttribute("href"),"#reunioes-convites")
+            assert.equal(await legacy.getByRole("button").count(),0)
+            assert.equal(await legacy.getByRole("combobox").count(),0)
+          } else {
+            const legacy=page.getByRole("region",{name:"Lista antiga de ações escolares",exact:true})
+            assert.equal(await legacy.getByRole("link",{name:"Registrar resultado ou alterar em Reuniões e convites",exact:true}).getAttribute("href"),"/high-school/escolas/school-0#reunioes-convites")
+            assert.equal(await legacy.getByRole("combobox").count(),0)
+            assert.equal(await legacy.getByRole("button",{name:"Remover ação",exact:true}).count(),0)
+          }
           const panel=page.getByRole("region",{name:"Reuniões e convites",exact:true})
           const colors=await panel.getByRole("button",{name:"Agendar reunião",exact:true}).evaluate(el=>({text:getComputedStyle(el).color,background:getComputedStyle(el).backgroundColor}))
           assert.notEqual(colors.text,colors.background,"Meeting action label must be visible")
           await panel.getByRole("button",{name:"Agendar reunião",exact:true}).click()
           let form=panel.getByRole("form")
           const contact= form.getByRole("checkbox",{name:/Contato com e-mail/})
+          assert.equal(await form.getByText(/Para trocar a lista, cancele e crie outra reunião/).count(),1)
           assert.equal(await form.getByRole("checkbox",{name:/Contato sem e-mail/}).isDisabled(),true)
           assert.equal(await form.getByRole("button",{name:"Salvar reunião",exact:true}).isEnabled(),true,"No contact is required")
           await form.getByLabel("Assunto",{exact:true}).fill("TESTE convite com Teams")
@@ -441,6 +453,17 @@ try {
           await panel.getByText("Histórico por destinatário",{exact:true}).click()
           assert.equal(await panel.getByRole("link",{name:"Entrar na reunião (Teams)",exact:true}).getAttribute("href"),"https://teams.microsoft.com/test?context=a&b=c")
           await check(name+" recipient history "+width)
+          await panel.getByRole("button",{name:"Registrar resultado",exact:true}).click()
+          const resultForm=panel.getByRole("form",{name:"Registrar resultado da reunião",exact:true})
+          assert.deepEqual(await resultForm.getByRole("option").allTextContents(),["Confirmada","Realizada","Não compareceu"])
+          // Inspect the native option state separately from the enabled parent select.
+          assert.equal(await resultForm.getByRole("option",{name:"Realizada",exact:true}).evaluate(option=>option.disabled),true)
+          assert.equal(await resultForm.getByRole("option",{name:"Não compareceu",exact:true}).evaluate(option=>option.disabled),true)
+          await check(name+" record outcome "+width)
+          await resultForm.getByRole("button",{name:"Salvar resultado",exact:true}).click()
+          await panel.getByText(/· Confirmada$/).waitFor()
+          assert.equal(await panel.getByText(/REQUEST · sequência 0/).count(),2,"Confirmation must not add a delivery or advance the ICS sequence")
+          await panel.getByText(/Nenhum e-mail enviado/).waitFor()
           await panel.getByRole("button",{name:"Remarcar",exact:true}).click()
           form=panel.getByRole("form")
           assert.equal(await form.getByRole("checkbox",{name:/Contato com e-mail/}).isDisabled(),true)
