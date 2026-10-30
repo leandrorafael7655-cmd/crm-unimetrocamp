@@ -27,15 +27,17 @@ export async function processContactMeetingQueue(options: Options = {}) {
     connectionTimeout: 5000, greetingTimeout: 5000, socketTimeout: 10000,
     disableFileAccess: true, disableUrlAccess: true })
   const started = Date.now()
+  const attempted: string[] = []
   try {
     for (let i = 0; i < Math.min(25, Math.max(1, options.limit || 10)) && Date.now() - started < 20000; i++) {
       const { data, error } = await admin.rpc("claim_contact_meeting_job", {
         p_meeting: options.meetingId || null, p_user: cfg.testUserId || options.userId || null,
-        p_test_email: testEmail, p_sender: cfg.organizer,
+        p_test_email: testEmail, p_sender: cfg.organizer, p_exclude: [...attempted],
       })
       if (error) return { ...result, error: "Não foi possível reservar o envio. A fila antiga permanece intacta." }
       const job = data?.[0] as ClaimedJob | undefined
       if (!job) break
+      attempted.push(job.id)
       let patch: Record<string, unknown>
       try {
         if (job.recipient_email !== job.payload.recipient.email || (testEmail && job.recipient_email !== testEmail))
@@ -55,8 +57,7 @@ export async function processContactMeetingQueue(options: Options = {}) {
         .update({ ...patch, lease_token: null, updated_at: new Date().toISOString() })
         .eq("id", job.id).eq("status", "processing").eq("lease_token", job.lease_token).select("id").maybeSingle()
       if (saveError || !saved) return { ...result, error: "Envio sem confirmação de registro. Confira o histórico antes de repetir." }
-      // A manual retry should not immediately retry its own failed job in this invocation.
-      if (patch.status === "failed") break
+      // Exclude every attempted job for this invocation; one failure cannot starve other recipients.
     }
   } finally { transport.close() }
   return result

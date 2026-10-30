@@ -40,7 +40,7 @@ A migração não executa `DROP`, `DELETE`, `UPDATE` ou `TRUNCATE` sobre registr
 - Fila persistida mesmo com envio pausado. O worker verifica a variável antes de reservar jobs ou abrir SMTP. Com `CALENDAR_TEST_USER_ID`, exige o perfil correto **e todos os endereços iguais ao e-mail desse perfil**.
 - Novos agendamentos começam com envio individual bloqueado. Alterar só a variável global não libera essa fila. O teste real terá aprovação dos IDs exatos primeiro.
 - Ao alterar a reunião, REQUESTs antigos ainda não enviados ficam `superseded` **somente na fila nova**. Requisições antigas nunca voltam a sair após o cancelamento. Histórico enviado permanece.
-- Lease exclusivo por reunião bloqueia edição durante o envio. Lease vencido vai para `delivery_unknown` e exige conferência; não é reencaminhado automaticamente. Destinatários já enviados não são reenviados quando outro falha. SMTP não oferece transação atômica entre provedor e banco: se houver aceite SMTP sem registro confirmado, parar e conferir o histórico; Message-ID estável ajuda a identificar duplicidade, mas não prova entrega exatamente uma vez.
+- Lease exclusivo por reunião bloqueia edição durante o envio. Lease vencido vai para `delivery_unknown` e exige conferência; não é reencaminhado automaticamente. Destinatários já enviados não são reenviados quando outro falha; uma falha também não impede a tentativa dos outros endereços. Cada job é reservado no máximo uma vez por chamada do worker. SMTP não oferece transação atômica entre provedor e banco: se houver aceite SMTP sem registro confirmado, parar e conferir o histórico; Message-ID estável ajuda a identificar duplicidade, mas não prova entrega exatamente uma vez.
 
 ## Validação automatizada
 

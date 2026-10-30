@@ -246,7 +246,7 @@ end $$;
 revoke all on function public.save_contact_meeting(uuid,uuid,integer,text,uuid,text,jsonb,uuid[],text) from public,anon,authenticated;
 grant execute on function public.save_contact_meeting(uuid,uuid,integer,text,uuid,text,jsonb,uuid[],text) to service_role;
 
-create function public.claim_contact_meeting_job(p_meeting uuid,p_user uuid,p_test_email text,p_sender text)
+create function public.claim_contact_meeting_job(p_meeting uuid,p_user uuid,p_test_email text,p_sender text,p_exclude uuid[] default '{}'::uuid[])
 returns setof public.contact_meeting_jobs language plpgsql security invoker set search_path='' as $$
 declare m public.contact_meetings; j public.contact_meeting_jobs;
 begin
@@ -262,7 +262,7 @@ begin
     if exists(select 1 from public.contact_meeting_jobs where meeting_id=m.id and status in ('processing','delivery_unknown')) then continue; end if;
     if m.organizer_email is not null and m.organizer_email<>lower(btrim(p_sender)) then continue; end if;
     if exists(select 1 from public.contact_meeting_recipients where meeting_id=m.id and email=lower(btrim(p_sender))) then continue; end if;
-    select * into j from public.contact_meeting_jobs where meeting_id=m.id and event_sequence=m.revision-1
+    select q.* into j from public.contact_meeting_jobs q where meeting_id=m.id and q.id<>all(coalesce(p_exclude,'{}'::uuid[])) and event_sequence=m.revision-1
       and status in ('pending','failed') and (p_meeting is not null or next_attempt_at is null or next_attempt_at<=now())
       order by created_at,id limit 1 for update skip locked;
     if not found then continue; end if;
@@ -272,6 +272,6 @@ begin
     return next j; return;
   end loop;
 end $$;
-revoke all on function public.claim_contact_meeting_job(uuid,uuid,text,text) from public,anon,authenticated;
-grant execute on function public.claim_contact_meeting_job(uuid,uuid,text,text) to service_role;
+revoke all on function public.claim_contact_meeting_job(uuid,uuid,text,text,uuid[]) from public,anon,authenticated;
+grant execute on function public.claim_contact_meeting_job(uuid,uuid,text,text,uuid[]) to service_role;
 commit;

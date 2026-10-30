@@ -13,7 +13,7 @@ const data = (start = "2098-11-03T13:00:00Z") => ({ subject: "Parceria", descrip
 async function save(op = "create", revision = 0, contacts = [CC, CC2], entity = "company", payload = data(), actor = U.b2b, id = M) {
   return db.query("select save_contact_meeting($1,$2,$3,$4,$5,$6,$7,$8,'agenda@example.invalid')", [actor, id, revision, entity, entity === "company" ? C : S, op, JSON.stringify(payload), contacts])
 }
-const claim = (meeting: string | null = M, testEmail: string | null = null) => db.query<{ id: string; recipient_email: string; payload: any }>("select * from claim_contact_meeting_job($1,$2,$3,'agenda@example.invalid')", [meeting, U.b2b, testEmail])
+const claim = (meeting: string | null = M, testEmail: string | null = null, exclude: string[] = []) => db.query<{ id: string; recipient_email: string; payload: any }>("select * from claim_contact_meeting_job($1,$2,$3,'agenda@example.invalid',$4)", [meeting, U.b2b, testEmail, exclude])
 beforeAll(async () => {
   db = await createAuditedDatabase()
   const claimBefore = (await db.query("select pg_get_functiondef('claim_calendar_email_jobs(integer,uuid,uuid)'::regprocedure) definition")).rows
@@ -103,6 +103,7 @@ describe("Contact invitations against full audited PostgreSQL + all 12 migration
     expect(second.recipient_email).not.toBe(first.recipient_email)
     await db.query("update contact_meeting_jobs set status='failed',lease_token=null,next_attempt_at=now()+interval '1 hour' where id=$1", [second.id])
     expect((await claim(null)).rows).toHaveLength(0)
+    expect((await claim(M, null, [second.id])).rows).toHaveLength(0)
     expect((await claim()).rows[0].id).toBe(second.id)
   })
   it("lists and reactivates an archived company through the actual RPC while preserving its history and other rows", async () => {

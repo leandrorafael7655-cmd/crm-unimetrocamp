@@ -62,10 +62,11 @@ it("sends to a selected external contact outside acceptance mode, with clickable
 it("records partial success and a redacted failure without undoing the meeting or retrying successful recipients", async () => {
   state.jobs = [job(), job("second@example.invalid", "job-2")]
   state.sends.mockRejectedValueOnce({ code: "EAUTH", response: "secret-credential" })
-  expect(await processContactMeetingQueue()).toMatchObject({ failed: 1, sent: 0 })
+  expect(await processContactMeetingQueue()).toMatchObject({ failed: 1, sent: 1 })
   expect(JSON.stringify(state.patches)).not.toContain("secret-credential")
   expect(state.patches[0]).toMatchObject({ status: "failed", lease_token: null })
-  expect(await processContactMeetingQueue()).toMatchObject({ sent: 1, failed: 0 })
+  expect(state.rpc).toHaveBeenNthCalledWith(2, "claim_contact_meeting_job", expect.objectContaining({ p_exclude: ["job-1"] }))
+  expect(await processContactMeetingQueue()).toMatchObject({ sent: 0, failed: 0 })
   expect(state.sends).toHaveBeenCalledTimes(2)
 })
 it("preserves the UID for reschedule and cancellation, with monotonically increasing sequences", async () => {
