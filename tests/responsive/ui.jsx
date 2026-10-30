@@ -47,12 +47,12 @@ const paths = { dashboard: "/dashboard", hs: "/high-school", escolas: "/high-sch
 const root = createRoot(document.getElementById("root"))
 window.renderFixture = async (name, role = "gerente") => {
   resetContactMeetingFixtures()
+  resetCaptureFixtures()
   window.refreshFixture = undefined
   window.fixturePath = paths[name] || "/"
   document.body.dataset.ready = ""
   if(name === "captacao-escolas") {
     window.fixturePath = "/high-school/captacao-escolas"
-    resetCaptureFixtures()
     const key = "capture:"+Date.now()
     window.refreshFixture = ()=>root.render(<React.Fragment key={key}><ResponsiveShell sidebar={<SystemSidebar role="gerente" userName={captureActor.name}/>} mainClassName="p-4 sm:p-6">
       <SchoolCapture data={captureFixtureData()} actor={captureActor} canWrite canConfigure now="2026-10-02T00:30:00.000Z"/>

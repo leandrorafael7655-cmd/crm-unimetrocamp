@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { loadCompanyMeetingAgenda } from "@/app/actions/contact-meetings"
 import { contactMeetingTitle, summarizeMeetingDeliveries, type ContactMeeting } from "@/lib/meetings/contact-domain"
 
-export function CompanyMeetingAgenda({ onOpen }: { onOpen: (id: string) => void }) {
+export function CompanyMeetingAgenda({ onOpen, refreshToken }: { onOpen: (id: string) => void; refreshToken?: unknown }) {
   const [meetings, setMeetings] = useState<ContactMeeting[]>([])
   const [error, setError] = useState("")
   useEffect(() => {
@@ -15,7 +15,7 @@ export function CompanyMeetingAgenda({ onOpen }: { onOpen: (id: string) => void 
       else setError(result.message)
     }).catch(() => { if (active) setError("Não foi possível carregar as reuniões. Atualize a agenda.") })
     return () => { active = false }
-  }, [])
+  }, [refreshToken])
   return <section aria-label="Reuniões B2B com convites" className="mb-4 space-y-3 rounded-xl border border-slate-200 bg-white p-3">
     <h3 className="text-sm font-semibold">Reuniões B2B com convites</h3>
     <p className="text-xs text-slate-500">Até 250 reuniões dos próximos 90 dias. Remarcação e cancelamento ficam na ficha.</p>

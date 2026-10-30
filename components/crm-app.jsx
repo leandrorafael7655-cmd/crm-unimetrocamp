@@ -1582,7 +1582,7 @@ function Agenda({ empresas, aoAbrir }) {
   ];
   return (
     <div className="space-y-4">
-      <CompanyMeetingAgenda onOpen={aoAbrir} />
+      <CompanyMeetingAgenda onOpen={aoAbrir} refreshToken={empresas} />
       {grupos.map((g) => (
         <section key={g.titulo}>
           <h3 className="mb-1.5 flex items-baseline gap-2 text-sm font-semibold text-slate-900">

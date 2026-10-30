@@ -25,9 +25,11 @@ export function ContactMeetings({ entity, entityId, onChanged }: {
   const [draft, setDraft] = useState<ContactMeetingInput | null>(null)
   const [cancel, setCancel] = useState<ContactMeeting | null>(null)
   const reload = useCallback(async () => {
-    const result = await loadContactMeetings(entity, entityId)
-    if (result.ok) setData(result)
-    else setNotice(result.message)
+    try {
+      const result = await loadContactMeetings(entity, entityId)
+      if (result.ok) setData(result)
+      else setNotice(result.message)
+    } catch { setNotice("Não foi possível atualizar as reuniões. Tente novamente.") }
   }, [entity, entityId])
   useEffect(() => {
     let active = true
@@ -67,7 +69,10 @@ export function ContactMeetings({ entity, entityId, onChanged }: {
         <h3 className="font-semibold text-slate-900">Reuniões e convites</h3>
         <p className="mt-1 text-xs text-slate-600">O consultor responsável sempre recebe. Você escolhe quais contatos desta ficha também serão convidados. Não é obrigatório selecionar um contato.</p>
       </div>
-      <button type="button" className={primary} disabled={busy || !data?.writable || data.archived || !data.actor.email} onClick={create}>Agendar reunião</button>
+      <div className="flex flex-wrap gap-2">
+        <button type="button" className={primary} disabled={busy || !data?.writable || data.archived || !data.actor.email} onClick={create}>Agendar reunião</button>
+        {data && <button type="button" className={button} disabled={busy} onClick={() => void reload()}>Atualizar reuniões</button>}
+      </div>
     </div>
     {notice && <p role="status" className="break-words rounded-lg bg-violet-50 p-3 text-sm text-violet-950">{notice}</p>}
     {!data && <button className={button} type="button" onClick={() => void reload()}>Atualizar reuniões</button>}
